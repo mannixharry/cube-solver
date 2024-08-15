@@ -17,7 +17,6 @@ class Render:
         self.height = height
         self.thickness = 1
         self.screen = self.create_window(width, height)
-        self.colour = (0, 0, 0)
         self.font = pygame.font.SysFont('Arial', 20)
 
     def update(self):
@@ -29,40 +28,25 @@ class Render:
                     return False
         return True
     
-    def draw_line(self, a, b):
-        pygame.draw.line(self.screen, 'aqua', a, b, self.thickness)
+    def draw_line(self, a, b, colour):
+        pygame.draw.line(self.screen, colour, a, b, self.thickness)
 
-    def draw_triangle(self, a, b, c):
-        pygame.draw.line(self.screen, self.colour, a, b, self.thickness)
-        pygame.draw.line(self.screen, self.colour, b, c, self.thickness)
-        pygame.draw.line(self.screen, self.colour, c, a, self.thickness)
+    def draw_triangle(self, a, b, c, colour):
+        pygame.draw.line(self.screen, colour, a, b, self.thickness)
+        pygame.draw.line(self.screen, colour, b, c, self.thickness)
+        pygame.draw.line(self.screen, colour, c, a, self.thickness)
 
     def display_fps(self, fps):
-        fps_text = self.font.render(f'FPS: {int(fps)}', True, self.colour)
+        fps_text = self.font.render(f'FPS: {int(fps)}', True, (0, 0, 0))
         self.screen.blit(fps_text, (10, 10))  # Display at the top-left corner
 
-class DepthBuffer:
-    def __init__(self, renderer):
-        self.width = renderer.width
-        self.height = renderer.height
-        self.buffer = np.full((self.width, self.height), np.inf)
+# Function to interpolate between two colours
+def interpolate_colour(start_colour, end_colour, t):
+    r = int(start_colour[0] + (end_colour[0] - start_colour[0]) * t)
+    g = int(start_colour[1] + (end_colour[1] - start_colour[1]) * t)
+    b = int(start_colour[2] + (end_colour[2] - start_colour[2]) * t)
+    return (r, g, b)
 
-    def reset_buffer(self):
-        self.buffer.fill(np.inf)
-
-    def check_depth(self, position, depth):
-        x, y = map(int, position)
-        if self.buffer[x,y] >= depth:
-            return True
-        return False 
-
-    def update_depth(self, position, depth):
-        x, y = map(int, position)
-        if self.buffer[x, y] >= depth:
-            self.buffer[x, y] = depth
-            return True
-        return False
-        
 class Triangle:
     def __init__(self, a, b, c):
         self.a = np.array(a)
@@ -209,7 +193,6 @@ class Transformer:
 
 def main():
     renderer = Render()
-    depthBuffer = DepthBuffer(renderer)
     projector = Projector(renderer)
     transformer = Transformer(projector)
 
@@ -229,11 +212,12 @@ def main():
         renderer.screen.fill((255, 255, 255))  # Clear the screen
         
         transformer.update_rotation_matrices(angle_x, angle_y, angle_z)
-        depthBuffer.reset_buffer()
+        projected_triangles = []
+        triangle_depths = []
         for cube in cubes[:]:
             for triangle in cube.triangles:
                 # Compute the centroid and the normal
-                centroid = find_centroid_triangle(triangle.a, triangle.b, triangle.c)
+                centroid = find_centroid_triangle(*triangle)
                 normal = triangle.get_normal()
 
                 # Transform the normal
@@ -244,25 +228,29 @@ def main():
                 if np.dot(transformed_normal, translated_centroid - camera) > 0:
                     projected_vertices = []
                     vertex_depths = []
-                    obscured = False
+                    transformed_vertices = []
                     for vertex in triangle:
                         projected_vertex, transformed_vertex = transformer.transform_vector(vertex)
                         projected_vertices.append(projected_vertex)
-                        vertex_depths.append(transformed_vertex[2])
+                        transformed_vertices.append(transformed_vertex)
+                    centroid_depth = find_centroid_triangle(*transformed_vertices)[2]
+                    projected_triangles.append(projected_vertices)
+                    triangle_depths.append(centroid_depth)
 
-                        if not depthBuffer.check_depth(projected_vertex, transformed_vertex[2]):
-                            obscured = True
-                    obscured = False # DEPTH BUFFER LOGIC CURRENTLY BROKEN
-                    if not obscured:
-                        for i in range(3):
-                            depthBuffer.update_depth(projected_vertices[i], vertex_depths[i])
-
-                        renderer.draw_triangle(*projected_vertices)
-
-                        # Draw the normal line
-                        positioned_normal = centroid + normal
-                        projected_positioned_normal, _ = transformer.transform_vector(positioned_normal)
-                        renderer.draw_line(transformed_centroid, projected_positioned_normal)
+        # Sort the triangles by depth 
+        zipped = list(zip(projected_triangles, triangle_depths))
+        sorted_zipped = sorted(zipped, key=lambda x : x[1])
+        sorted_triangles = [i[0] for i in sorted_zipped]
+        
+        count = 0
+        max_count = 144
+        for triangle in sorted_triangles:
+            if count == max_count:
+                break
+            t = count / max_count  # Calculate the interpolation factor
+            colour = interpolate_colour((0, 0, 255), (255, 0, 0), t)  # Blend from blue to red
+            renderer.draw_triangle(*triangle, colour)
+            count += 1
 
         # Calculate and display FPS
         fps = clock.get_fps()
@@ -272,8 +260,8 @@ def main():
 
         # Update rotation angles for smooth rotation
         angle_x += 0.005  # Slow rotation around X-axis
-        angle_y += 0.003  # Rotation around Y-axis
-        angle_z += 0.001  # Slightly faster rotation around Z-axis
+        angle_y += 0.000  # Rotation around Y-axis
+        angle_z += 0.000  # Slightly faster rotation around Z-axis
 
         clock.tick(60)  # Limit to 60 FPS
 
