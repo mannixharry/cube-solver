@@ -28,6 +28,7 @@ class Render:
                 if event.key == K_ESCAPE:
                     return False
         return True
+    
     def draw_line(self, a, b):
         pygame.draw.line(self.screen, 'aqua', a, b, self.thickness)
 
@@ -40,6 +41,28 @@ class Render:
         fps_text = self.font.render(f'FPS: {int(fps)}', True, self.colour)
         self.screen.blit(fps_text, (10, 10))  # Display at the top-left corner
 
+class DepthBuffer:
+    def __init__(self, renderer):
+        self.width = renderer.width
+        self.height = renderer.height
+        self.buffer = np.full((self.width, self.height), np.inf)
+
+    def reset_buffer(self):
+        self.buffer.fill(np.inf)
+
+    def check_depth(self, position, depth):
+        x, y = map(int, position)
+        if self.buffer[x,y] >= depth:
+            return True
+        return False 
+
+    def update_depth(self, position, depth):
+        x, y = map(int, position)
+        if self.buffer[x, y] >= depth:
+            self.buffer[x, y] = depth
+            return True
+        return False
+        
 class Triangle:
     def __init__(self, a, b, c):
         self.a = np.array(a)
@@ -62,7 +85,7 @@ class Triangle:
         vector_y = self.c - self.a
         normal = np.cross(vector_x, vector_y)
         x, y, z = normal
-        m = (x**2 + y**2 + z**2)**1/2
+        m = np.sqrt(x**2 + y**2 + z**2)
         normalised_normal = np.array([x/m, y/m, z/m])
         return normalised_normal
     
@@ -186,6 +209,7 @@ class Transformer:
 
 def main():
     renderer = Render()
+    depthBuffer = DepthBuffer(renderer)
     projector = Projector(renderer)
     transformer = Transformer(projector)
 
@@ -205,7 +229,8 @@ def main():
         renderer.screen.fill((255, 255, 255))  # Clear the screen
         
         transformer.update_rotation_matrices(angle_x, angle_y, angle_z)
-        for cube in cubes:
+        depthBuffer.reset_buffer()
+        for cube in cubes[:]:
             for triangle in cube.triangles:
                 # Compute the centroid and the normal
                 centroid = find_centroid_triangle(triangle.a, triangle.b, triangle.c)
@@ -218,17 +243,26 @@ def main():
                 # Perform back-face culling
                 if np.dot(transformed_normal, translated_centroid - camera) > 0:
                     projected_vertices = []
+                    vertex_depths = []
+                    obscured = False
                     for vertex in triangle:
-                        projected_vertex, _ = transformer.transform_vector(vertex)
+                        projected_vertex, transformed_vertex = transformer.transform_vector(vertex)
                         projected_vertices.append(projected_vertex)
-                    
-                    a, b, c = projected_vertices
-                    renderer.draw_triangle(a, b, c)
+                        vertex_depths.append(transformed_vertex[2])
 
-                    # Draw the normal line
-                    positioned_normal = centroid + normal
-                    projected_positioned_normal, _ = transformer.transform_vector(positioned_normal)
-                    renderer.draw_line(transformed_centroid, projected_positioned_normal)
+                        if not depthBuffer.check_depth(projected_vertex, transformed_vertex[2]):
+                            obscured = True
+                    obscured = False # DEPTH BUFFER LOGIC CURRENTLY BROKEN
+                    if not obscured:
+                        for i in range(3):
+                            depthBuffer.update_depth(projected_vertices[i], vertex_depths[i])
+
+                        renderer.draw_triangle(*projected_vertices)
+
+                        # Draw the normal line
+                        positioned_normal = centroid + normal
+                        projected_positioned_normal, _ = transformer.transform_vector(positioned_normal)
+                        renderer.draw_line(transformed_centroid, projected_positioned_normal)
 
         # Calculate and display FPS
         fps = clock.get_fps()
