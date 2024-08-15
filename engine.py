@@ -17,6 +17,7 @@ class Render:
         self.height = height
         self.thickness = 1
         self.screen = self.create_window(width, height)
+        self.colour = (0, 0, 0)
         self.font = pygame.font.SysFont('Arial', 20)
 
     def update(self):
@@ -28,24 +29,17 @@ class Render:
                     return False
         return True
     
-    def draw_line(self, a, b, colour):
-        pygame.draw.line(self.screen, colour, a, b, self.thickness)
+    def draw_line(self, a, b):
+        pygame.draw.line(self.screen, 'aqua', a, b, self.thickness)
 
-    def draw_triangle(self, a, b, c, colour):
-        pygame.draw.line(self.screen, colour, a, b, self.thickness)
-        pygame.draw.line(self.screen, colour, b, c, self.thickness)
-        pygame.draw.line(self.screen, colour, c, a, self.thickness)
+    def draw_triangle(self, a, b, c):
+        pygame.draw.line(self.screen, self.colour, a, b, self.thickness)
+        pygame.draw.line(self.screen, self.colour, b, c, self.thickness)
+        pygame.draw.line(self.screen, self.colour, c, a, self.thickness)
 
     def display_fps(self, fps):
-        fps_text = self.font.render(f'FPS: {int(fps)}', True, (0, 0, 0))
+        fps_text = self.font.render(f'FPS: {int(fps)}', True, self.colour)
         self.screen.blit(fps_text, (10, 10))  # Display at the top-left corner
-
-# Function to interpolate between two colours
-def interpolate_colour(start_colour, end_colour, t):
-    r = int(start_colour[0] + (end_colour[0] - start_colour[0]) * t)
-    g = int(start_colour[1] + (end_colour[1] - start_colour[1]) * t)
-    b = int(start_colour[2] + (end_colour[2] - start_colour[2]) * t)
-    return (r, g, b)
 
 class Triangle:
     def __init__(self, a, b, c):
@@ -229,6 +223,7 @@ def main():
                     projected_vertices = []
                     vertex_depths = []
                     transformed_vertices = []
+                    obscured = False
                     for vertex in triangle:
                         projected_vertex, transformed_vertex = transformer.transform_vector(vertex)
                         projected_vertices.append(projected_vertex)
@@ -237,20 +232,19 @@ def main():
                     projected_triangles.append(projected_vertices)
                     triangle_depths.append(centroid_depth)
 
+                    # Draw the normal line
+                    positioned_normal = centroid + normal
+                    projected_positioned_normal, _ = transformer.transform_vector(positioned_normal)
+                    renderer.draw_line(transformed_centroid, projected_positioned_normal)
+
         # Sort the triangles by depth 
         zipped = list(zip(projected_triangles, triangle_depths))
         sorted_zipped = sorted(zipped, key=lambda x : x[1])
         sorted_triangles = [i[0] for i in sorted_zipped]
-        
-        count = 0
-        max_count = 144
         for triangle in sorted_triangles:
-            if count == max_count:
-                break
-            t = count / max_count  # Calculate the interpolation factor
-            colour = interpolate_colour((0, 0, 255), (255, 0, 0), t)  # Blend from blue to red
-            renderer.draw_triangle(*triangle, colour)
-            count += 1
+            renderer.draw_triangle(*triangle)
+
+
 
         # Calculate and display FPS
         fps = clock.get_fps()
@@ -260,8 +254,8 @@ def main():
 
         # Update rotation angles for smooth rotation
         angle_x += 0.005  # Slow rotation around X-axis
-        angle_y += 0.000  # Rotation around Y-axis
-        angle_z += 0.000  # Slightly faster rotation around Z-axis
+        angle_y += 0.003  # Rotation around Y-axis
+        angle_z += 0.001  # Slightly faster rotation around Z-axis
 
         clock.tick(60)  # Limit to 60 FPS
 
