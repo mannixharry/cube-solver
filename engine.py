@@ -15,7 +15,7 @@ class Render:
         width, height = 800, 800
         self.width = width
         self.height = height
-        self.thickness = 1
+        self.thickness = 2
         self.screen = self.create_window(width, height)
         self.colour = (0, 0, 0)
         self.font = pygame.font.SysFont('Arial', 20)
@@ -34,7 +34,8 @@ class Render:
 
     def draw_triangle(self, a, b, c, colour):
         # Draw filled triangle
-        pygame.draw.polygon(self.screen, colour, [a, b, c])
+        if colour:
+            pygame.draw.polygon(self.screen, colour, [a, b, c])
         # Draw the edges
         pygame.draw.line(self.screen, (0, 0, 0), a, b, self.thickness)
         pygame.draw.line(self.screen, (0, 0, 0), b, c, self.thickness)
@@ -102,18 +103,21 @@ class Projector:
     def __init__(self, renderer):
         self.width, self.height = renderer.width, renderer.height
         self.fov = 90
-        self.znear, self.zfar = 0.1, 1000
+        self.znear, self.zfar = 0.1, 10000
 
-        x = self.height / self.width
-        y = 1 / np.tan(self.fov * np.pi / 360)
-        z = self.zfar / (self.zfar - self.znear)
-
+        # Aspect ratio
+        aspect = self.width / self.height
+        # Calculate projection matrix components
+        f = 1.0 / np.tan(np.radians(self.fov) / 2.0)
+        nf = 1.0 / (self.znear - self.zfar)
+        
         self.projection_matrix = np.array([
-            [x * y, 0, 0, 0],
-            [0, y, 0, 0],
-            [0, 0, z, 1],
-            [0, 0, -self.znear * z, 0]
+            [f / aspect, 0, 0, 0],
+            [0, f, 0, 0],
+            [0, 0, (self.zfar + self.znear) * nf, 2 * self.zfar * self.znear * nf],
+            [0, 0, -1, 0]
         ])
+
 
     def project_vector(self, vector):
         vector_homogeneous = np.append(vector, 1)  # Convert to 4D
@@ -158,15 +162,6 @@ def find_centroid_triangle(A, B, C):
     centroid = (A + B + C) / 3.0
     return centroid
 
-
-import pygame
-from pygame.locals import *
-import numpy as np
-
-import pygame
-from pygame.locals import *
-import numpy as np
-
 class Transformer:
     def __init__(self, projector):
         self.projector = projector
@@ -180,7 +175,7 @@ class Transformer:
         rotated_vertex = self.rotation_matrix_x @ vertex  # Rotate around X-axis
         rotated_vertex = self.rotation_matrix_y @ rotated_vertex  # Rotate around Y-axis
         rotated_vertex = self.rotation_matrix_z @ rotated_vertex  # Rotate around Z-axis
-        translated_vertex = rotated_vertex + np.array([0, 0, 50])  # Translate in Z-axis
+        translated_vertex = rotated_vertex + np.array([0, 0, 8])  # Translate in Z-axis
         projected_vertex = self.projector.project_vector(translated_vertex)
         return projected_vertex, translated_vertex
 
@@ -214,7 +209,6 @@ def main():
     for cube in cubes:
         for triangle in cube.triangles: 
             centroid = find_centroid_triangle(*triangle)
-            print(centroid)
             dist = max([*map(abs, centroid)])
             distances.append(dist)
             triangles_to_sort.append([Triangle, dist, index])
@@ -265,6 +259,7 @@ def main():
                 transformed_vertices = []
                 projected_vertices = []
 
+                '''
                 for vertex in triangle:
                     projected_vertex, transformed_vertex = transformer.transform_vector(vertex)
                     projected_vertices.append(projected_vertex)
@@ -274,37 +269,66 @@ def main():
                 transformed_normal = transformed_triangle.get_normal()
 
                 transformed_centroid = find_centroid_triangle(*transformed_vertices)
-                view_vector = transformed_centroid - camera
+                '''
+
+                # calculate the normal
+                # transform normal + a point 
+                # subtract the transformed point from the normal to get the new normal
+                # calculate teh view vector and take the dot product
+
+                normal = triangle.get_normal()
+            
+                positioned_normal = normal + triangle.a
+                _, transformed_point = transformer.transform_vector(triangle.a)
+                _, transformed_normal = transformer.transform_vector(positioned_normal)
+                
+                transformed_normal -= transformed_point   
+                transformed_centroid = transformed_point
+
+                view_vector = transformed_point - camera
                 normalized_view_vector = view_vector / np.linalg.norm(view_vector)
 
-                if np.dot(transformed_normal, normalized_view_vector) > 0:
+                if np.dot(transformed_normal, normalized_view_vector) < 0:
+
+                    for vertex in triangle:
+                        projected_vertex, transformed_vertex = transformer.transform_vector(vertex)
+                        projected_vertices.append(projected_vertex)
+                        transformed_vertices.append(transformed_vertex)
+
+                    centroid = find_centroid_triangle(*triangle)
+                    _, transformed_centroid = transformer.transform_vector(centroid)
                     centroid_depth = np.linalg.norm(transformed_centroid - camera)
 
                     triangles_to_draw.append((projected_vertices, triangle.layer, centroid_depth))
 
-                    positioned_normal = transformed_centroid + transformed_normal
-                    projected_positioned_normal = projector.project_vector(positioned_normal)
-                    projected_transformed_centroid = projector.project_vector(transformed_centroid)
+                    draw_normals = False
+                    if draw_normals: 
+                    
+                        positioned_normal = transformed_centroid + transformed_normal
+                        projected_positioned_normal = projector.project_vector(positioned_normal)
+                        projected_transformed_centroid = projector.project_vector(transformed_centroid)
 
-                    renderer.draw_line(projected_transformed_centroid, projected_positioned_normal, 'aqua')
+                        renderer.draw_line(projected_transformed_centroid, projected_positioned_normal, 'aqua')
+                    
 
         # Sort triangles by layer and depth
-        triangles_to_draw.sort(key=lambda x: (x[1], x[2]))
+        triangles_to_draw.sort(key=lambda x: (x[1], -x[2]))
 
         #Sort triangles by depth
         #triangles_to_draw.sort(key=lambda x: x[2])
-
+        count = 0
         for count, (triangle, layer, _) in enumerate(triangles_to_draw):
             t = count / len(triangles_to_draw)
             colour = interpolate_colour((0, 0, 255), (255, 0, 0), t)
             renderer.draw_triangle(*triangle, colour)
-        print(count)
+        print(count+1) # number of triangles rendered
+
         fps = clock.get_fps()
         renderer.display_fps(fps)
 
         pygame.display.flip()
 
-        clock.tick(60)
+        clock.tick(120)
 
     pygame.quit()
 
