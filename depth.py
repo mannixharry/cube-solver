@@ -17,7 +17,6 @@ class Render:
         self.height = height
         self.thickness = 1
         self.screen = self.create_window(width, height)
-        self.colour = (0, 0, 0)
         self.font = pygame.font.SysFont('Arial', 20)
 
     def update(self):
@@ -41,16 +40,22 @@ class Render:
         pygame.draw.line(self.screen, (0, 0, 0), c, a, self.thickness)
 
     def display_fps(self, fps):
-        fps_text = self.font.render(f'FPS: {int(fps)}', True, self.colour)
+        fps_text = self.font.render(f'FPS: {int(fps)}', True, (0, 0, 0))
         self.screen.blit(fps_text, (10, 10))  # Display at the top-left corner
 
+# Function to interpolate between two colours
+def interpolate_colour(start_colour, end_colour, t):
+    r = int(start_colour[0] + (end_colour[0] - start_colour[0]) * t)
+    g = int(start_colour[1] + (end_colour[1] - start_colour[1]) * t)
+    b = int(start_colour[2] + (end_colour[2] - start_colour[2]) * t)
+    return (r, g, b)
+
 class Triangle:
-    def __init__(self, a, b, c, layer=False):
+    def __init__(self, a, b, c):
         self.a = np.array(a)
         self.b = np.array(b)
         self.c = np.array(c)
         self.vertices = [self.a, self.b, self.c]
-        self.layer = layer 
 
     def __getitem__(self, index):
         if 0 <= index <= 2:
@@ -87,7 +92,7 @@ class Cube:
             Triangle([0, 1, 0], [0, 1, 1], [1, 1, 1]),
             Triangle([0, 1, 0], [1, 1, 1], [1, 1, 0]),
             Triangle([1, 0, 1], [0, 0, 1], [0, 0, 0]),
-            Triangle([1, 0, 1], [0, 0, 0], [1, 0, 0])
+            Triangle([1, 0, 1], [0, 0, 0], [1, 0, 0]),
         ]
 
         # Apply translation and scaling to each triangle's vertices
@@ -96,7 +101,7 @@ class Cube:
             new_a = (triangle.a + translation_vector) * scale
             new_b = (triangle.b + translation_vector) * scale
             new_c = (triangle.c + translation_vector) * scale
-            self.triangles.append(Triangle(new_a, new_b, new_c, triangle.layer))
+            self.triangles.append(Triangle(new_a, new_b, new_c))
     
 class Projector:
     def __init__(self, renderer):
@@ -122,13 +127,7 @@ class Projector:
         if projected_vector[3] != 0:
             projected_vector /= projected_vector[3]  # Normalize by w
 
-        projected_vector += np.array([1, 1, 0, 0])  # Adjust for screen coordinates
-        projected_vector = (
-            projected_vector[0] * 0.5 * self.width,
-            projected_vector[1] * 0.5 * self.height
-        )
-
-        return projected_vector # Return only x and y for 2D coordinates
+        return projected_vector[:2], projected_vector[2]  # Return only x and y for 2D coordinates
 
 def create_rotation_matrix_x(angle):
     cos_theta, sin_theta = np.cos(angle), np.sin(angle)
@@ -181,55 +180,31 @@ class Transformer:
         rotated_vertex = self.rotation_matrix_y @ rotated_vertex  # Rotate around Y-axis
         rotated_vertex = self.rotation_matrix_z @ rotated_vertex  # Rotate around Z-axis
         translated_vertex = rotated_vertex + np.array([0, 0, 50])  # Translate in Z-axis
-        projected_vertex = self.projector.project_vector(translated_vertex)
-        return projected_vertex, translated_vertex
+        projected_vertex, projected_depth= self.projector.project_vector(translated_vertex)
+        projected_vertex += np.array([1, 1])  # Adjust for screen coordinates
+        projected_vertex = (
+            projected_vertex[0] * 0.5 * self.projector.width,
+            projected_vertex[1] * 0.5 * self.projector.height
+        )
+        return projected_vertex, translated_vertex, projected_depth
 
     def transform_normal(self, normal):
         rotated_normal = self.rotation_matrix_x @ normal
         rotated_normal = self.rotation_matrix_y @ rotated_normal
         rotated_normal = self.rotation_matrix_z @ rotated_normal
-    
         return rotated_normal
-    
-# Function to interpolate between two colours
-def interpolate_colour(start_colour, end_colour, t):
-    r = int(start_colour[0] + (end_colour[0] - start_colour[0]) * t)
-    g = int(start_colour[1] + (end_colour[1] - start_colour[1]) * t)
-    b = int(start_colour[2] + (end_colour[2] - start_colour[2]) * t)
-    return (r, g, b)
-
 
 def main():
     renderer = Render()
     projector = Projector(renderer)
     transformer = Transformer(projector)
 
-    cubes = [Cube([i/2, j/2, k/2]) for i in range(-3, 3, 2) for j in range(-3, 3, 2) for k in range(-3, 3, 2)]
-
-    #Work out which triangles are on the outer surface of the cube 
-    triangles_to_sort = []
-    distances = []
-    index = 0 
-    for cube in cubes:
-        for triangle in cube.triangles: 
-            centroid = find_centroid_triangle(*triangle)
-            print(centroid)
-            dist = max([*map(abs, centroid)])
-            distances.append(dist)
-            triangles_to_sort.append([Triangle, dist, index])
-            index += 1
-    triangles_to_sort.sort(key=lambda x : x[1], reverse=True)
-
-    for i in range(108): # Number of triangle on outer surface of the cube 
-        index = triangles_to_sort[i][2] 
-        cubes[index//12].triangles[index%12].layer = True
+    cubes = [Cube([i, j, k]) for i in range(-1, 2) for j in range(-1, 2) for k in range(-1, 2)]
 
     camera = np.array([0, 0, 0])
     angle_x = 0
-    angle_y = 0
+    angle_y = 0  
     angle_z = 0
-
-    rotation_speed = 0.05
 
     clock = pygame.time.Clock()
 
@@ -237,71 +212,65 @@ def main():
     while running:
         running = renderer.update()
 
-        # Handle key presses for rotation
-        keys = pygame.key.get_pressed()
-        if keys[K_LEFT]:
-            angle_y -= rotation_speed  # Rotate left around Y-axis
-        if keys[K_RIGHT]:
-            angle_y += rotation_speed  # Rotate right around Y-axis
-        if keys[K_UP]:
-            angle_x -= rotation_speed  # Rotate up around X-axis
-        if keys[K_DOWN]:
-            angle_x += rotation_speed  # Rotate down around X-axis
-        if keys[K_a]:
-            angle_z -= rotation_speed  # Rotate counterclockwise around Z-axis
-        if keys[K_d]:
-            angle_z += rotation_speed  # Rotate clockwise around Z-axis
-
         renderer.screen.fill((255, 255, 255))  # Clear the screen
-
+        
         transformer.update_rotation_matrices(angle_x, angle_y, angle_z)
-        triangles_to_draw = []
-
+        projected_triangles = []
+        triangle_depths = []
+        triangle_closest = []
         for cube in cubes[:]:
             for triangle in cube.triangles:
-                transformed_vertices = []
-                projected_vertices = []
+                # Compute the centroid and the normal
+                centroid = find_centroid_triangle(*triangle)
+                normal = triangle.get_normal()
 
-                for vertex in triangle:
-                    projected_vertex, transformed_vertex = transformer.transform_vector(vertex)
-                    projected_vertices.append(projected_vertex)
-                    transformed_vertices.append(transformed_vertex)
+                # Transform the normal
+                transformed_normal = transformer.transform_normal(normal)
+                transformed_centroid, translated_centroid, _ = transformer.transform_vector(centroid)
+                
+                # Perform back-face culling
+                if np.dot(transformed_normal, translated_centroid - camera) > 0:
+            
+               # if True:
+                    projected_vertices = []
+                    vertex_depths = []
+                    transformed_vertices = []
+                    for vertex in triangle:
+                        projected_vertex, transformed_vertex, _ = transformer.transform_vector(vertex)
+                        projected_vertices.append(projected_vertex)
+                        transformed_vertices.append(transformed_vertex)
+                    _, centroid_depth = projector.project_vector(find_centroid_triangle(*transformed_vertices))
+                    #NEED TO CHANGE THIS TO TAKE z VALUE OF PROJECTION NOT THE Z VALUE OF THE TRANSFORMATION 
+                    projected_triangles.append(projected_vertices)
+                    triangle_depths.append(centroid_depth)
 
-                transformed_triangle = Triangle(*transformed_vertices)
-                transformed_normal = transformed_triangle.get_normal()
-
-                transformed_centroid = find_centroid_triangle(*transformed_vertices)
-                view_vector = transformed_centroid - camera
-                normalized_view_vector = view_vector / np.linalg.norm(view_vector)
-
-                if np.dot(transformed_normal, normalized_view_vector) > 0:
-                    centroid_depth = np.linalg.norm(transformed_centroid - camera)
-
-                    triangles_to_draw.append((projected_vertices, triangle.layer, centroid_depth))
-
-                    positioned_normal = transformed_centroid + transformed_normal
-                    projected_positioned_normal = projector.project_vector(positioned_normal)
-                    projected_transformed_centroid = projector.project_vector(transformed_centroid)
-
-                    renderer.draw_line(projected_transformed_centroid, projected_positioned_normal, 'aqua')
-
-        # Sort triangles by layer and depth
-        triangles_to_draw.sort(key=lambda x: (x[1], x[2]))
-
-        for count, (triangle, layer, _) in enumerate(triangles_to_draw):
-            t = count / len(triangles_to_draw)
-            if layer:
-                colour = (0,255,0)
-            else:
-                colour = interpolate_colour((0, 0, 255), (255, 0, 0), t)
+        # Sort the triangles by depth 
+        zipped = list(zip(projected_triangles, triangle_depths))
+        sorted_zipped = sorted(zipped, key=lambda x : x[1], reverse=False)
+        sorted_triangles = [i[0] for i in sorted_zipped]
+        
+        count = 0
+        max_count = len(sorted_triangles) + 10
+        for triangle in sorted_triangles:
+            if count == max_count:
+                break
+            t = count / max_count  # Calculate the interpolation factor
+            colour = interpolate_colour((0, 0, 255), (255, 0, 0), t)  # Blend from blue to red
             renderer.draw_triangle(*triangle, colour)
+            count += 1
 
+        # Calculate and display FPS
         fps = clock.get_fps()
         renderer.display_fps(fps)
 
         pygame.display.flip()
 
-        clock.tick(60)
+        # Update rotation angles for smooth rotation
+        angle_x += 0.005  # Slow rotation around X-axis
+        angle_y += 0.003  # Rotation around Y-axis
+        angle_z += 0.001  # Slightly faster rotation around Z-axis
+
+        clock.tick(15)  # Limit to 60 FPS
 
     pygame.quit()
 
