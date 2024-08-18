@@ -200,6 +200,7 @@ def interpolate_colour(start_colour, end_colour, t):
 
 
 def main():
+    rotating = True
     renderer = Render()
     projector = Projector(renderer)
     transformer = Transformer(projector)
@@ -259,6 +260,8 @@ def main():
 
         for cube in cubes[:]:
             for triangle in cube.triangles:
+                if not rotating and not triangle.layer:
+                    continue
                 transformed_vertices = []
                 projected_vertices = []
 
@@ -288,14 +291,14 @@ def main():
         # Sort triangles by layer and depth
         triangles_to_draw.sort(key=lambda x: (x[1], x[2]))
 
+        #Sort triangles by depth
+        #triangles_to_draw.sort(key=lambda x: x[2])
+
         for count, (triangle, layer, _) in enumerate(triangles_to_draw):
             t = count / len(triangles_to_draw)
-            if layer:
-                colour = (0,255,0)
-            else:
-                colour = interpolate_colour((0, 0, 255), (255, 0, 0), t)
+            colour = interpolate_colour((0, 0, 255), (255, 0, 0), t)
             renderer.draw_triangle(*triangle, colour)
-
+        print(count)
         fps = clock.get_fps()
         renderer.display_fps(fps)
 
