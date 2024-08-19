@@ -31,35 +31,33 @@ class Render:
     
     def draw_line(self, a, b, colour):
         pygame.draw.line(self.screen, colour, a, b, self.thickness)
-    
-    def draw_rectangle(self, a, b, c, d, colour):
-        # Draw filled rectangle
+
+    def draw_triangle(self, a, b, c, colour):
+        # Draw filled triangle
         if colour:
-            pygame.draw.polygon(self.screen, colour, [a, b, c, d])
+            pygame.draw.polygon(self.screen, colour, [a, b, c])
         # Draw the edges
         pygame.draw.line(self.screen, (0, 0, 0), a, b, self.thickness)
         pygame.draw.line(self.screen, (0, 0, 0), b, c, self.thickness)
-        pygame.draw.line(self.screen, (0, 0, 0), c, d, self.thickness)
-        pygame.draw.line(self.screen, (0,0,0), d, a, self.thickness)
+        pygame.draw.line(self.screen, (0, 0, 0), c, a, self.thickness)
 
     def display_fps(self, fps):
         fps_text = self.font.render(f'FPS: {int(fps)}', True, self.colour)
         self.screen.blit(fps_text, (10, 10))  # Display at the top-left corner
 
-class Rectangle:
-    def __init__(self, a, b, c, d, piece_colour=False):
+class Triangle:
+    def __init__(self, a, b, c, layer=False):
         self.a = np.array(a)
         self.b = np.array(b)
         self.c = np.array(c)
-        self.d = np.array(d)
-        self.vertices = [self.a, self.b, self.c, self.d]
-        self.piece_colour = piece_colour 
+        self.vertices = [self.a, self.b, self.c]
+        self.layer = layer 
 
     def __getitem__(self, index):
-        if 0 <= index <= 3:
+        if 0 <= index <= 2:
             return self.vertices[index]
         else:
-            raise IndexError("Index out of range. Valid indices are 0, 1, 2 or 3")
+            raise IndexError("Index out of range. Valid indices are 0, 1, or 2.")
 
     def __iter__(self):
         return iter(self.vertices)
@@ -70,31 +68,37 @@ class Rectangle:
         vector_y = self.c - self.a
         normal = np.cross(vector_x, vector_y)
         x, y, z = normal
-        # use linalg here 
         m = np.sqrt(x**2 + y**2 + z**2)
         normalised_normal = np.array([x/m, y/m, z/m])
         return normalised_normal
     
+    
 class Cube:
     def __init__(self, translation_vector, scale=1):
-        # Define base rectangles for a unit cube with 4 vertices each, in anticlockwise order
-        base_rectangles = [
-            Rectangle([0, 0, 0], [0, 1, 0], [1, 1, 0], [1, 0, 0]),  # Bottom face (ABCD)
-            Rectangle([0, 0, 1], [1, 0, 1], [1, 1, 1], [0, 1, 1]),  # Top face (EFGH)
-            Rectangle([0, 0, 0], [1, 0, 0], [1, 0, 1], [0, 0, 1]),  # Front face (ABFE)
-            Rectangle([0, 1, 0], [0, 1, 1], [1, 1, 1], [1, 1, 0]),  # Back face (DCGH)
-            Rectangle([0, 0, 0], [0, 0, 1], [0, 1, 1], [0, 1, 0]),  # Left face (ADHE)
-            Rectangle([1, 0, 0], [1, 1, 0], [1, 1, 1], [1, 0, 1])   # Right face (BCGF)
+        # Define base triangles for a unit cube
+        # Vertices given in anticlockwise order
+        base_triangles = [
+            Triangle([0, 0, 0], [0, 1, 0], [1, 1, 0]),
+            Triangle([0, 0, 0], [1, 1, 0], [1, 0, 0]),
+            Triangle([1, 0, 0], [1, 1, 0], [1, 1, 1]),
+            Triangle([1, 0, 0], [1, 1, 1], [1, 0, 1]),
+            Triangle([1, 0, 1], [1, 1, 1], [0, 1, 1]),
+            Triangle([1, 0, 1], [0, 1, 1], [0, 0, 1]),
+            Triangle([0, 0, 1], [0, 1, 1], [0, 1, 0]),
+            Triangle([0, 0, 1], [0, 1, 0], [0, 0, 0]),
+            Triangle([0, 1, 0], [0, 1, 1], [1, 1, 1]),
+            Triangle([0, 1, 0], [1, 1, 1], [1, 1, 0]),
+            Triangle([1, 0, 1], [0, 0, 1], [0, 0, 0]),
+            Triangle([1, 0, 1], [0, 0, 0], [1, 0, 0])
         ]
 
-        # Apply translation and scaling to each Rectangle's vertices
-        self.rectangles = []
-        for rectangle in base_rectangles:
-            new_a = (rectangle.a + translation_vector) * scale
-            new_b = (rectangle.b + translation_vector) * scale
-            new_c = (rectangle.c + translation_vector) * scale
-            new_d = (rectangle.d + translation_vector) * scale
-            self.rectangles.append(Rectangle(new_a, new_b, new_c, new_d, rectangle.piece_colour))
+        # Apply translation and scaling to each triangle's vertices
+        self.triangles = []
+        for triangle in base_triangles:
+            new_a = (triangle.a + translation_vector) * scale
+            new_b = (triangle.b + translation_vector) * scale
+            new_c = (triangle.c + translation_vector) * scale
+            self.triangles.append(Triangle(new_a, new_b, new_c, triangle.layer))
     
 class Projector:
     def __init__(self, renderer):
@@ -155,9 +159,9 @@ def create_rotation_matrix_z(angle):
         [0, 0, 1]
     ])
 
-def find_centre_rectangle(A, B, C, D):
-    centre = (A + B + C + D) / 4.0
-    return centre
+def find_centroid_triangle(A, B, C):
+    centroid = (A + B + C) / 3.0
+    return centroid
 
 class Transformer:
     def __init__(self, projector):
@@ -190,54 +194,31 @@ def interpolate_colour(start_colour, end_colour, t):
     b = int(start_colour[2] + (end_colour[2] - start_colour[2]) * t)
     return (r, g, b)
 
+
 def main():
-    rotating = False
+    rotating = True
     renderer = Render()
     projector = Projector(renderer)
     transformer = Transformer(projector)
 
     cubes = [Cube([i/2, j/2, k/2]) for i in range(-3, 3, 2) for j in range(-3, 3, 2) for k in range(-3, 3, 2)]
 
-    #Work out which rectangles are on the outer surface of the cube 
-    rectangles_to_sort = []
+    #Work out which triangles are on the outer surface of the cube 
+    triangles_to_sort = []
     distances = []
     index = 0 
     for cube in cubes:
-        for rectangle in cube.rectangles: 
-            centre = find_centre_rectangle(*rectangle)
-            dist = max([*map(abs, centre)])
+        for triangle in cube.triangles: 
+            centroid = find_centroid_triangle(*triangle)
+            dist = max([*map(abs, centroid)])
             distances.append(dist)
-            rectangles_to_sort.append([rectangle, dist, index, centre])
+            triangles_to_sort.append([Triangle, dist, index])
             index += 1
-    rectangles_to_sort.sort(key=lambda x : x[1], reverse=True)
+    triangles_to_sort.sort(key=lambda x : x[1], reverse=True)
 
-    rectangles_to_sort = rectangles_to_sort[:54] # Number of rectangles on outer surface of the cube 
-
-    def set_colours(rectangles_to_sort, colour1, colour2, xyz):
-        xyz_dict = {'x': 0,
-                    'y': 1,
-                    'z': 2}
-                    
-        xyz = xyz_dict[xyz]
-        # Sort rectangles by the z component of their vertices
-        sorted_rectangles = sorted(rectangles_to_sort, key=lambda x: (x[3][xyz]))
-        # Get the indices of the top 9 rectangles with the largest z components
-        top_9_rectangles = sorted_rectangles[:9]
-        bottom_9_rectangles = sorted_rectangles[-9:]
-        
-        # Set color1 for the top 9 rectangles
-        for i in range(len(top_9_rectangles)):
-            index = top_9_rectangles[i][2]
-            cubes[index//6].rectangles[index%6].piece_colour = colour1
-         # Set color2 for the bottom 9 rectangles
-        for i in range(len(bottom_9_rectangles)):
-            index = bottom_9_rectangles[i][2]
-            cubes[index//6].rectangles[index%6].piece_colour = colour2
-
-
-    set_colours(rectangles_to_sort, 'green', 'blue', 'x')
-    set_colours(rectangles_to_sort, 'white', 'yellow', 'y')
-    set_colours(rectangles_to_sort, 'orange', 'red', 'z')
+    for i in range(108): # Number of triangle on outer surface of the cube 
+        index = triangles_to_sort[i][2] 
+        cubes[index//12].triangles[index%12].layer = True
 
     camera = np.array([0, 0, 0])
     angle_x = 0
@@ -270,23 +251,36 @@ def main():
         renderer.screen.fill((255, 255, 255))  # Clear the screen
 
         transformer.update_rotation_matrices(angle_x, angle_y, angle_z)
-        rectangles_to_draw = []
+        triangles_to_draw = []
 
         for cube in cubes[:]:
-            for rectangle in cube.rectangles:
-                if not rotating and not rectangle.piece_colour:
+            for triangle in cube.triangles:
+                if not rotating and not triangle.layer:
                     continue
                 transformed_vertices = []
                 projected_vertices = []
+
+                '''
+                for vertex in triangle:
+                    projected_vertex, transformed_vertex = transformer.transform_vector(vertex)
+                    projected_vertices.append(projected_vertex)
+                    transformed_vertices.append(transformed_vertex)
+
+                transformed_triangle = Triangle(*transformed_vertices)
+                transformed_normal = transformed_triangle.get_normal()
+
+                transformed_centroid = find_centroid_triangle(*transformed_vertices)
+                '''
+
                 # calculate the normal
                 # transform normal + a point 
                 # subtract the transformed point from the normal to get the new normal
                 # calculate teh view vector and take the dot product
 
-                normal = rectangle.get_normal()
+                normal = triangle.get_normal()
             
-                positioned_normal = normal + rectangle.a
-                _, transformed_point = transformer.transform_vector(rectangle.a)
+                positioned_normal = normal + triangle.a
+                _, transformed_point = transformer.transform_vector(triangle.a)
                 _, transformed_normal = transformer.transform_vector(positioned_normal)
                 
                 transformed_normal -= transformed_point   
@@ -297,16 +291,16 @@ def main():
 
                 if np.dot(transformed_normal, normalized_view_vector) < 0:
 
-                    for vertex in rectangle:
+                    for vertex in triangle:
                         projected_vertex, transformed_vertex = transformer.transform_vector(vertex)
                         projected_vertices.append(projected_vertex)
                         transformed_vertices.append(transformed_vertex)
 
-                    centre = find_centre_rectangle(*rectangle)
-                    _, transformed_centroid = transformer.transform_vector(centre)
+                    centroid = find_centroid_triangle(*triangle)
+                    _, transformed_centroid = transformer.transform_vector(centroid)
                     centroid_depth = np.linalg.norm(transformed_centroid - camera)
 
-                    rectangles_to_draw.append((projected_vertices, rectangle.piece_colour, centroid_depth))
+                    triangles_to_draw.append((projected_vertices, triangle.layer, centroid_depth))
 
                     draw_normals = False
                     if draw_normals: 
@@ -318,24 +312,24 @@ def main():
                         renderer.draw_line(projected_transformed_centroid, projected_positioned_normal, 'aqua')
                     
 
-        # Sort rectangles by piece_colour and depth
-        rectangles_to_draw.sort(key=lambda x: (x[1], -x[2]))
+        # Sort triangles by layer and depth
+        triangles_to_draw.sort(key=lambda x: (x[1], -x[2]))
 
-        #Sort rectangles by depth
-        #rectangles_to_draw.sort(key=lambda x: x[2])
+        #Sort triangles by depth
+        #triangles_to_draw.sort(key=lambda x: x[2])
         count = 0
-        for count, (rectangle, piece_colour, _) in enumerate(rectangles_to_draw):
-            t = count / len(rectangles_to_draw)
-            colour = piece_colour
-            renderer.draw_rectangle(*rectangle, colour)
-        #print(count+1) # number of rectangles rendered
+        for count, (triangle, layer, _) in enumerate(triangles_to_draw):
+            t = count / len(triangles_to_draw)
+            colour = interpolate_colour((0, 0, 255), (255, 0, 0), t)
+            renderer.draw_triangle(*triangle, colour)
+        print(count+1) # number of triangles rendered
 
         fps = clock.get_fps()
         renderer.display_fps(fps)
 
         pygame.display.flip()
 
-        clock.tick(240)
+        clock.tick(120)
 
     pygame.quit()
 
