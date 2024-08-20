@@ -2,23 +2,20 @@ import pygame
 from pygame.locals import *
 import numpy as np
 
-class Render:
-    def create_window(self, width, height):
+class Renderer:
+    def __init__(self, width=800, height=800):
         pygame.init()
-        screen = pygame.display.set_mode((width, height))
-        pygame.display.set_caption('Basic 3D Engine')
-        screen.fill((255, 255, 255))  # Fill the screen with white
-        pygame.display.flip()  # Update the display
-        return screen
-
-    def __init__(self):
-        width, height = 800, 800
         self.width = width
         self.height = height
         self.thickness = 2
-        self.screen = self.create_window(width, height)
-        self.colour = (0, 0, 0)
+        self.screen = self.create_window()
         self.font = pygame.font.SysFont('Arial', 20)
+        self.colour = (0, 0, 0)
+
+    def create_window(self):
+        screen = pygame.display.set_mode((self.width, self.height))
+        pygame.display.set_caption('Basic 3D Engine')
+        return screen
 
     def update(self):
         for event in pygame.event.get():
@@ -29,22 +26,21 @@ class Render:
                     return False
         return True
     
+    def clear_screen(self):
+        self.screen.fill((255, 255, 255))
+    
     def draw_line(self, a, b, colour):
-        pygame.draw.line(self.screen, colour, a, b, self.thickness)
+        pygame.draw.line(self.screen, colour, a, b, self.thicknes*3)
     
     def draw_rectangle(self, a, b, c, d, colour):
-        # Draw filled rectangle
         if colour:
             pygame.draw.polygon(self.screen, colour, [a, b, c, d])
-        # Draw the edges
-        pygame.draw.line(self.screen, (0, 0, 0), a, b, self.thickness)
-        pygame.draw.line(self.screen, (0, 0, 0), b, c, self.thickness)
-        pygame.draw.line(self.screen, (0, 0, 0), c, d, self.thickness)
-        pygame.draw.line(self.screen, (0,0,0), d, a, self.thickness)
+        for start, end in [(a, b), (b, c), (c, d), (d, a)]:
+            pygame.draw.line(self.screen, (0, 0, 0), start, end, self.thickness*2)
 
     def display_fps(self, fps):
         fps_text = self.font.render(f'FPS: {int(fps)}', True, self.colour)
-        self.screen.blit(fps_text, (10, 10))  # Display at the top-left corner
+        self.screen.blit(fps_text, (10, 10))
 
 class Rectangle:
     def __init__(self, a, b, c, d, piece_colour=False):
@@ -56,58 +52,46 @@ class Rectangle:
         self.piece_colour = piece_colour 
 
     def __getitem__(self, index):
-        if 0 <= index <= 3:
-            return self.vertices[index]
-        else:
-            raise IndexError("Index out of range. Valid indices are 0, 1, 2 or 3")
-
+        return self.vertices[index]
+        
     def __iter__(self):
         return iter(self.vertices)
-    
+        
     def get_normal(self):
-
         vector_x = self.b - self.a
         vector_y = self.c - self.a
         normal = np.cross(vector_x, vector_y)
-        x, y, z = normal
-        # use linalg here 
-        m = np.sqrt(x**2 + y**2 + z**2)
-        normalised_normal = np.array([x/m, y/m, z/m])
-        return normalised_normal
+        normal /= np.linalg.norm(normal)
+        return normal
     
 class Cube:
     def __init__(self, translation_vector, scale=1):
-        # Define base rectangles for a unit cube with 4 vertices each, in anticlockwise order
         base_rectangles = [
-            Rectangle([0, 0, 0], [0, 1, 0], [1, 1, 0], [1, 0, 0]),  # Bottom face (ABCD)
-            Rectangle([0, 0, 1], [1, 0, 1], [1, 1, 1], [0, 1, 1]),  # Top face (EFGH)
-            Rectangle([0, 0, 0], [1, 0, 0], [1, 0, 1], [0, 0, 1]),  # Front face (ABFE)
-            Rectangle([0, 1, 0], [0, 1, 1], [1, 1, 1], [1, 1, 0]),  # Back face (DCGH)
-            Rectangle([0, 0, 0], [0, 0, 1], [0, 1, 1], [0, 1, 0]),  # Left face (ADHE)
-            Rectangle([1, 0, 0], [1, 1, 0], [1, 1, 1], [1, 0, 1])   # Right face (BCGF)
+            Rectangle([0, 0, 0], [0, 1, 0], [1, 1, 0], [1, 0, 0]),  # Bottom face
+            Rectangle([0, 0, 1], [1, 0, 1], [1, 1, 1], [0, 1, 1]),  # Top face
+            Rectangle([0, 0, 0], [1, 0, 0], [1, 0, 1], [0, 0, 1]),  # Front face
+            Rectangle([0, 1, 0], [0, 1, 1], [1, 1, 1], [1, 1, 0]),  # Back face
+            Rectangle([0, 0, 0], [0, 0, 1], [0, 1, 1], [0, 1, 0]),  # Left face
+            Rectangle([1, 0, 0], [1, 1, 0], [1, 1, 1], [1, 0, 1])   # Right face
         ]
 
-        # Apply translation and scaling to each Rectangle's vertices
         self.rectangles = []
         for rectangle in base_rectangles:
-            new_a = (rectangle.a + translation_vector) * scale
-            new_b = (rectangle.b + translation_vector) * scale
-            new_c = (rectangle.c + translation_vector) * scale
-            new_d = (rectangle.d + translation_vector) * scale
-            self.rectangles.append(Rectangle(new_a, new_b, new_c, new_d, rectangle.piece_colour))
+            self.rectangles.append(Rectangle(
+                (rectangle.a + translation_vector) * scale,
+                (rectangle.b + translation_vector) * scale,
+                (rectangle.c + translation_vector) * scale,
+                (rectangle.d + translation_vector) * scale,
+                rectangle.piece_colour))
     
 class Projector:
-    def __init__(self, renderer):
-        self.width, self.height = renderer.width, renderer.height
+    def __init__(self, width, height):
+        self.width, self.height = width, height
         self.fov = 90
         self.znear, self.zfar = 0.1, 10000
-
-        # Aspect ratio
-        aspect = self.width / self.height
-        # Calculate projection matrix components
+        aspect = width / height
         f = 1.0 / np.tan(np.radians(self.fov) / 2.0)
         nf = 1.0 / (self.znear - self.zfar)
-        
         self.projection_matrix = np.array([
             [f / aspect, 0, 0, 0],
             [0, f, 0, 0],
@@ -115,46 +99,17 @@ class Projector:
             [0, 0, -1, 0]
         ])
 
-
     def project_vector(self, vector):
-        vector_homogeneous = np.append(vector, 1)  # Convert to 4D
+        vector_homogeneous = np.append(vector, 1)
         projected_vector = self.projection_matrix @ vector_homogeneous
-
         if projected_vector[3] != 0:
-            projected_vector /= projected_vector[3]  # Normalize by w
-
-        projected_vector += np.array([1, 1, 0, 0])  # Adjust for screen coordinates
-        projected_vector = (
+            projected_vector /= projected_vector[3]
+        projected_vector += np.array([1, 1, 0, 0])
+        return (
             projected_vector[0] * 0.5 * self.width,
             projected_vector[1] * 0.5 * self.height
         )
-
-        return projected_vector # Return only x and y for 2D coordinates
-
-def create_rotation_matrix_x(angle):
-    cos_theta, sin_theta = np.cos(angle), np.sin(angle)
-    return np.array([
-        [1, 0, 0],
-        [0, cos_theta, -sin_theta],
-        [0, sin_theta, cos_theta]
-    ])
-
-def create_rotation_matrix_y(angle):
-    cos_theta, sin_theta = np.cos(angle), np.sin(angle)
-    return np.array([
-        [cos_theta, 0, sin_theta],
-        [0, 1, 0],
-        [-sin_theta, 0, cos_theta]
-    ])
-
-def create_rotation_matrix_z(angle):
-    cos_theta, sin_theta = np.cos(angle), np.sin(angle)
-    return np.array([
-        [cos_theta, -sin_theta, 0],
-        [sin_theta, cos_theta, 0],
-        [0, 0, 1]
-    ])
-
+    
 def find_centre_rectangle(A, B, C, D):
     centre = (A + B + C + D) / 4.0
     return centre
@@ -162,84 +117,163 @@ def find_centre_rectangle(A, B, C, D):
 class Transformer:
     def __init__(self, projector):
         self.projector = projector
+        self.rotation_matrix = np.zeros((3,3))
+    
+    @staticmethod
+    def create_rotation_matrix(angle_x, angle_y, angle_z):
 
-    def update_rotation_matrices(self, angle_x, angle_y, angle_z):
-        self.rotation_matrix_x = create_rotation_matrix_x(angle_x)
-        self.rotation_matrix_y = create_rotation_matrix_y(angle_y)
-        self.rotation_matrix_z = create_rotation_matrix_z(angle_z)
+        def create_rotation_matrix_x(angle):
+            cos_theta, sin_theta = np.cos(angle), np.sin(angle)
+            return np.array([
+                [1, 0, 0],
+                [0, cos_theta, -sin_theta],
+                [0, sin_theta, cos_theta]
+            ])
+
+        def create_rotation_matrix_y(angle):
+            cos_theta, sin_theta = np.cos(angle), np.sin(angle)
+            return np.array([
+                [cos_theta, 0, sin_theta],
+                [0, 1, 0],
+                [-sin_theta, 0, cos_theta]
+            ])
+
+        def create_rotation_matrix_z(angle):
+            cos_theta, sin_theta = np.cos(angle), np.sin(angle)
+            return np.array([
+                [cos_theta, -sin_theta, 0],
+                [sin_theta, cos_theta, 0],
+                [0, 0, 1]
+            ])
+    
+        return create_rotation_matrix_x(angle_x) @ create_rotation_matrix_y(angle_y) @ create_rotation_matrix_z(angle_z)
+
+    def set_rotation_matrix(self, angle_x, angle_y, angle_z):
+        self.rotation_matrix = self.create_rotation_matrix(angle_x, angle_y, angle_z)
 
     def transform_vector(self, vertex):
-        rotated_vertex = self.rotation_matrix_x @ vertex  # Rotate around X-axis
-        rotated_vertex = self.rotation_matrix_y @ rotated_vertex  # Rotate around Y-axis
-        rotated_vertex = self.rotation_matrix_z @ rotated_vertex  # Rotate around Z-axis
-        translated_vertex = rotated_vertex + np.array([0, 0, 8])  # Translate in Z-axis
-        projected_vertex = self.projector.project_vector(translated_vertex)
-        return projected_vertex, translated_vertex
+        rotated_vertex = self.rotation_matrix @ vertex 
+        translated_vertex = rotated_vertex + np.array([0, 0, 8]) 
+        return translated_vertex
 
-    def transform_normal(self, normal):
-        rotated_normal = self.rotation_matrix_x @ normal
-        rotated_normal = self.rotation_matrix_y @ rotated_normal
-        rotated_normal = self.rotation_matrix_z @ rotated_normal
-    
-        return rotated_normal
-    
-# Function to interpolate between two colours
-def interpolate_colour(start_colour, end_colour, t):
-    r = int(start_colour[0] + (end_colour[0] - start_colour[0]) * t)
-    g = int(start_colour[1] + (end_colour[1] - start_colour[1]) * t)
-    b = int(start_colour[2] + (end_colour[2] - start_colour[2]) * t)
-    return (r, g, b)
+class CubeManager:
+    def __init__(self, cubes):
+        self.cubes = cubes
+        self.outer_rectangles = []
+        self.faces = []
 
-def main():
-    rotating = False
-    renderer = Render()
-    projector = Projector(renderer)
-    transformer = Transformer(projector)
+    def find_outer_rectangles(self):
+        rectangles_to_sort = []
 
-    cubes = [Cube([i/2, j/2, k/2]) for i in range(-3, 3, 2) for j in range(-3, 3, 2) for k in range(-3, 3, 2)]
+        for cube_index, cube in enumerate(self.cubes):
+            for rect_index, rectangle in enumerate(cube.rectangles):
+                centre = self.find_centre_rectangle(*rectangle)
+                dist = max(map(abs, centre))
+                rectangles_to_sort.append([rectangle, dist, cube_index * 6 + rect_index, centre])
 
-    #Work out which rectangles are on the outer surface of the cube 
-    rectangles_to_sort = []
-    distances = []
-    index = 0 
-    for cube in cubes:
-        for rectangle in cube.rectangles: 
-            centre = find_centre_rectangle(*rectangle)
-            dist = max([*map(abs, centre)])
-            distances.append(dist)
-            rectangles_to_sort.append([rectangle, dist, index, centre])
-            index += 1
-    rectangles_to_sort.sort(key=lambda x : x[1], reverse=True)
+        # Sort rectangles by distance in descending order and select the top 54
+        rectangles_to_sort.sort(key=lambda x: x[1], reverse=True)
+        self.outer_rectangles = rectangles_to_sort[:54]
 
-    rectangles_to_sort = rectangles_to_sort[:54] # Number of rectangles on outer surface of the cube 
+    @staticmethod
+    def find_centre_rectangle(a, b, c, d):
+        return (a + b + c + d) / 4.0
 
-    def set_colours(rectangles_to_sort, colour1, colour2, xyz):
-        xyz_dict = {'x': 0,
-                    'y': 1,
-                    'z': 2}
-                    
-        xyz = xyz_dict[xyz]
-        # Sort rectangles by the z component of their vertices
-        sorted_rectangles = sorted(rectangles_to_sort, key=lambda x: (x[3][xyz]))
-        # Get the indices of the top 9 rectangles with the largest z components
+    def set_colours(self, colour1, colour2, axis):
+        axis_dict = {'x': 0, 'y': 1, 'z': 2}
+        axis_index = axis_dict[axis]
+
+        # Sort outer rectangles by the specified axis (x, y, or z)
+        sorted_rectangles = sorted(self.outer_rectangles, key=lambda x: x[3][axis_index])
+
+        # Get the top and bottom 9 rectangles along the specified axis
         top_9_rectangles = sorted_rectangles[:9]
         bottom_9_rectangles = sorted_rectangles[-9:]
-        
-        # Set color1 for the top 9 rectangles
-        for i in range(len(top_9_rectangles)):
-            index = top_9_rectangles[i][2]
-            cubes[index//6].rectangles[index%6].piece_colour = colour1
-         # Set color2 for the bottom 9 rectangles
-        for i in range(len(bottom_9_rectangles)):
-            index = bottom_9_rectangles[i][2]
-            cubes[index//6].rectangles[index%6].piece_colour = colour2
 
+        # Assign colours and store the faces
+        self._assign_face_colours(top_9_rectangles, colour1)
+        self._assign_face_colours(bottom_9_rectangles, colour2)
 
-    set_colours(rectangles_to_sort, 'green', 'blue', 'x')
-    set_colours(rectangles_to_sort, 'white', 'yellow', 'y')
-    set_colours(rectangles_to_sort, 'orange', 'red', 'z')
+    def _assign_face_colours(self, rectangles, colour):
+        face = []
+        for rect_info in rectangles:
+            cube_index, rect_index = divmod(rect_info[2], 6)
+            self.cubes[cube_index].rectangles[rect_index].piece_colour = colour
+            face.append(self.cubes[cube_index])
+        self.faces.append(face)
+
+    def process_cube_faces(self):
+        self.find_outer_rectangles()
+        self.set_colours((255, 100, 0), (255, 0, 0), 'x')  # Red, Orange
+        self.set_colours((255, 255, 0), (255, 255, 255), 'y')  # Yellow, White
+        self.set_colours((0, 0, 187), (0, 187, 0), 'z')  # Blue, Green
+
+    def rotate_face(self, notation):
+        notation_arr = ['R', 'L', 'D', 'U', 'F', 'B']
+        face_symbol = notation[0]
+        face_index = notation_arr.index(face_symbol)
+ 
+        if len(notation) == 1:
+            c = 1
+        elif notation[1] == "\'":
+            c = -1
+
+        face = self.faces[face_index]
+
+        if face_symbol in ['R', 'D', 'F']:
+            c *= -1 
+
+        if face_symbol in ['U', 'D']:
+            angle = [0,c,0]
+        if face_symbol in ['L', 'R']:
+            angle = [c,0,0]
+        if face_symbol in ['F', 'B']:
+            angle = [0,0,c]
+      
+        angle = np.multiply(angle, np.pi/2)
+
+        rotation_matrix = Transformer.create_rotation_matrix(*angle)  # Adjust for specific axis
+        for i, cube in enumerate(face):
+            for j, rectangle in enumerate(cube.rectangles):
+                
+                rotated_a = rectangle.a @ rotation_matrix
+                rotated_b = rectangle.b @ rotation_matrix
+                rotated_c = rectangle.c @ rotation_matrix
+                rotated_d = rectangle.d @ rotation_matrix
+                
+                self.faces[face_index][i].rectangles[j].a = rotated_a
+                self.faces[face_index][i].rectangles[j].b = rotated_b
+                self.faces[face_index][i].rectangles[j].c = rotated_c
+                self.faces[face_index][i].rectangles[j].d = rotated_d
+
+                self.faces[face_index][i].rectangles[j].vertices = [rotated_a, rotated_b, rotated_c, rotated_d]
+def main():
+
+    renderer = Renderer()
+    projector = Projector(renderer.width, renderer.height)
+    transformer = Transformer(projector)
+    
+    cubes = [Cube([i/2, j/2, k/2]) for i in range(-3, 3, 2) for j in range(-3, 3, 2) for k in range(-3, 3, 2)]
+    cube_manager = CubeManager(cubes)
+    cube_manager.process_cube_faces()
+
+    cube_manager.rotate_face('U')
+    cube_manager.rotate_face('U')
+    cube_manager.rotate_face('D')
+    cube_manager.rotate_face('D')
+    cube_manager.rotate_face('R')
+    cube_manager.rotate_face('R')
+    cube_manager.rotate_face('L')
+    cube_manager.rotate_face('L')
+    cube_manager.rotate_face('F')
+    cube_manager.rotate_face('F')
+    cube_manager.rotate_face('B')
+    cube_manager.rotate_face('B')
+
+    rotating = False #testing
 
     camera = np.array([0, 0, 0])
+
     angle_x = 0
     angle_y = 0
     angle_z = 0
@@ -269,25 +303,22 @@ def main():
 
         renderer.screen.fill((255, 255, 255))  # Clear the screen
 
-        transformer.update_rotation_matrices(angle_x, angle_y, angle_z)
+        transformer.set_rotation_matrix(angle_x, angle_y, angle_z)
         rectangles_to_draw = []
 
-        for cube in cubes[:]:
+
+        for cube in cubes:
             for rectangle in cube.rectangles:
                 if not rotating and not rectangle.piece_colour:
                     continue
                 transformed_vertices = []
                 projected_vertices = []
-                # calculate the normal
-                # transform normal + a point 
-                # subtract the transformed point from the normal to get the new normal
-                # calculate teh view vector and take the dot product
 
                 normal = rectangle.get_normal()
             
                 positioned_normal = normal + rectangle.a
-                _, transformed_point = transformer.transform_vector(rectangle.a)
-                _, transformed_normal = transformer.transform_vector(positioned_normal)
+                transformed_point = transformer.transform_vector(rectangle.a)
+                transformed_normal = transformer.transform_vector(positioned_normal)
                 
                 transformed_normal -= transformed_point   
                 transformed_centroid = transformed_point
@@ -298,12 +329,13 @@ def main():
                 if np.dot(transformed_normal, normalized_view_vector) < 0:
 
                     for vertex in rectangle:
-                        projected_vertex, transformed_vertex = transformer.transform_vector(vertex)
+                        transformed_vertex = transformer.transform_vector(vertex)
+                        projected_vertex = projector.project_vector(transformed_vertex)
                         projected_vertices.append(projected_vertex)
                         transformed_vertices.append(transformed_vertex)
 
                     centre = find_centre_rectangle(*rectangle)
-                    _, transformed_centroid = transformer.transform_vector(centre)
+                    transformed_centroid = transformer.transform_vector(centre)
                     centroid_depth = np.linalg.norm(transformed_centroid - camera)
 
                     rectangles_to_draw.append((projected_vertices, rectangle.piece_colour, centroid_depth))
@@ -335,7 +367,7 @@ def main():
 
         pygame.display.flip()
 
-        clock.tick(240)
+        clock.tick(60)
 
     pygame.quit()
 
