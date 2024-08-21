@@ -1,6 +1,7 @@
 import pygame
 from pygame.locals import *
 import numpy as np
+import time 
 
 class Renderer:
     def __init__(self, width=800, height=800):
@@ -35,8 +36,10 @@ class Renderer:
     def draw_rectangle(self, a, b, c, d, colour):
         if colour:
             pygame.draw.polygon(self.screen, colour, [a, b, c, d])
+        else: 
+            pygame.draw.polygon(self.screen, 'black', [a,b,c,d])
         for start, end in [(a, b), (b, c), (c, d), (d, a)]:
-            pygame.draw.line(self.screen, (0, 0, 0), start, end, self.thickness*2)
+            pygame.draw.line(self.screen, 'aqua', start, end, self.thickness*2)
 
     def display_fps(self, fps):
         fps_text = self.font.render(f'FPS: {int(fps)}', True, self.colour)
@@ -158,9 +161,14 @@ class Transformer:
 
 class CubeManager:
     def __init__(self, cubes):
+        
         self.cubes = cubes
         self.outer_rectangles = []
         self.faces = []
+
+        self.frames = 30
+        self.rotating = False
+        self.rotation_to_execute = False
 
     def find_outer_rectangles(self):
         rectangles_to_sort = []
@@ -207,15 +215,16 @@ class CubeManager:
         self.set_colours((255, 100, 0), (255, 0, 0), 'x')  # Red, Orange
         self.set_colours((255, 255, 0), (255, 255, 255), 'y')  # Yellow, White
         self.set_colours((0, 0, 187), (0, 187, 0), 'z')  # Blue, Green
+    
+    def set_rotation(self, notation_input):
 
-    def rotate_face(self, notation):
         notation_arr = ['R', 'L', 'D', 'U', 'F', 'B']
-        face_symbol = notation[0]
+        face_symbol = notation_input[0]
         face_index = notation_arr.index(face_symbol)
- 
-        if len(notation) == 1:
+
+        if len(notation_input) == 1:
             c = 1
-        elif notation[1] == "\'":
+        elif notation_input[1] == "\'":
             c = -1
 
         face = self.faces[face_index]
@@ -229,24 +238,38 @@ class CubeManager:
             angle = [c,0,0]
         if face_symbol in ['F', 'B']:
             angle = [0,0,c]
-      
         angle = np.multiply(angle, np.pi/2)
 
-        rotation_matrix = Transformer.create_rotation_matrix(*angle)  # Adjust for specific axis
-        for i, cube in enumerate(face):
-            for j, rectangle in enumerate(cube.rectangles):
-                
-                rotated_a = rectangle.a @ rotation_matrix
-                rotated_b = rectangle.b @ rotation_matrix
-                rotated_c = rectangle.c @ rotation_matrix
-                rotated_d = rectangle.d @ rotation_matrix
-                
-                self.faces[face_index][i].rectangles[j].a = rotated_a
-                self.faces[face_index][i].rectangles[j].b = rotated_b
-                self.faces[face_index][i].rectangles[j].c = rotated_c
-                self.faces[face_index][i].rectangles[j].d = rotated_d
+        self.rotating_face, self.face_index, self.target_angle, self.rotation_to_execute = face, face_index, angle, True
+        return face, face_index, np.multiply(angle, np.pi/2)
 
-                self.faces[face_index][i].rectangles[j].vertices = [rotated_a, rotated_b, rotated_c, rotated_d]
+    def rotate_face(self):
+
+        if not self.rotating and self.rotation_to_execute:
+            self.rotating = True
+            self.current_frame = 0
+        else:
+            if self.current_frame == self.frames:
+                self.rotating = False 
+                self.rotation_to_execute = False
+            else:
+                self.current_frame += 1 
+                angle = np.multiply(self.target_angle, 1 / self.frames)
+                rotation_matrix = Transformer.create_rotation_matrix(*angle)  # Adjust for specific axis
+                for i, cube in enumerate(self.rotating_face):
+                    for j, rectangle in enumerate(cube.rectangles):
+                        
+                        rotated_a = rectangle.a @ rotation_matrix
+                        rotated_b = rectangle.b @ rotation_matrix
+                        rotated_c = rectangle.c @ rotation_matrix
+                        rotated_d = rectangle.d @ rotation_matrix
+                        
+                        self.faces[self.face_index][i].rectangles[j].a = rotated_a
+                        self.faces[self.face_index][i].rectangles[j].b = rotated_b
+                        self.faces[self.face_index][i].rectangles[j].d = rotated_d
+                        self.faces[self.face_index][i].rectangles[j].c = rotated_c
+
+                        self.faces[self.face_index][i].rectangles[j].vertices = [rotated_a, rotated_b, rotated_c, rotated_d]
 def main():
 
     renderer = Renderer()
@@ -257,20 +280,10 @@ def main():
     cube_manager = CubeManager(cubes)
     cube_manager.process_cube_faces()
 
-    cube_manager.rotate_face('U')
-    cube_manager.rotate_face('U')
-    cube_manager.rotate_face('D')
-    cube_manager.rotate_face('D')
-    cube_manager.rotate_face('R')
-    cube_manager.rotate_face('R')
-    cube_manager.rotate_face('L')
-    cube_manager.rotate_face('L')
-    cube_manager.rotate_face('F')
-    cube_manager.rotate_face('F')
-    cube_manager.rotate_face('B')
-    cube_manager.rotate_face('B')
+    cube_manager.set_rotation('U')
+    
+    
 
-    rotating = False #testing
 
     camera = np.array([0, 0, 0])
 
@@ -281,9 +294,10 @@ def main():
     rotation_speed = 0.05
 
     clock = pygame.time.Clock()
-
+    
     running = True
     while running:
+        cube_manager.rotate_face()
         running = renderer.update()
 
         # Handle key presses for rotation
@@ -301,6 +315,27 @@ def main():
         if keys[K_d]:
             angle_z += rotation_speed  # Rotate clockwise around Z-axis
 
+        face = False
+
+        if keys[K_u]:
+            face = ('U')
+        if keys[K_d]:
+            face = ('D')
+        if keys[K_l]:
+            face = ('L')
+        if keys[K_r]:
+            face = ('R')
+        if keys[K_f]:
+            face = ('F')
+        if keys[K_b]:
+           face = ('B')
+
+        if keys[K_LSHIFT] and face:
+            face += '\''
+
+        if face:
+            cube_manager.set_rotation(face)
+
         renderer.screen.fill((255, 255, 255))  # Clear the screen
 
         transformer.set_rotation_matrix(angle_x, angle_y, angle_z)
@@ -309,6 +344,7 @@ def main():
 
         for cube in cubes:
             for rectangle in cube.rectangles:
+                rotating = cube_manager.rotating
                 if not rotating and not rectangle.piece_colour:
                     continue
                 transformed_vertices = []
@@ -337,6 +373,7 @@ def main():
                     centre = find_centre_rectangle(*rectangle)
                     transformed_centroid = transformer.transform_vector(centre)
                     centroid_depth = np.linalg.norm(transformed_centroid - camera)
+                    
 
                     rectangles_to_draw.append((projected_vertices, rectangle.piece_colour, centroid_depth))
 
@@ -348,10 +385,9 @@ def main():
                         projected_transformed_centroid = projector.project_vector(transformed_centroid)
 
                         renderer.draw_line(projected_transformed_centroid, projected_positioned_normal, 'aqua')
-                    
-
+                
         # Sort rectangles by piece_colour and depth
-        rectangles_to_draw.sort(key=lambda x: (x[1], -x[2]))
+        rectangles_to_draw.sort(key=lambda x: (isinstance(x[1], tuple), -x[2]))
 
         #Sort rectangles by depth
         #rectangles_to_draw.sort(key=lambda x: x[2])
@@ -373,3 +409,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+# work out some 2D representation of the cube and properly cycle the colours in this representation
+# use this colour cycling logic to cycle the faces of the cube 
