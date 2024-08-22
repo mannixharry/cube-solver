@@ -34,7 +34,7 @@ class RubiksCube:
         return (f"Corners: {self.corners_permutation}, {self.corners_orientation}\n"
                 f"Edges: {self.edges_permutation}, {self.edges_orientation}")
     
-    def display_2D_net(self):
+    def get_2D_net(self):
 
         for i, permutation in enumerate(self.corners_permutation):
             corner_facelet = self.corner_facelets[i]

@@ -284,6 +284,7 @@ def main():
     cube_manager.set_rotation('U')
     
     
+    
 
 
     camera = np.array([0, 0, 0])
