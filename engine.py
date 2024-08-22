@@ -411,7 +411,7 @@ def main():
 
 if __name__ == "__main__":
     main()
-    print('this is a test to see if what i write on my mac ends up on my pc')
+    print('this is a test to see if what i write on my pc ends up on my mac')
 
 # work out some 2D representation of the cube and properly cycle the colours in this representation
 # use this colour cycling logic to cycle the faces of the cube 
