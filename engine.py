@@ -36,10 +36,11 @@ class Renderer:
     def draw_rectangle(self, a, b, c, d, colour):
         if colour:
             pygame.draw.polygon(self.screen, colour, [a, b, c, d])
+            for start, end in [(a, b), (b, c), (c, d), (d, a)]:
+                pygame.draw.line(self.screen, 'black', start, end, self.thickness*2)
         else: 
             pygame.draw.polygon(self.screen, 'black', [a,b,c,d])
-        for start, end in [(a, b), (b, c), (c, d), (d, a)]:
-            pygame.draw.line(self.screen, 'aqua', start, end, self.thickness*2)
+        
 
     def display_fps(self, fps):
         fps_text = self.font.render(f'FPS: {int(fps)}', True, self.colour)
@@ -217,31 +218,31 @@ class CubeManager:
         self.set_colours((0, 0, 187), (0, 187, 0), 'z')  # Blue, Green
     
     def set_rotation(self, notation_input):
+        if not self.rotating:
+            notation_arr = ['R', 'L', 'D', 'U', 'F', 'B']
+            face_symbol = notation_input[0]
+            face_index = notation_arr.index(face_symbol)
 
-        notation_arr = ['R', 'L', 'D', 'U', 'F', 'B']
-        face_symbol = notation_input[0]
-        face_index = notation_arr.index(face_symbol)
+            if len(notation_input) == 1:
+                c = 1
+            elif notation_input[1] == "\'":
+                c = -1
 
-        if len(notation_input) == 1:
-            c = 1
-        elif notation_input[1] == "\'":
-            c = -1
+            face = self.faces[face_index]
 
-        face = self.faces[face_index]
+            if face_symbol in ['R', 'D', 'F']:
+                c *= -1 
 
-        if face_symbol in ['R', 'D', 'F']:
-            c *= -1 
+            if face_symbol in ['U', 'D']:
+                angle = [0,c,0]
+            if face_symbol in ['L', 'R']:
+                angle = [c,0,0]
+            if face_symbol in ['F', 'B']:
+                angle = [0,0,c]
+            angle = np.multiply(angle, np.pi/2)
 
-        if face_symbol in ['U', 'D']:
-            angle = [0,c,0]
-        if face_symbol in ['L', 'R']:
-            angle = [c,0,0]
-        if face_symbol in ['F', 'B']:
-            angle = [0,0,c]
-        angle = np.multiply(angle, np.pi/2)
-
-        self.rotating_face, self.face_index, self.target_angle, self.rotation_to_execute = face, face_index, angle, True
-        return face, face_index, np.multiply(angle, np.pi/2)
+            self.rotating_face, self.face_index, self.target_angle, self.rotation_to_execute = face, face_index, angle, True
+            return face, face_index, np.multiply(angle, np.pi/2)
 
     def rotate_face(self):
 
