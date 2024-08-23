@@ -12,7 +12,31 @@ class Renderer:
         self.screen = self.create_window()
         self.font = pygame.font.SysFont('Arial', 20)
         self.colour = (0, 0, 0)
+        
+        self.displayed_quadrilaterals = []
+        self.displayed_quadrilaterals_indices = []
+        
+        self.faces_clicked = []
 
+    def detect_facelet_click(self, mouse_pos):
+        
+        def is_point_inside_triangle(A, B, C, P):
+            v0, v1, v2 = C - A, B - A, P - A
+            dot00, dot01, dot02, dot11, dot12 = np.dot(v0, v0), np.dot(v0, v1), np.dot(v0, v2), np.dot(v1, v1), np.dot(v1, v2)
+            invDenom = 1 / (dot00 * dot11 - dot01 * dot01)
+            u, v = (dot11 * dot02 - dot01 * dot12) * invDenom, (dot00 * dot12 - dot01 * dot02) * invDenom
+            return u >= 0 and v >= 0 and u + v <= 1
+    
+        def is_point_inside_quadrilateral(A, B, C, D, P):
+            A, B, C, D, P = np.array(A), np.array(B), np.array(C), np.array(D), np.array(P)
+            return is_point_inside_triangle(A, B, C, P) or is_point_inside_triangle(A, C, D, P)
+        
+        for i, quad in enumerate(self.displayed_quadrilaterals): 
+            if is_point_inside_quadrilateral(*quad, mouse_pos):
+                self.faces_clicked.append(self.displayed_quadrilaterals_indices[i])
+                print(self.faces_clicked)
+                break
+                
     def create_window(self):
         screen = pygame.display.set_mode((self.width, self.height))
         pygame.display.set_caption('Basic 3D Engine')
@@ -25,6 +49,9 @@ class Renderer:
             elif event.type == pygame.KEYDOWN:
                 if event.key == K_ESCAPE:
                     return False
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                mouse_pos = pygame.mouse.get_pos()
+                self.detect_facelet_click(mouse_pos)
         return True
     
     def clear_screen(self):
@@ -41,7 +68,7 @@ class Renderer:
         else: 
             pygame.draw.polygon(self.screen, 'black', [a,b,c,d])
         
-
+        
     def display_fps(self, fps):
         fps_text = self.font.render(f'FPS: {int(fps)}', True, self.colour)
         self.screen.blit(fps_text, (10, 10))
@@ -171,7 +198,7 @@ class CubeManager:
         self.rotating = False
         self.rotation_to_execute = False
 
-    def find_outer_rectangles(self):
+    def process_cube_faces(self):
         rectangles_to_sort = []
 
         for cube_index, cube in enumerate(self.cubes):
@@ -183,12 +210,52 @@ class CubeManager:
         # Sort rectangles by distance in descending order and select the top 54
         rectangles_to_sort.sort(key=lambda x: x[1], reverse=True)
         self.outer_rectangles = rectangles_to_sort[:54]
+        self.set_colours()
 
     @staticmethod
     def find_centre_rectangle(a, b, c, d):
         return (a + b + c + d) / 4.0
+    
+    def set_colours(self, cube_string='WWWWWWWWWOOROOOOOOGGGGGGGGGORRRRRRRRBBBBBBBBBYYYYYYYYY'):
+        
+        colour_map = {
+            'R': (255, 0, 0),       # Red
+            'O': (255, 100, 0),     # Orange
+            'Y': (255, 255, 0),     # Yellow
+            'W': (255, 255, 255),   # White
+            'G': (0, 187, 0),       # Green
+            'B': (0, 0, 187),       # Blue
+            'T': (0,0,0)            # Test
+        }
+            
+        faces_dict = {
+            'U' : [53, 33, 20, 50, 31, 17, 48, 30, 15],
+            'D' : [35, 23, 2, 37, 24, 4, 40, 26, 7],
+            'F' : [47, 29, 14, 42, 27, 9, 34, 22, 1],
+            'B' : [52, 32, 19, 45, 28, 12, 39, 25, 6],
+            'L' : [54, 51, 49, 46, 44, 43, 41, 38, 36],
+            'R' : [16, 18, 21, 10, 11, 13, 3, 5, 8]
+        } #Gives the index of the faces 
+        
+        faces = [cube_string[i:i+9] for i in range(0, len(cube_string), 9)]
+        face_symbols  = ['U', 'L', 'F', 'R', 'B', 'D']
+        for i, symbol in enumerate(face_symbols):
+            face = []
+            indices = faces_dict[symbol]
+            for j, colour in enumerate(cube_string[i*9:(i+1)*9]):
+                index = indices[j] - 1 
+                #print(index)
+                #print(self.outer_rectangles[index])
+                rect_info = self.outer_rectangles[index][2]
+                cube_index, rect_index = divmod(rect_info, 6)
+                self.cubes[cube_index].rectangles[rect_index].piece_colour = colour_map[colour]
+                
+                face.append(self.cubes[cube_index])
+            self.faces.append(face)
+            
+            
 
-    def set_colours(self, colour1, colour2, axis):
+    ''' def set_colours(self, colour1, colour2, axis):
         axis_dict = {'x': 0, 'y': 1, 'z': 2}
         axis_index = axis_dict[axis]
 
@@ -202,24 +269,21 @@ class CubeManager:
         # Assign colours and store the faces
         self._assign_face_colours(top_9_rectangles, colour1)
         self._assign_face_colours(bottom_9_rectangles, colour2)
-
-    def _assign_face_colours(self, rectangles, colour):
+    
+     def _assign_face_colours(self, rectangles, colour):
         face = []
         for rect_info in rectangles:
+            print(rect_info)
             cube_index, rect_index = divmod(rect_info[2], 6)
             self.cubes[cube_index].rectangles[rect_index].piece_colour = colour
             face.append(self.cubes[cube_index])
-        self.faces.append(face)
+        self.faces.append(face)'''
+    
 
-    def process_cube_faces(self):
-        self.find_outer_rectangles()
-        self.set_colours((255, 0, 0), (255, 100, 0), 'x')  # Red, Orange
-        self.set_colours((255, 255, 0), (255, 255, 255), 'y')  # Yellow, White
-        self.set_colours((0, 187, 0), (0, 0, 187), 'z')  # Blue, Green
     
     def set_rotation(self, notation_input):
         if not self.rotating:
-            notation_arr = ['R', 'L', 'D', 'U', 'F', 'B']
+            notation_arr = ['U', 'L', 'F', 'R', 'B', 'D']
             face_symbol = notation_input[0]
             face_index = notation_arr.index(face_symbol)
 
@@ -301,7 +365,8 @@ def main():
     while running:
         cube_manager.rotate_face()
         running = renderer.update()
-
+        renderer.displayed_quadrilaterals = []
+        renderer.displayed_quadrilaterals_indices = []
         # Handle key presses for rotation
         keys = pygame.key.get_pressed()
         if keys[K_LEFT]:
@@ -342,13 +407,14 @@ def main():
 
         transformer.set_rotation_matrix(angle_x, angle_y, angle_z)
         rectangles_to_draw = []
-
-
+        index = 0
         for cube in cubes:
             for rectangle in cube.rectangles:
                 rotating = cube_manager.rotating
                 if not rotating and not rectangle.piece_colour:
                     continue
+                if rectangle.piece_colour:
+                    index += 1
                 transformed_vertices = []
                 projected_vertices = []
 
@@ -377,7 +443,7 @@ def main():
                     centroid_depth = np.linalg.norm(transformed_centroid - camera)
                     
 
-                    rectangles_to_draw.append((projected_vertices, rectangle.piece_colour, centroid_depth))
+                    rectangles_to_draw.append((projected_vertices, rectangle.piece_colour, centroid_depth, index))
 
                     draw_normals = False
                     if draw_normals: 
@@ -393,11 +459,14 @@ def main():
 
         #Sort rectangles by depth
         #rectangles_to_draw.sort(key=lambda x: x[2])
-        count = 0
-        for count, (rectangle, piece_colour, _) in enumerate(rectangles_to_draw):
+        
+        for count, (rectangle, piece_colour, _, index) in enumerate(rectangles_to_draw):
             t = count / len(rectangles_to_draw)
             colour = piece_colour
             renderer.draw_rectangle(*rectangle, colour)
+            renderer.displayed_quadrilaterals.append([*rectangle])
+            renderer.displayed_quadrilaterals_indices.append(index)
+            
         #print(count+1) # number of rectangles rendered
 
         fps = clock.get_fps()
