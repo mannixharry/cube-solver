@@ -213,9 +213,9 @@ class CubeManager:
 
     def process_cube_faces(self):
         self.find_outer_rectangles()
-        self.set_colours((255, 100, 0), (255, 0, 0), 'x')  # Red, Orange
+        self.set_colours((255, 0, 0), (255, 100, 0), 'x')  # Red, Orange
         self.set_colours((255, 255, 0), (255, 255, 255), 'y')  # Yellow, White
-        self.set_colours((0, 0, 187), (0, 187, 0), 'z')  # Blue, Green
+        self.set_colours((0, 187, 0), (0, 0, 187), 'z')  # Blue, Green
     
     def set_rotation(self, notation_input):
         if not self.rotating:
