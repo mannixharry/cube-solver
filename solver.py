@@ -4,7 +4,7 @@ import sys
 class RubiksCube:
     def __init__(self):
         # Corner representation: permutation and orientation
-        self.corners_permutation = [0, 1 , 2, 3, 4, 5, 6, 7]  # Starts in solved state
+        self.corners_permutation = [1, 0 , 2, 3, 4, 5, 6, 7]  # Starts in solved state
         self.corners_orientation = [0, 0, 0, 0, 0, 0, 0, 0]  # All corners correctly oriented
 
         # Edge representation: permutation and orientation
@@ -118,7 +118,6 @@ class RubiksCube:
         pygame.quit()
         sys.exit()
 
-        
     def get_2D_net(self):
         
         net = ['x'] * 54 
@@ -271,7 +270,6 @@ class CubeRotations:
         else:
             self.rotate_clockwise(cube, face)
                 
-
 # Example usage:
 cube = RubiksCube()
 # Instantiate the rotation logic
