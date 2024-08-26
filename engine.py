@@ -198,7 +198,7 @@ class CubeManager:
         self.rotating = False
         self.rotation_to_execute = False
 
-    def process_cube_faces(self):
+    def process_cube_faces(self, cube_string):
         rectangles_to_sort = []
 
         for cube_index, cube in enumerate(self.cubes):
@@ -210,7 +210,7 @@ class CubeManager:
         # Sort rectangles by distance in descending order and select the top 54
         rectangles_to_sort.sort(key=lambda x: x[1], reverse=True)
         self.outer_rectangles = rectangles_to_sort[:54]
-        self.set_colours()
+        self.set_colours(cube_string)
 
     @staticmethod
     def find_centre_rectangle(a, b, c, d):
@@ -232,7 +232,8 @@ class CubeManager:
             'U' : [53, 33, 20, 50, 31, 17, 48, 30, 15],
             'D' : [35, 23, 2, 37, 24, 4, 40, 26, 7],
             'F' : [47, 29, 14, 42, 27, 9, 34, 22, 1],
-            'B' : [52, 32, 19, 45, 28, 12, 39, 25, 6],
+            #'B' : [52, 32, 19, 45, 28, 12, 39, 25, 6],
+            'B' : [19, 32, 52, 12, 28, 45, 6, 25, 39],
             'L' : [54, 51, 49, 46, 44, 43, 41, 38, 36],
             'R' : [16, 18, 21, 10, 11, 13, 3, 5, 8]
         } #Gives the index of the faces 
@@ -253,34 +254,6 @@ class CubeManager:
                 face.append(self.cubes[cube_index])
             self.faces.append(face)
             
-            
-
-    ''' def set_colours(self, colour1, colour2, axis):
-        axis_dict = {'x': 0, 'y': 1, 'z': 2}
-        axis_index = axis_dict[axis]
-
-        # Sort outer rectangles by the specified axis (x, y, or z)
-        sorted_rectangles = sorted(self.outer_rectangles, key=lambda x: x[3][axis_index])
-
-        # Get the top and bottom 9 rectangles along the specified axis
-        top_9_rectangles = sorted_rectangles[:9]
-        bottom_9_rectangles = sorted_rectangles[-9:]
-
-        # Assign colours and store the faces
-        self._assign_face_colours(top_9_rectangles, colour1)
-        self._assign_face_colours(bottom_9_rectangles, colour2)
-    
-     def _assign_face_colours(self, rectangles, colour):
-        face = []
-        for rect_info in rectangles:
-            print(rect_info)
-            cube_index, rect_index = divmod(rect_info[2], 6)
-            self.cubes[cube_index].rectangles[rect_index].piece_colour = colour
-            face.append(self.cubes[cube_index])
-        self.faces.append(face)'''
-    
-
-    
     def set_rotation(self, notation_input):
         if not self.rotating:
             notation_arr = ['U', 'L', 'F', 'R', 'B', 'D']
@@ -310,8 +283,9 @@ class CubeManager:
 
     def rotate_face(self):
 
-        if not self.rotating and self.rotation_to_execute:
-            self.rotating = True
+        if not self.rotating:
+            if self.rotation_to_execute:
+                self.rotating = True
             self.current_frame = 0
         else:
             if self.current_frame == self.frames:
@@ -335,7 +309,7 @@ class CubeManager:
                         self.faces[self.face_index][i].rectangles[j].c = rotated_c
 
                         self.faces[self.face_index][i].rectangles[j].vertices = [rotated_a, rotated_b, rotated_c, rotated_d]
-def main():
+def main(cube_string= 'WWWWWWWWWOOOOOOOOOGGGGGGGGGRRRRRRRRRBBBBBBBBBYYYYYYYYY'):
 
     renderer = Renderer()
     projector = Projector(renderer.width, renderer.height)
@@ -343,14 +317,8 @@ def main():
     
     cubes = [Cube([i/2, j/2, k/2]) for i in range(-3, 3, 2) for j in range(-3, 3, 2) for k in range(-3, 3, 2)]
     cube_manager = CubeManager(cubes)
-    cube_manager.process_cube_faces()
-
-    cube_manager.set_rotation('U')
+    cube_manager.process_cube_faces(cube_string)
     
-    
-    
-
-
     camera = np.array([0, 0, 0])
 
     angle_x = 0
