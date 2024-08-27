@@ -4,21 +4,20 @@ import sys
 class RubiksCube:
     def __init__(self):
         # Facelet string representation of the cube
-        self.cube_string = list('TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTWOGRBYGBW')
-                                          #OOOOOOOOOGGGGGGGGGRRRRRRRRRBBBBBBBBBYYYYYYYYY')
-
+        self.cube_string = list('WWWWWWWWWOOOOOOOOOGGGGGGGGGRRRRRRRRRBBBBBBBBBYYYYYYYYY')
+                                    
     def __repr__(self):
         cube_string = self.cube_string
         # Print the net representation
-        return (f"   {cube_string[0:3]}\n"
-                f"   {cube_string[3:6]}\n"
-                f"   {cube_string[6:9]}\n"
+        return (f"               {cube_string[0:3]}\n"
+                f"               {cube_string[3:6]}\n"
+                f"               {cube_string[6:9]}\n"
                 f"{cube_string[9:12]}{cube_string[18:21]}{cube_string[27:30]}{cube_string[36:39]}\n"
                 f"{cube_string[12:15]}{cube_string[21:24]}{cube_string[30:33]}{cube_string[39:42]}\n"
                 f"{cube_string[15:18]}{cube_string[24:27]}{cube_string[33:36]}{cube_string[42:45]}\n"
-                f"   {cube_string[45:48]}\n"
-                f"   {cube_string[48:51]}\n"
-                f"   {cube_string[51:54]}\n")
+                f"               {cube_string[48:51]}\n"
+                f"               {cube_string[45:48]}\n"
+                f"               {cube_string[51:54]}\n")
     
     def display_2D_net(self):
         face_indices = ['U', 'L', 'F', 'R', 'B', 'D']
@@ -79,15 +78,15 @@ class CubeRotations:
 
     def __init__(self):
         # Define the rotation tables for the edges around each face
-        self.rotation_tables = {
-            'U': [9, 10, 11, 27, 28, 29, 36, 37, 38, 18, 19, 20],  # Edges affected by rotating U face
-            'D': [15, 16, 17, 24, 25, 26, 33, 34, 35, 42, 43, 44],  # Edges affected by rotating D face
-            'F': [6, 7, 8, 18, 21, 24, 45, 46, 47, 44, 41, 38],    # Edges affected by rotating F face
-            'B': [0, 1, 2, 36, 39, 42, 51, 52, 53, 26, 23, 20],    # Edges affected by rotating B face
-            'L': [0, 3, 6, 9, 12, 15, 45, 48, 51, 35, 32, 29],     # Edges affected by rotating L face
-            'R': [2, 5, 8, 38, 41, 44, 47, 50, 53, 27, 30, 33]     # Edges affected by rotating R face
+        self.encoded_rotation_tables = {
+            'F' : ['U6', 'U7', 'U8', 'R0', 'R3', 'R6', 'D2', 'D1', 'D0', 'L8', 'L5', 'L2']
         }
-
+        
+        self.rotation_tables = {key: ['ULFRBD'.index(i[0])*9 + int(i[1]) for i in value] for (key, value) in self.encoded_rotation_tables.items()}
+        
+        print(self.encoded_rotation_tables)
+        print(self.rotation_tables)
+        
     def rotate_clockwise(self, cube, face):
         # Rotate the face itself
         self._rotate_face(cube, face, clockwise=True)
@@ -110,13 +109,16 @@ class CubeRotations:
             cube.cube_string[face_start + i] = new_face[i]
 
     def _rotate_edges (self, cube, face, clockwise = True):
-        return 
-    
-
-
-
-
-
+        rotation_table = self.rotation_tables[face]
+        new_cube = cube.cube_string[:] #creates a new list rather than creating a reference
+        for i, index in enumerate(rotation_table):
+            new_cube[rotation_table[(i+3)%12]] = cube.cube_string[index]
+            print(f"{index} ==> {rotation_table[(i+3)%12]}")
+            
+        for i in range(54):
+            
+            cube.cube_string[i] = new_cube[i]
+        
                 
 def main():
     # Example usage:
@@ -125,11 +127,15 @@ def main():
     rotator = CubeRotations()
 
     # Perform some rotations
-    #rotator.rotate(cube, 'U')
-    rotator.rotate_clockwise(cube, 'D')
-    print(cube)
+    rotator.rotate_clockwise(cube, 'F')
+    rotator.rotate_clockwise(cube, 'F')
     
+   
+    #rotator.rotate_clockwise(cube, 'D')
+    print(cube)
+    print(cube.cube_string)
     engine.main(cube.cube_string)
+
 
 import engine 
 
