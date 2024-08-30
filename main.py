@@ -261,9 +261,9 @@ class Transformer:
         return translated_vertex
 
 class CubeManager:
-    def __init__(self, cubes):
+    def __init__(self, cubes, cube_string= 'WWWWWWWWWOOOOOOOOOGGGGGGGGGRRRRRRRRRBBBBBBBBBYYYYYYYYY'):
 
-        self.rubiks_cube = RubiksCube()
+        self.rubiks_cube = RubiksCube(cube_string)
         self.rotator = CubeRotations()
 
         self.cubes = cubes
@@ -410,14 +410,14 @@ class CubeManager:
                         self.faces[self.face_index][i].rectangles[j].c = rotated_c
 
                         self.faces[self.face_index][i].rectangles[j].vertices = [rotated_a, rotated_b, rotated_c, rotated_d]
-def main():
+def main(cube_string ='WWWWWWWWWOOOOOOOOOGGGGGGGGGRRRRRRRRRBBBBBBBBBYYYYYYYYY'):
 
     renderer = Renderer()
     projector = Projector(renderer.width, renderer.height)
     transformer = Transformer(projector)
     
     cubes = [Cube([i/2, j/2, k/2]) for i in range(-3, 3, 2) for j in range(-3, 3, 2) for k in range(-3, 3, 2)]
-    cube_manager = CubeManager(cubes)
+    cube_manager = CubeManager(cubes, cube_string)
     cube_manager.process_cube_faces()
     
     camera = np.array([0, 0, 0])
