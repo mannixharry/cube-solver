@@ -66,11 +66,11 @@ class CubeRotations:
         if clockwise:
             for i, index in enumerate(rotation_table):
                 new_cube[rotation_table[(i+3)%12]] = cube.cube_string[index]
-                print(f"{index} ==> {rotation_table[(i+3)%12]}")
+                #print(f"{index} ==> {rotation_table[(i+3)%12]}")
         else: 
             for i, index in enumerate(rotation_table):
                 new_cube[index] = cube.cube_string[rotation_table[(i+3)%12]]
-                print(f"{index} <== {rotation_table[(i+3)%12]}")
+                #print(f"{index} <== {rotation_table[(i+3)%12]}")
                 
             
         for i in range(54):
@@ -389,6 +389,7 @@ class CubeManager:
                 notation_arr = ['U', 'L', 'F', 'R', 'B', 'D']
                 self.rotator.rotate(self.rubiks_cube, notation_arr[self.face_index], self.clockwise)
                 self.set_colours()
+                print(''.join(self.rubiks_cube.cube_string))
 
                 self.rotating = False 
                 self.rotation_to_execute = False
