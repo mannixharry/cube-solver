@@ -91,9 +91,6 @@ class Facelet(IntEnum):
     D7 = 52
     D8 = 53
 
-
-
-
 class CubieCube:
     def __init__(self):
         #Initialize in solved position
@@ -141,85 +138,6 @@ class CubieCube:
             Move.B: [0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1],  # B move flips UB, DB, BR, BL edges
         }
         
-    corner_facelet_indices = [
-        [Facelet.U6, Facelet.L2, Facelet.F0],  # UFL
-        [Facelet.U8, Facelet.F2, Facelet.R0],  # UFR
-        [Facelet.U0, Facelet.B2, Facelet.L0],  # UBL
-        [Facelet.U2, Facelet.R2, Facelet.B0],  # UBR
-        [Facelet.D0, Facelet.F6, Facelet.L8],  # DFL
-        [Facelet.D2, Facelet.R6, Facelet.F8],  # DFR
-        [Facelet.D6, Facelet.L6, Facelet.B8],  # DBL
-        [Facelet.D8, Facelet.B6, Facelet.R8]   # DBR
-    ]
-
-    edge_facelet_indices = [
-        [Facelet.U7, Facelet.F1],  # UF: U, F
-        [Facelet.U3, Facelet.L1],  # UL: U, L
-        [Facelet.U1, Facelet.B1],  # UB: U, B
-        [Facelet.U5, Facelet.R1],  # UR: U, R
-        [Facelet.D1, Facelet.F7], # DF: D, F
-        [Facelet.D3, Facelet.L7], # DL: D, L
-        [Facelet.D7, Facelet.B7], # DB: D, B
-        [Facelet.D5, Facelet.R7], # DR: D, R
-        [Facelet.F3, Facelet.L5], # FL: F, L
-        [Facelet.F5, Facelet.R3], # FR: F, R
-        [Facelet.B5, Facelet.L3], # BL: B, L
-        [Facelet.B3, Facelet.R5]  # BR: B, R
-    ]
-
-    def to_facelet_representation(self):
-        facelet_array = ['x'] * 54
-
-        # Define the colors associated with each corner and edge piece
-        corner_colors = [
-            ['W', 'O', 'G'],  # UFL
-            ['W', 'G', 'R'],  # UFR
-            ['W', 'B', 'O'],  # UBL
-            ['W', 'R', 'B'],  # UBR
-            ['Y', 'G', 'O'],  # DFL
-            ['Y', 'R', 'G'],  # DFR
-            ['Y', 'O', 'B'],  # DBL
-            ['Y', 'B', 'R'],  # DBR
-        ]
-
-        edge_colors = [
-            ['W', 'G'],  # UF
-            ['W', 'O'],  # UL
-            ['W', 'B'],  # UB
-            ['W', 'R'],  # UR
-            ['Y', 'G'],  # DF
-            ['Y', 'O'],  # DL
-            ['Y', 'B'],  # DB
-            ['Y', 'R'],  # DR
-            ['G', 'O'],  # FL
-            ['G', 'R'],  # FR
-            ['B', 'O'],  # BL
-            ['B', 'R'],  # BR
-        ]
-
-        # Fill the corners
-        for i in range(8):
-            perm = self.corner_permutations[i]
-            orient = self.corner_orientations[i]
-            for j in range(3):
-                facelet_array[self.corner_facelet_indices[i][j]] = corner_colors[perm][(j + orient) % 3]
-
-        # Fill the edges
-        for i in range(12):
-            perm = self.edge_permutations[i]
-            orient = self.edge_orientations[i]
-            for j in range(2):
-                facelet_array[self.edge_facelet_indices[i][j]] = edge_colors[perm][(j + orient) % 2]
-
-        # Fill the center pieces (fixed colors)
-        center_colors = ['W', 'O', 'G', 'R', 'B', 'Y']
-        center_indices = [Facelet.U4, Facelet.L4, Facelet.F4, Facelet.R4, Facelet.B4, Facelet.D4]
-
-        for i in range(6):
-            facelet_array[center_indices[i]] = center_colors[i]
-
-        return ''.join(facelet_array)
-    
     def __repr__(self):
         return (f"Corner Permutations: {self.corner_permutations}\n"
                 f"Corner Orientations: {self.corner_orientations}\n"
@@ -324,8 +242,91 @@ def generate_edge_tables():
     print(f"Base coordinate {base_coordinate} and its sub-coordinates written to {filename}")
     return 
 
+
+def generate_corner_tables():
+    corner_coordinate_dict = {}
+    # utilities.py
+    def ternary(n):
+        if n == 0:
+            return '0'
+        ternary = []
+        while n > 0:
+            ternary.append(str(n % 3))
+            n //= 3
+        return ''.join(reversed(ternary))
+
+    for i in range(6561):
+        ternary_str = ternary(i).zfill(8)  # 'zfill(12)' ensures the string is 12 characters long
+
+        corner_orientation = [int(digit) for digit in ternary_str]
+        print(corner_orientation)
+        cube = CubieCube()
+        cube.corner_orientations = corner_orientation
+        
+        base_coordinate = cube.get_corner_orientation_coordinate()
+        
+        sub_coordinates = []
+        for i in [Move.U, Move.L, Move.F, Move.R, Move.B, Move.D]:
+            sub_cube = CubieCube()
+            sub_cube.corner_orientations = corner_orientation
+            for j in range(3):
+                sub_cube.rotate_clockwise(i)
+                sub_coordinates.append(sub_cube.get_corner_orientation_coordinate())
+        corner_coordinate_dict[base_coordinate] = sub_coordinates
+    data =  {k: corner_coordinate_dict[k] for k in sorted(corner_coordinate_dict)}
+    # Write the data to a JSON file
+    filename = "corner_table.json"
+    with open(filename, 'w') as json_file:  # Open in append mode
+        json.dump(data, json_file, indent=4)
+        json_file.write('\n')  # Ensure each dictionary is on a new line
+
+    print(f"Base coordinate {base_coordinate} and its sub-coordinates written to {filename}")
+    return 
+
+def generate_UD_tables():
+    
+    UD_coordinate_dict = {}
+    total = 0
+    for i in range(9):
+        for j in range(i+1,10):
+            for k in range(j+1, 11):
+                for l in range(k+1, 12):
+                    edge_permutations = [0,0,0,0,0,0,0,0,0,0,0,0]
+                    edge_permutations[i] = 8
+                    edge_permutations[j] = 9
+                    edge_permutations[k] = 10
+                    edge_permutations[l] = 11
+
+                    cube = CubieCube()
+                    cube.edge_permutations = edge_permutations
+                    print(edge_permutations)
+
+                    base_coordinate = cube.get_UD_slice_coordinate()
+    
+                    sub_coordinates = []
+                    for m in [Move.U, Move.L, Move.F, Move.R, Move.B, Move.D]:
+                        sub_cube = CubieCube()
+                        sub_cube.edge_permutations = edge_permutations                            
+                        for n in range(3):
+                            sub_cube.rotate_clockwise(m)
+                            sub_coordinates.append(sub_cube.get_UD_slice_coordinate())
+                    UD_coordinate_dict[base_coordinate] = sub_coordinates
+
+    data =  {k: UD_coordinate_dict[k] for k in sorted(UD_coordinate_dict)}
+    # Write the data to a JSON file
+    filename = "UD_table.json"
+    with open(filename, 'w') as json_file:  # Open in append mode
+        json.dump(data, json_file, indent=4)
+        json_file.write('\n')  # Ensure each dictionary is on a new line
+
+    print(f"Base coordinate {base_coordinate} and its sub-coordinates written to {filename}")
+    return 
+
+                    
 def main():
-    generate_edge_tables()
+    #generate_edge_tables()
+    #generate_corner_tables()
+    generate_UD_tables()
     # write code that iterates through all possible edge_orientations 
     # for each of these, calculate the coordinate of that edge. 
     # also calculate the result of the 18 possible moves on that coordinate (using teh cubie to do these rotations )
