@@ -338,16 +338,42 @@ def main():
    #cube.corner_permutations = [4,5,2,3,0,7,1,6]
     # fix the orientation for each face.
     # orienation depends on position???
-    cube.rotate_clockwise(Move.R)
+
     cube.rotate_clockwise(Move.U)
+    cube.rotate_clockwise(Move.R)
+    cube.rotate_clockwise(Move.R)
     cube.rotate_clockwise(Move.F)
-    cube.rotate_clockwise(Move.L)
     cube.rotate_clockwise(Move.B)
     cube.rotate_clockwise(Move.R)
+    cube.rotate_clockwise(Move.B)
+    cube.rotate_clockwise(Move.B)
     cube.rotate_clockwise(Move.R)
+    cube.rotate_clockwise(Move.U)
+    cube.rotate_clockwise(Move.U)
+    cube.rotate_clockwise(Move.L)
+    cube.rotate_clockwise(Move.B)
+    cube.rotate_clockwise(Move.B)
+    cube.rotate_clockwise(Move.R)
+    cube.rotate_clockwise(Move.U)
+    cube.rotate_clockwise(Move.U)
+    cube.rotate_clockwise(Move.U)
     cube.rotate_clockwise(Move.D)
-
- 
+    cube.rotate_clockwise(Move.D)
+    cube.rotate_clockwise(Move.D)
+    cube.rotate_clockwise(Move.R)
+    cube.rotate_clockwise(Move.R)
+    cube.rotate_clockwise(Move.F)
+    cube.rotate_clockwise(Move.R)
+    cube.rotate_clockwise(Move.R)
+    cube.rotate_clockwise(Move.R)
+    cube.rotate_clockwise(Move.L)
+    cube.rotate_clockwise(Move.B)
+    cube.rotate_clockwise(Move.B)
+    cube.rotate_clockwise(Move.U)
+    cube.rotate_clockwise(Move.U)
+    cube.rotate_clockwise(Move.F)
+    cube.rotate_clockwise(Move.F)
+    
     print(cube)
     import main
     main.main(cube.to_facelet_representation())
