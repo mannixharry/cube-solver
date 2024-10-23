@@ -143,7 +143,7 @@ class CubieCube:
             Move.B: [0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1],  # B move flips UB, DB, BR, BL edges
         }
         
-    corner_facelet_indices = [
+    corner_facelet_indices_1 = [
         [Facelet.U6, Facelet.L2, Facelet.F0],  # UFL
         [Facelet.U8, Facelet.F2, Facelet.R0],  # UFR
         [Facelet.U0, Facelet.B2, Facelet.L0],  # UBL
@@ -154,7 +154,7 @@ class CubieCube:
         [Facelet.D8, Facelet.B6, Facelet.R8]   # DBR
     ]
 
-    edge_facelet_indices = [
+    edge_facelet_indices_1 = [
         [Facelet.U7, Facelet.F1],  # UF: U, F
         [Facelet.U3, Facelet.L1],  # UL: U, L
         [Facelet.U1, Facelet.B1],  # UB: U, B
@@ -204,14 +204,14 @@ class CubieCube:
             perm = self.corner_permutations[i]
             orient = self.corner_orientations[i]
             for j in range(3):
-                facelet_array[self.corner_facelet_indices[i][j]] = (corner_colors[perm])[(j+orient)%3]
+                facelet_array[self.corner_facelet_indices_1[i][j]] = (corner_colors[perm])[(j+orient)%3]
 
         # Fill the edges
         for i in range(12):
             perm = self.edge_permutations[i]
             orient = self.edge_orientations[i]
             for j in range(2):
-                facelet_array[self.edge_facelet_indices[i][j]] = edge_colors[perm][(j + orient) % 2]
+                facelet_array[self.edge_facelet_indices_1[i][j]] = edge_colors[perm][(j + orient) % 2]
 
         # Fill the center pieces (fixed colors)
         center_colors = ['W', 'O', 'G', 'R', 'B', 'Y']
@@ -222,6 +222,9 @@ class CubieCube:
 
         return ''.join(facelet_array)
     
+    def load_facelet_representation(self, cube_string):
+        pass
+        
     def __repr__(self):
         return (f"Corner Permutations: {self.corner_permutations}\n"
                 f"Corner Orientations: {self.corner_orientations}\n"
@@ -338,7 +341,7 @@ def main():
    #cube.corner_permutations = [4,5,2,3,0,7,1,6]
     # fix the orientation for each face.
     # orienation depends on position???
-
+    
     cube.rotate_clockwise(Move.U)
     cube.rotate_clockwise(Move.R)
     cube.rotate_clockwise(Move.R)
@@ -397,3 +400,16 @@ print(cube)
 import engine
 engine.main(cube.to_facelet_representation())'''
 
+
+# make this into a formalized cubie-cube representation 
+# builda facelet representation (archive code to do rotations)
+# make a facelet to cubie-cube converter
+# tidy up the 3D engine code
+
+# test the coordinate representation of the cube
+# add a property to cubie cube to allow the UD slices, and other G1 coordinates' pieces to be fetched and recieved by a coordinate cube. 
+
+# test the validity of the g1 tables by converting the coordinates to positions and cycling through the possible moves from that position 
+# add a depth 3 search of the G1 coordiante and asses the searches ability to give  moves to reach G1. 
+
+# after this, add a randomized position generator (with a specified depth)
