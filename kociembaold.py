@@ -168,12 +168,9 @@ class CubieCube:
         [Facelet.B5, Facelet.L3], # BL: B, L
         [Facelet.B3, Facelet.R5]  # BR: B, R
     ]
-
-    def to_facelet_representation(self):
-        facelet_array = ['x'] * 54
-
-        # Define the colors associated with each corner and edge piece
-        corner_colors = [
+    
+    # Define the colours associated with each corner and edge piece
+    corner_colours = [
             ['W', 'O', 'G'],  # UFL
             ['W', 'G', 'R'],  # UFR
             ['W', 'B', 'O'],  # UBL
@@ -184,7 +181,7 @@ class CubieCube:
             ['Y', 'B', 'R'],  # DBR
         ]
 
-        edge_colors = [
+    edge_colours = [
             ['W', 'G'],  # UF
             ['W', 'O'],  # UL
             ['W', 'B'],  # UB
@@ -198,30 +195,59 @@ class CubieCube:
             ['B', 'O'],  # BL
             ['B', 'R'],  # BR
         ]
-
+        
+    def to_facelet_representation(self):
+        facelet_array = ['x'] * 54
         # Fill the corners
         for i in range(8):
             perm = self.corner_permutations[i]
             orient = self.corner_orientations[i]
             for j in range(3):
-                facelet_array[self.corner_facelet_indices[i][j]] = (corner_colors[perm])[(j+orient)%3]
+                facelet_array[self.corner_facelet_indices[i][j]] = (self.corner_colours[perm])[(j+orient)%3]
 
         # Fill the edges
         for i in range(12):
             perm = self.edge_permutations[i]
             orient = self.edge_orientations[i]
             for j in range(2):
-                facelet_array[self.edge_facelet_indices[i][j]] = edge_colors[perm][(j + orient) % 2]
+                facelet_array[self.edge_facelet_indices[i][j]] = self.edge_colours[perm][(j + orient) % 2]
 
-        # Fill the center pieces (fixed colors)
-        center_colors = ['W', 'O', 'G', 'R', 'B', 'Y']
-        center_indices = [Facelet.U4, Facelet.L4, Facelet.F4, Facelet.R4, Facelet.B4, Facelet.D4]
+        # Fill the centre pieces (fixed colours)
+        centre_colours = ['W', 'O', 'G', 'R', 'B', 'Y']
+        centre_indices = [Facelet.U4, Facelet.L4, Facelet.F4, Facelet.R4, Facelet.B4, Facelet.D4]
 
         for i in range(6):
-            facelet_array[center_indices[i]] = center_colors[i]
+            facelet_array[centre_indices[i]] = centre_colours[i]
 
         return ''.join(facelet_array)
     
+    def from_facelet_representation(self, cube_string): 
+        new_corner_permuations = [0] * 8
+        new_corner_orientations = [0] * 8
+        new_edge_permutations = [0] * 12
+        new_edge_orientations = [0] * 12
+
+        facelet_array = list(cube_string)
+        for i, corner_index, in enumerate(self.corner_facelet_indices): 
+            colours = [facelet_array[i] for i in corner_index]
+            orient = -(colours.index('W')  if 'W' in colours else colours.index('Y')) % 3
+            perm =  self.corner_colours.index([colours[(i-orient)%3] for i in range(3)])
+            new_corner_permuations[i] = perm
+            new_corner_orientations[i] = orient
+            
+        for i, edge_index, in enumerate(self.edge_facelet_indices): 
+            colours = [facelet_array[i] for i in edge_index]
+            orient = -(colours.index('W')  if 'W' in colours else colours.index('Y') if 'Y' in colours else colours.index('G') if 'G' in colours else colours.index('B')) % 2
+            perm =  self.edge_colours.index([colours[(i-orient)%2] for i in range(2)])
+            new_edge_permutations[i] = perm
+            new_edge_orientations[i] = orient
+        
+        self.corner_permutations = new_corner_permuations
+        self.corner_orientations = new_corner_orientations
+        self.edge_permutations = new_edge_permutations
+        self.edge_orientations = new_edge_orientations
+        
+
     def __repr__(self):
         return (f"Corner Permutations: {self.corner_permutations}\n"
                 f"Corner Orientations: {self.corner_orientations}\n"
@@ -338,8 +364,8 @@ def main():
    #cube.corner_permutations = [4,5,2,3,0,7,1,6]
     # fix the orientation for each face.
     # orienation depends on position???
-
-    cube.rotate_clockwise(Move.U)
+    
+    '''cube.rotate_clockwise(Move.U)
     cube.rotate_clockwise(Move.R)
     cube.rotate_clockwise(Move.R)
     cube.rotate_clockwise(Move.F)
@@ -372,11 +398,32 @@ def main():
     cube.rotate_clockwise(Move.U)
     cube.rotate_clockwise(Move.U)
     cube.rotate_clockwise(Move.F)
+    cube.rotate_clockwise(Move.F)'''
+    
+    cube.rotate_clockwise(Move.U)
+    cube.rotate_clockwise(Move.U)
+    cube.rotate_clockwise(Move.D)
+    cube.rotate_clockwise(Move.D)
+    cube.rotate_clockwise(Move.L)
+    cube.rotate_clockwise(Move.L)
+    cube.rotate_clockwise(Move.R)
+    cube.rotate_clockwise(Move.R)
     cube.rotate_clockwise(Move.F)
+    cube.rotate_clockwise(Move.F)
+    cube.rotate_clockwise(Move.B)
+    cube.rotate_clockwise(Move.B)
+    
+    
     
     print(cube)
+    cube.from_facelet_representation(cube.to_facelet_representation())
+    
+    print(cube)
+    
     import main
     main.main(cube.to_facelet_representation())
+    
+    
     #generate_edge_tables()
     # write code that iterates through all possible edge_orientations 
     # for each of these, calculate the coordinate of that edge. 

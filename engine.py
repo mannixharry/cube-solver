@@ -68,7 +68,6 @@ class Renderer:
         else: 
             pygame.draw.polygon(self.screen, 'black', [a,b,c,d])
         
-        
     def display_fps(self, fps):
         fps_text = self.font.render(f'FPS: {int(fps)}', True, self.colour)
         self.screen.blit(fps_text, (10, 10))
@@ -232,7 +231,6 @@ class CubeManager:
             'U' : [53, 33, 20, 50, 31, 17, 48, 30, 15],
             'D' : [35, 23, 2, 37, 24, 4, 40, 26, 7],
             'F' : [47, 29, 14, 42, 27, 9, 34, 22, 1],
-            #'B' : [52, 32, 19, 45, 28, 12, 39, 25, 6],
             'B' : [19, 32, 52, 12, 28, 45, 6, 25, 39],
             'L' : [54, 51, 49, 46, 44, 43, 41, 38, 36],
             'R' : [16, 18, 21, 10, 11, 13, 3, 5, 8]
@@ -309,6 +307,7 @@ class CubeManager:
                         self.faces[self.face_index][i].rectangles[j].c = rotated_c
 
                         self.faces[self.face_index][i].rectangles[j].vertices = [rotated_a, rotated_b, rotated_c, rotated_d]
+                        
 def main(cube_string= 'WWWWWWWWWOOOOOOOOOGGGGGGGGGRRRRRRRRRBBBBBBBBBYYYYYYYYY'):
 
     renderer = Renderer()
