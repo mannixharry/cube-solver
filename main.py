@@ -323,8 +323,6 @@ class CubeManager:
             indices = faces_dict[symbol]
             for j, colour in enumerate(cube_string[i*9:(i+1)*9]):
                 index = indices[j] - 1 
-                #print(index)
-                #print(self.outer_rectangles[index])
                 rect_info = self.outer_rectangles[index][2]
                 cube_index, rect_index = divmod(rect_info, 6)
                 self.cubes[cube_index].rectangles[rect_index].piece_colour = colour_map[colour]
@@ -411,6 +409,7 @@ class CubeManager:
                         self.faces[self.face_index][i].rectangles[j].c = rotated_c
 
                         self.faces[self.face_index][i].rectangles[j].vertices = [rotated_a, rotated_b, rotated_c, rotated_d]
+                        
 def main(cube_string ='WWWWWWWWWOOOOOOOOOGGGGGGGGGRRRRRRRRRBBBBBBBBBYYYYYYYYY'):
 
     renderer = Renderer()
@@ -551,4 +550,3 @@ def main(cube_string ='WWWWWWWWWOOOOOOOOOGGGGGGGGGRRRRRRRRRBBBBBBBBBYYYYYYYYY'):
 if __name__ == "__main__":
     main()
 
-# create some solver class that uses rotator to search for improved positions 
