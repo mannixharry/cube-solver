@@ -1,7 +1,8 @@
 from data import *
+import math 
 
 class CubieCube:
-    def __init__(self):
+    def __init__(self, cube_input=None):
         
         self.corner_permutations = list(range(8))
         self.corner_orientations = [0] * 8
@@ -18,7 +19,16 @@ class CubieCube:
         self.corner_facelet_indices = Data.corner_facelet_indices
         self.edge_facelet_indices = Data.edge_facelet_indices
         
-        
+        if cube_input is not None:
+            if isinstance(cube_input, FaceletCube):
+                cubieCube = cube_input.to_cubie_cube()
+                self.corner_permutations = cubieCube.corner_permutations
+                self.corner_orientations = cubieCube.corner_orientations
+                self.edge_permutations = cubieCube.edge_permutations
+                self.edge_orientations = cubieCube.edge_orientations
+            else:
+                raise TypeError('cube_input does not match an expected type')
+                    
     def rotate_clockwise(self, move):
 
         corner_permutation_table = self.corner_permutation_tables[move]
@@ -30,7 +40,6 @@ class CubieCube:
 
         self.corner_permutations = new_corner_permutations
         self.corner_orientations = new_corner_orientations
-
 
         corner_orientation_table = self.corner_orientation_tables[move]
         for i in range(8):
@@ -60,13 +69,22 @@ class CubieCube:
                 f"Edge Orientations: {self.edge_orientations}\n")
         
 class FaceletCube:
-    def __init__(self, facelet_str=None):
-        self.facelets = ['x'] * 54 if facelet_str is None else list(facelet_str)
-    
+    def __init__(self, cube_input=None):
+        
         self.corner_colours = Data.corner_colours
         self.edge_colours = Data.edge_colours
         self.corner_facelet_indices = Data.corner_facelet_indices
-        self.edge_facelet_indices = Data.edge_facelet_indices    
+        self.edge_facelet_indices = Data.edge_facelet_indices 
+        
+        self.facelets = ['x'] * 54 
+        if cube_input is not None:
+            if isinstance(cube_input, str):
+                self.facelets = list(cube_input)
+            elif isinstance(cube_input, CubieCube):
+                self.facelets = self.from_cubie_cube(cube_input)
+            else:
+                raise TypeError('cube_input does not match an expected type')
+           
         
     def from_cubie_cube(self, cubie_cube):
         facelets = ['x'] * 54
@@ -91,12 +109,9 @@ class FaceletCube:
 
         for i in range(6):
             facelets[centre_indices[i]] = centre_colours[i]
-
-        self.facelets = facelets
-        return ''.join(facelets)
+            
+        return facelets
     
-        
-
     def to_cubie_cube(self):
         
         cubie_cube = CubieCube()
@@ -129,8 +144,62 @@ class FaceletCube:
 
     def __repr__(self):
         return ''.join(self.facelets)
+
   
-  
+class CoordCube:
+    
+    def __init__(self, cube_input=None):
+        #  Define the G1 coordinates in here
+        # and the G2 coordinates 
+        # write code to convert between CubieCube and G1 vice versa. 
+        # write code to simulate rotations of each G1 coordinate, and tabulate the resultant coordinates. 
+        # write code to import this table and use it. 
+        # do the same for G2.
+        # we should then be able to implement Kociemba's alg. 
+        
+        self.corner_permutations = list(range(8))
+        self.corner_orientations = [0] * 8
+        self.edge_permutations = list(range(12))
+        self.edge_orientations = [0] * 12
+        
+        if cube_input is not None:
+            if isinstance(cube_input, CubieCube):
+                self.corner_permutations = cube_input.corner_permutations
+                self.corner_orientations = cube_input.corner_orientations
+                self.edge_permutations = cube_input.edge_permutations
+                self.edge_orientations = cube_input.edge_orientations 
+                
+        self.G1_coordinate = (self.corner_orientation_coordinate, self.edge_orientation_coordinate, self.UD_slice_coordinate)
+    
+    @property
+    def corner_orientation_coordinate(self):
+        # Converts corner orientations to a unique integer in the range 0 - 3^7-1
+        return sum(self.corner_orientations[i] * (3 ** i) for i in range(7))
+
+    @property
+    def edge_orientation_coordinate(self):
+        # Converts corner orientations to a unique integer in the range 0 - 2^11-1
+        return sum(self.edge_orientations[i] * (2 ** i) for i in range(11))
+    
+    @property
+    def UD_slice_coordinate(self):
+        # Converts corner orientations to a unique integer in the range 0 - 2^11-1
+        slice_indices = [1 if i in [8, 9, 10, 11] else 0 for i in self.edge_permutations]
+        UD_slice_coordinate = 0
+        occupied_count = 0
+        start_counting = False  # Flag to start counting after the first '1'
+
+        for i in range(12):
+            if not start_counting:
+                if slice_indices[i] == 1:
+                    start_counting = True
+            elif slice_indices[i] == 0:
+                UD_slice_coordinate += math.comb(i, occupied_count) 
+            else:
+                occupied_count += 1 
+             
+        return UD_slice_coordinate
+
 def main():
     
     
@@ -171,17 +240,16 @@ def main():
     cube.rotate_clockwise(Move.F)
     cube.rotate_clockwise(Move.F)
     
+        
     import main
-    facelet = FaceletCube()
-    main.main(facelet.from_cubie_cube(cube))
-    
-    
+
+    main.main(str(FaceletCube(cube)))
+
     #generate_edge_tables()
     # write code that iterates through all possible edge_orientations 
     # for each of these, calculate the coordinate of that edge. 
     # also calculate the result of the 18 possible moves on that coordinate (using teh cubie to do these rotations )
-    # store the results in a file called edge_table 
-    return       
+    # store the results in a file called edge_table     
 
 if __name__ == '__main__':
     main()
