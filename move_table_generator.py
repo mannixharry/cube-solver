@@ -1,13 +1,10 @@
 import os 
 import json
 import itertools
-
 import cube 
-
 
 class MoveTableGenerator:
     def __init__(self, regenerate_tables=False):
-        
         
         generate_corner_orientation_table = True if os.path.isfile('corner_orientation_table') else False
         generate_edge_orientation_table = True if os.path.isfile('edge_orientation_table') else False
@@ -142,4 +139,5 @@ class MoveTableGenerator:
         
         return UD_slice_permutation_table
 
-MoveTableGenerator = MoveTableGenerator(regenerate_tables=True)
+move_tables = MoveTableGenerator(regenerate_tables=True)
+

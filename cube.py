@@ -1,6 +1,11 @@
 from data import *
 import math 
 
+import os 
+import json
+import itertools
+import cube 
+
 class CubieCube:
     def __init__(self, cube_input=None):
         
@@ -30,43 +35,45 @@ class CubieCube:
                 raise TypeError('cube_input does not match an expected type')
                     
     def rotate_clockwise(self, move):
+        move_count = 1 + (move // 6)
+        move = move % 6 
+        for m in range(move_count):
+            corner_permutation_table = self.corner_permutation_tables[move]
+            new_corner_permutations = [0] * 8
+            new_corner_orientations = [0] * 8
+            for i in range(8):
+                new_corner_permutations[i] = self.corner_permutations[corner_permutation_table[i]]
+                new_corner_orientations[i] = self.corner_orientations[corner_permutation_table[i]]
 
-        corner_permutation_table = self.corner_permutation_tables[move]
-        new_corner_permutations = [0] * 8
-        new_corner_orientations = [0] * 8
-        for i in range(8):
-            new_corner_permutations[i] = self.corner_permutations[corner_permutation_table[i]]
-            new_corner_orientations[i] = self.corner_orientations[corner_permutation_table[i]]
+            self.corner_permutations = new_corner_permutations
+            self.corner_orientations = new_corner_orientations
 
-        self.corner_permutations = new_corner_permutations
-        self.corner_orientations = new_corner_orientations
+            corner_orientation_table = self.corner_orientation_tables[move]
+            for i in range(8):
+                new_corner_orientations[i] = (self.corner_orientations[i] + corner_orientation_table[i]) % 3 
+            self.corner_orientations = new_corner_orientations
 
-        corner_orientation_table = self.corner_orientation_tables[move]
-        for i in range(8):
-            new_corner_orientations[i] = (self.corner_orientations[i] + corner_orientation_table[i]) % 3 
-        self.corner_orientations = new_corner_orientations
+            edge_permutation_table = self.edge_permutation_tables[move]
+            new_edge_permutations = [0] * 12
+            new_edge_orientations = [0] * 12
+            for i in range(12):
+                new_edge_permutations[i] = self.edge_permutations[edge_permutation_table[i]]
+                new_edge_orientations[i] = self.edge_orientations[edge_permutation_table[i]]
 
-        edge_permutation_table = self.edge_permutation_tables[move]
-        new_edge_permutations = [0] * 12
-        new_edge_orientations = [0] * 12
-        for i in range(12):
-            new_edge_permutations[i] = self.edge_permutations[edge_permutation_table[i]]
-            new_edge_orientations[i] = self.edge_orientations[edge_permutation_table[i]]
+            self.edge_permutations = new_edge_permutations
+            self.edge_orientations = new_edge_orientations
 
-        self.edge_permutations = new_edge_permutations
-        self.edge_orientations = new_edge_orientations
+            edge_orientation_table = self.edge_orientation_tables[move]
+            for i in range(12):
+                new_edge_orientations[i] = (self.edge_orientations[i] + edge_orientation_table[i]) % 2 
+            self.edge_orientations = new_edge_orientations
+            
 
-        edge_orientation_table = self.edge_orientation_tables[move]
-        for i in range(12):
-            new_edge_orientations[i] = (self.edge_orientations[i] + edge_orientation_table[i]) % 2 
-        self.edge_orientations = new_edge_orientations
-        
-
-    def __repr__(self):
-        return (f"Corner Permutations: {self.corner_permutations}\n"
-                f"Corner Orientations: {self.corner_orientations}\n"
-                f"Edge Permutations: {self.edge_permutations}\n"
-                f"Edge Orientations: {self.edge_orientations}\n")
+        def __repr__(self):
+            return (f"Corner Permutations: {self.corner_permutations}\n"
+                    f"Corner Orientations: {self.corner_orientations}\n"
+                    f"Edge Permutations: {self.edge_permutations}\n"
+                    f"Edge Orientations: {self.edge_orientations}\n")
         
 class FaceletCube:
     def __init__(self, cube_input=None):
@@ -149,41 +156,71 @@ class FaceletCube:
 class CoordCube:
     
     def __init__(self, cube_input=None):
-        #  Define the G1 coordinates in here
-        # and the G2 coordinates 
-        # write code to convert between CubieCube and G1 vice versa. 
-        # write code to simulate rotations of each G1 coordinate, and tabulate the resultant coordinates. 
-        # write code to import this table and use it. 
-        # do the same for G2.
-        # we should then be able to implement Kociemba's alg. 
-        
+
+        # Import move tables for rotations and transitions
+        self.corner_orientation_table = Move_Tables.corner_orientation_table
+        self.edge_orientation_table = Move_Tables.edge_orientation_table
+        self.UD_slice_permutation_table = Move_Tables.UD_slice_permutation_table
+
+        # Default values if no cube input is provided
         self.corner_permutations = list(range(8))
         self.corner_orientations = [0] * 8
         self.edge_permutations = list(range(12))
         self.edge_orientations = [0] * 12
+
+        self.corner_orientation_coordinate = 0
+        self.edge_orientation_coordinate = 0
+        self.UD_slice_coordinate = 0
         
+        # Load cube configuration from CubieCube input if provided
         if cube_input is not None:
+            if isinstance(cube_input, CoordCube):
+                self.corner_orientation_coordinate = cube_input.corner_orientation_coordinate
+                self.edge_orientation_coordinate = cube_input.edge_orientation_coordinate
+                self.UD_slice_coordinate = cube_input.UD_slice_coordinate
             if isinstance(cube_input, CubieCube):
                 self.corner_permutations = cube_input.corner_permutations
                 self.corner_orientations = cube_input.corner_orientations
                 self.edge_permutations = cube_input.edge_permutations
                 self.edge_orientations = cube_input.edge_orientations 
-                
-        self.G1_coordinate = (self.corner_orientation_coordinate, self.edge_orientation_coordinate, self.UD_slice_coordinate)
-    
-    @property
-    def corner_orientation_coordinate(self):
-        # Converts corner orientations to a unique integer in the range 0 - 3^7-1
+        
+                # Initialize coordinates from the corner and edge orientations
+                self.corner_orientation_coordinate = self.calculate_corner_orientation_coordinate()
+                self.edge_orientation_coordinate = self.calculate_edge_orientation_coordinate()
+                self.UD_slice_coordinate = self.calculate_UD_slice_coordinate()
+
+    def rotate_clockwise(self, move):
+        # Dictionary to map moves to indices for lookup
+        move_conversion_dict = {
+            0: 0, 6: 1, 12: 2,
+            1: 3, 7: 4, 13: 5,
+            2: 6, 8: 7, 14: 8,
+            3: 9, 9: 10, 15: 11,
+            4: 12, 10: 13, 16: 14,
+            5: 15, 11: 16, 17: 17
+        }
+
+        move_integer = move_conversion_dict[move]
+
+        # Update coordinates based on move
+        self.corner_orientation_coordinate = self.corner_orientation_table[str(self.corner_orientation_coordinate)][move_integer]
+        self.edge_orientation_coordinate = self.edge_orientation_table[str(self.edge_orientation_coordinate)][move_integer]
+        self.UD_slice_coordinate = self.UD_slice_permutation_table[str(self.UD_slice_coordinate)][move_integer]
+
+    def __repr__(self):
+        return str((self.corner_orientation_coordinate, self.edge_orientation_coordinate, self.UD_slice_coordinate))
+    # Calculation methods for each coordinate
+
+    def calculate_corner_orientation_coordinate(self):
+        # Converts corner orientations to a unique integer (range 0 to 3^7-1)
         return sum(self.corner_orientations[i] * (3 ** i) for i in range(7))
 
-    @property
-    def edge_orientation_coordinate(self):
-        # Converts corner orientations to a unique integer in the range 0 - 2^11-1
+    def calculate_edge_orientation_coordinate(self):
+        # Converts edge orientations to a unique integer (range 0 to 2^11-1)
         return sum(self.edge_orientations[i] * (2 ** i) for i in range(11))
     
-    @property
-    def UD_slice_coordinate(self):
-        # Converts corner orientations to a unique integer in the range 0 - 2^11-1
+    def calculate_UD_slice_coordinate(self):
+        # Converts UD slice positions to a unique integer
         slice_indices = [1 if i in [8, 9, 10, 11] else 0 for i in self.edge_permutations]
         UD_slice_coordinate = 0
         occupied_count = 0
@@ -199,57 +236,42 @@ class CoordCube:
                 occupied_count += 1 
              
         return UD_slice_coordinate
+    
 
 def main():
     
     
     cube = CubieCube()
+    coordCube = CoordCube(cube)
+    coordCube.rotate_clockwise(Move.L)
+
+    print(coordCube)
     
     cube.rotate_clockwise(Move.U)
-    cube.rotate_clockwise(Move.R)
-    cube.rotate_clockwise(Move.R)
+    cube.rotate_clockwise(Move.R2)
     cube.rotate_clockwise(Move.F)
     cube.rotate_clockwise(Move.B)
     cube.rotate_clockwise(Move.R)
-    cube.rotate_clockwise(Move.B)
-    cube.rotate_clockwise(Move.B)
+    cube.rotate_clockwise(Move.B2)
     cube.rotate_clockwise(Move.R)
-    cube.rotate_clockwise(Move.U)
-    cube.rotate_clockwise(Move.U)
+    cube.rotate_clockwise(Move.U2)
     cube.rotate_clockwise(Move.L)
-    cube.rotate_clockwise(Move.B)
-    cube.rotate_clockwise(Move.B)
+    cube.rotate_clockwise(Move.B2)
     cube.rotate_clockwise(Move.R)
-    cube.rotate_clockwise(Move.U)
-    cube.rotate_clockwise(Move.U)
-    cube.rotate_clockwise(Move.U)
-    cube.rotate_clockwise(Move.D)
-    cube.rotate_clockwise(Move.D)
-    cube.rotate_clockwise(Move.D)
-    cube.rotate_clockwise(Move.R)
-    cube.rotate_clockwise(Move.R)
+    cube.rotate_clockwise(Move.U3)
+    cube.rotate_clockwise(Move.D3)
+    cube.rotate_clockwise(Move.R2)
     cube.rotate_clockwise(Move.F)
-    cube.rotate_clockwise(Move.R)
-    cube.rotate_clockwise(Move.R)
-    cube.rotate_clockwise(Move.R)
+    cube.rotate_clockwise(Move.R3)
     cube.rotate_clockwise(Move.L)
-    cube.rotate_clockwise(Move.B)
-    cube.rotate_clockwise(Move.B)
-    cube.rotate_clockwise(Move.U)
-    cube.rotate_clockwise(Move.U)
-    cube.rotate_clockwise(Move.F)
-    cube.rotate_clockwise(Move.F)
+    cube.rotate_clockwise(Move.B2)
+    cube.rotate_clockwise(Move.U2)
+    cube.rotate_clockwise(Move.F2)
     
-        
     import main
 
+  
     main.main(str(FaceletCube(cube)))
-
-    #generate_edge_tables()
-    # write code that iterates through all possible edge_orientations 
-    # for each of these, calculate the coordinate of that edge. 
-    # also calculate the result of the 18 possible moves on that coordinate (using teh cubie to do these rotations )
-    # store the results in a file called edge_table     
 
 if __name__ == '__main__':
     main()

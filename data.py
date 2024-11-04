@@ -1,4 +1,5 @@
 from enum import IntEnum
+import json
 
 class Corner(IntEnum):
     UFL = 0  # Upper Front Left
@@ -31,6 +32,18 @@ class Move(IntEnum):
     D = 3
     R = 4
     B = 5
+    U2 = 6
+    F2 = 7
+    L2 = 8
+    D2 = 9
+    R2 = 10
+    B2 = 11
+    U3 = 12 
+    F3 = 13
+    L3 = 14
+    D3 = 15
+    R3 = 16
+    B3 = 17 
 
 class Facelet(IntEnum):
     U0 = 0
@@ -89,6 +102,8 @@ class Facelet(IntEnum):
     D8 = 53
 
 class Data:
+
+    #move_tables = move_tables.MoveTableGenerator()
     
     corner_permutation_tables = {
             Move.U : [1, 3, 0, 2, 4, 5, 6, 7],  # UFR -> UFL, UBR -> UFR, UFL -> UBL, UBL -> UBR
@@ -179,4 +194,14 @@ class Data:
             ['B', 'O'],  # BL
             ['B', 'R'],  # BR
         ]
-
+class Move_Tables:
+    try: 
+        with open('corner_orientation_table.json', 'r') as corner_orientation_file:
+                corner_orientation_table = json.load(corner_orientation_file)
+        with open('edge_orientation.json', 'r') as edge_orientation_file:
+                edge_orientation_table = json.load(edge_orientation_file)
+        with open('UD_slice_permutation.json', 'r') as UD_slice_permutation_file:
+            UD_slice_permutation_table = json.load(UD_slice_permutation_file)
+    except: 
+        corner_orientation_table = edge_orientation_table = UD_slice_permutation_table = None
+        print('Move Tables not found')
