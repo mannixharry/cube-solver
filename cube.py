@@ -189,6 +189,8 @@ class CoordCube:
                 self.edge_orientation_coordinate = self.calculate_edge_orientation_coordinate()
                 self.UD_slice_coordinate = self.calculate_UD_slice_coordinate()
 
+    def get_g1_coordinates(self):
+        return (self.corner_orientation_coordinate, self.edge_orientation_coordinate, self.UD_slice_coordinate)
     def rotate_clockwise(self, move):
         # Dictionary to map moves to indices for lookup
         move_conversion_dict = {

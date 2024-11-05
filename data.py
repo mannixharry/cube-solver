@@ -194,6 +194,10 @@ class Data:
             ['B', 'O'],  # BL
             ['B', 'R'],  # BR
         ]
+    
+    move_notation = ['U', 'F', 'L', 'D', 'R', 'B', 'U2', 'F2', 'L2', 'D2', 'R2', 'B2', 'U3', 'F3', 'L3', 'D3', 'R3', 'B3']
+
+    
 class Move_Tables:
     try: 
         with open('corner_orientation_table.json', 'r') as corner_orientation_file:

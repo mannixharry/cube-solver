@@ -63,7 +63,7 @@ class MoveTableGenerator:
             parent_orientation_coordinate = cube.CoordCube(parent_cube).corner_orientation_coordinate
 
             child_orientation_coordinates = []
-            for move_type in [cube.Move.U, cube.Move.L, cube.Move.F, cube.Move.R, cube.Move.B, cube.Move.D]:
+            for move_type in [cube.Move.U, cube.Move.F, cube.Move.L, cube.Move.D, cube.Move.R, cube.Move.B]:
                 
                 base_cube = cube.CubieCube()
                 base_cube.corner_orientations = cubie_corner_orientation
@@ -83,14 +83,13 @@ class MoveTableGenerator:
         for generating_orientation_coordinate in range(2**11):
             binary_form = self.decimal_to_binary(generating_orientation_coordinate)
             cubie_edge_orientation = binary_form + [-sum(binary_form)%2] # Add a number to make the sum divisible by two (to have a valid orientation)
-            
             parent_cube = cube.CubieCube()
             parent_cube.edge_orientations = cubie_edge_orientation
             
             parent_orientation_coordinate = cube.CoordCube(parent_cube).edge_orientation_coordinate
 
             child_orientation_coordinates = []
-            for move_type in [cube.Move.U, cube.Move.L, cube.Move.F, cube.Move.R, cube.Move.B, cube.Move.D]:
+            for move_type in [cube.Move.U, cube.Move.F, cube.Move.L, cube.Move.D, cube.Move.R, cube.Move.B]:
                 
                 base_cube = cube.CubieCube()
                 base_cube.edge_orientations = cubie_edge_orientation
@@ -125,7 +124,7 @@ class MoveTableGenerator:
             print(parent_UD_slice_coordinate)
 
             child_UD_slice_coordinates = []
-            for move_type in [cube.Move.U, cube.Move.L, cube.Move.F, cube.Move.R, cube.Move.B, cube.Move.D]:
+            for move_type in [cube.Move.U, cube.Move.F, cube.Move.L, cube.Move.D, cube.Move.R, cube.Move.B]:
 
                 base_cube = cube.CubieCube()
                 base_cube.edge_permutations = cubie_UD_permutations
