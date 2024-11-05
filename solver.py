@@ -82,28 +82,15 @@ class G1Solver:
 
 # Usage:
 test_cube = cube.CubieCube()
-test_cube.rotate_clockwise(Move.R2)
-test_cube.rotate_clockwise(Move.U)
-test_cube.rotate_clockwise(Move.F)
-test_cube.rotate_clockwise(Move.B)
 test_cube.rotate_clockwise(Move.R)
-test_cube.rotate_clockwise(Move.B2)
-test_cube.rotate_clockwise(Move.R)
+test_cube.rotate_clockwise(Move.L3)
 test_cube.rotate_clockwise(Move.U2)
-test_cube.rotate_clockwise(Move.L)
-test_cube.rotate_clockwise(Move.B2)
-test_cube.rotate_clockwise(Move.R)
-test_cube.rotate_clockwise(Move.U3)
-test_cube.rotate_clockwise(Move.D3)
-test_cube.rotate_clockwise(Move.R2)
 test_cube.rotate_clockwise(Move.F)
-test_cube.rotate_clockwise(Move.R3)
-test_cube.rotate_clockwise(Move.L)
-test_cube.rotate_clockwise(Move.B2)
-test_cube.rotate_clockwise(Move.U2)
-test_cube.rotate_clockwise(Move.F2)
-    
 
+
+
+import main
+main.main(str(cube.FaceletCube(test_cube)))
 initial_state = cube.CoordCube(test_cube)  # Starting state, assuming this is an unsolved cube in G1
 solver = G1Solver()
 solution_moves = solver.ida_star(initial_state)

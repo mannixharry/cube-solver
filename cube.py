@@ -161,6 +161,9 @@ class CoordCube:
         self.corner_orientation_table = Move_Tables.corner_orientation_table
         self.edge_orientation_table = Move_Tables.edge_orientation_table
         self.UD_slice_permutation_table = Move_Tables.UD_slice_permutation_table
+        #self.main_edge_permutation_coordinate_table = Move_Tables.main_edge_permutation_table
+        #self.UD_edge_permutation_coordinate_table = Move_Tables.UD_edge_permutation_table
+        #self.corner_permutation_coordinate_table = Move_Tables.corner_permutation_table
 
         # Default values if no cube input is provided
         self.corner_permutations = list(range(8))
@@ -171,6 +174,9 @@ class CoordCube:
         self.corner_orientation_coordinate = 0
         self.edge_orientation_coordinate = 0
         self.UD_slice_coordinate = 0
+        self.main_edge_permutation_coordinate = 0
+        self.UD_edge_permutation_coordinate = 0
+        self.corner_permutation_coordinate = 0
         
         # Load cube configuration from CubieCube input if provided
         if cube_input is not None:
@@ -178,6 +184,10 @@ class CoordCube:
                 self.corner_orientation_coordinate = cube_input.corner_orientation_coordinate
                 self.edge_orientation_coordinate = cube_input.edge_orientation_coordinate
                 self.UD_slice_coordinate = cube_input.UD_slice_coordinate
+                self.main_edge_permutation_coordinate = cube_input.main_edge_permutation_coordinate
+                self.UD_edge_permutation_coordinate = cube_input.UD_edge_permutation_coordinate
+                self.corner_permutation_coordinate = cube_input.corner_permutation_coordinate
+                
             if isinstance(cube_input, CubieCube):
                 self.corner_permutations = cube_input.corner_permutations
                 self.corner_orientations = cube_input.corner_orientations
@@ -188,9 +198,16 @@ class CoordCube:
                 self.corner_orientation_coordinate = self.calculate_corner_orientation_coordinate()
                 self.edge_orientation_coordinate = self.calculate_edge_orientation_coordinate()
                 self.UD_slice_coordinate = self.calculate_UD_slice_coordinate()
+                #self.main_edge_permutation_coordinate = self.calculate_main_edge_permutation_coordinate()
+                #self.UD_edge_permutation_coordinate = self.calculate_cube_input.UD_edge_permutation_coordinate()
+                #self.corner_permutation_coordinate = self.calculate_cube_input.corner_permutation_coordinate()
 
     def get_g1_coordinates(self):
         return (self.corner_orientation_coordinate, self.edge_orientation_coordinate, self.UD_slice_coordinate)
+    
+    def get_g2_coordinates(self):
+        return (self.corner_permutation_coordinate, self.main_edge_permutation_coordinate, self.UD_edge_permutation_coordinate)
+    
     def rotate_clockwise(self, move):
         # Dictionary to map moves to indices for lookup
         move_conversion_dict = {
@@ -208,9 +225,12 @@ class CoordCube:
         self.corner_orientation_coordinate = self.corner_orientation_table[str(self.corner_orientation_coordinate)][move_integer]
         self.edge_orientation_coordinate = self.edge_orientation_table[str(self.edge_orientation_coordinate)][move_integer]
         self.UD_slice_coordinate = self.UD_slice_permutation_table[str(self.UD_slice_coordinate)][move_integer]
+        #self.main_edge_permutation_coordinate = self.main_edge_permutation_table[str(self.main_edge_permutation_coordinate)][move_integer]
+        #self.UD_edge_permutation_coordinate = self.UD_edge_permutation_table[str(self.UD_edge_permutation_table)][move_integer]
+        #self.corner_permutation_coordinate = self.corner_permutation_table[str(self.corner_permutation_table)][move_integer]
 
     def __repr__(self):
-        return str((self.corner_orientation_coordinate, self.edge_orientation_coordinate, self.UD_slice_coordinate))
+        return str((self.corner_orientation_coordinate, self.edge_orientation_coordinate, self.UD_slice_coordinate, self.main_edge_permutation_coordinate, self.UD_edge_permutation_coordinate, self.corner_permutation_coordinate))
     # Calculation methods for each coordinate
 
     def calculate_corner_orientation_coordinate(self):
@@ -239,7 +259,30 @@ class CoordCube:
              
         return UD_slice_coordinate
     
+    def calculate_corner_permutation_coordinate(self):
+        corner_permutation_coordinate = 0
+        for i in range(8):
+            # Count elements to the right of i that are smaller than element i
+            smaller_count = sum(1 for j in range(i) if self.corner_permutations[j] > self.corner_permutations[i])
+            corner_permutation_coordinate += smaller_count * math.factorial(i)
+        return corner_permutation_coordinate
 
+    def calculate_main_edge_permutation_coordinate(self):
+        main_edge_permutation_coordinate = 0
+        for i in range(8):
+            # Count elements to the right of i that are smaller than element i
+            smaller_count = sum(1 for j in range(i) if self.edge_permutations[j] > self.edge_permutations[i])
+            main_edge_permutation_coordinate += smaller_count * math.factorial(i)
+        return main_edge_permutation_coordinate
+
+    def calculate_UD_edge_permutation_coordinate(self):
+        UD_edge_permutation_coordinate = 0
+        for i in range(4):
+            # Similar logic but for UD edges
+            smaller_count = sum(1 for j in range(i) if self.edge_permutations[j + 8] > self.edge_permutations[i + 8])
+            UD_edge_permutation_coordinate += smaller_count * math.factorial(i)
+        return UD_edge_permutation_coordinate
+    
 def main():
     
     
@@ -247,7 +290,7 @@ def main():
     coordCube = CoordCube(cube)
     coordCube.rotate_clockwise(Move.L)
 
-    print(coordCube)
+    #print(coordCube)
     
     cube.rotate_clockwise(Move.U)
     cube.rotate_clockwise(Move.R2)
@@ -272,8 +315,9 @@ def main():
     
     import main
 
-  
-    main.main(str(FaceletCube(cube)))
+    x = coordCube.calculate_corner_permutation_coordinate()
+    print(x)
+    #main.main(str(FaceletCube(cube)))
 
 if __name__ == '__main__':
     main()
