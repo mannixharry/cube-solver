@@ -197,15 +197,23 @@ class Data:
     
     move_notation = ['U', 'F', 'L', 'D', 'R', 'B', 'U2', 'F2', 'L2', 'D2', 'R2', 'B2', 'U3', 'F3', 'L3', 'D3', 'R3', 'B3']
 
-    
+
+
 class Move_Tables:
     try: 
         with open('corner_orientation_table.json', 'r') as corner_orientation_file:
-                corner_orientation_table = json.load(corner_orientation_file)
-        with open('edge_orientation.json', 'r') as edge_orientation_file:
-                edge_orientation_table = json.load(edge_orientation_file)
-        with open('UD_slice_permutation.json', 'r') as UD_slice_permutation_file:
+            corner_orientation_table = json.load(corner_orientation_file)
+        with open('edge_orientation_table.json', 'r') as edge_orientation_file:
+            edge_orientation_table = json.load(edge_orientation_file)
+        with open('UD_slice_permutation_table.json', 'r') as UD_slice_permutation_file:
             UD_slice_permutation_table = json.load(UD_slice_permutation_file)
-    except: 
+        with open('UD_slice_edge_permutation_table.json', 'r') as UD_slice_edge_permutation_file:
+            UD_slice_edge_permutation_table = json.load(UD_slice_edge_permutation_file)
+        with open('main_edge_permutation_table.json', 'r') as main_edge_permutation_file:
+            main_edge_permutation_table = json.load(main_edge_permutation_file)
+        with open('corner_permutation_table.json', 'r') as corner_permutation_file:
+            corner_permutation_table = json.load(corner_permutation_file)
+    except FileNotFoundError: 
         corner_orientation_table = edge_orientation_table = UD_slice_permutation_table = None
-        print('Move Tables not found')
+        corner_udslice_edge_table = mainedge_udslice_edge_table = None
+        print('One or more move tables not found')

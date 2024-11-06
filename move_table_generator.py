@@ -5,32 +5,25 @@ import cube
 
 class MoveTableGenerator:
     def __init__(self, regenerate_tables=False):
-        
-        generate_corner_orientation_table = True if os.path.isfile('corner_orientation_table') else False
-        generate_edge_orientation_table = True if os.path.isfile('edge_orientation_table') else False
-        generate_UD_slice_table = True if os.path.isfile('UD_slice_table') else False                
-        
-        if regenerate_tables == True:
-            generate_corner_orientation_table = generate_edge_orientation_table = generate_UD_slice_table = False
-        
-        if not generate_corner_orientation_table:
-            with open('corner_orientation_table.json', 'w') as corner_orientation_file:
-                data = self.generate_corner_orientation_table()
-                data =  {k: data[k] for k in sorted(data)}
-                json.dump(data, corner_orientation_file, indent=4)
+        # Define all tables with their respective file paths and generation methods
+        tables = {
+            "corner_orientation_table": ("corner_orientation_table.json", self.generate_corner_orientation_table),
+            "edge_orientation_table": ("edge_orientation_table.json", self.generate_edge_orientation_table),
+            "UD_slice_table": ("UD_slice_permutation_table.json", self.generate_UD_slice_permutation_table),
+            "corner_permutation_table": ("corner_permutation_table.json", self.generate_corner_permutation_table),
+            "main_edge_permutation_table": ("main_edge_permutation_table.json", self.generate_main_edge_permutation_table),
+            "UD_slice_edge_permutation_table": ("UD_slice_edge_permutation_table.json", self.generate_UD_slice_edge_permutation_table),
+        }
 
-        if not generate_edge_orientation_table:
-            with open('edge_orientation.json', 'w') as edge_orientation_file:
-                data = self.generate_edge_orientation_table()
-                data = {k: data[k] for k in sorted(data)}
-                json.dump(data, edge_orientation_file, indent=4)
+        # Check if regeneration is required or the files already exist
+        for table_name, (filename, generation_method) in tables.items():
+            if regenerate_tables or not os.path.isfile(filename):
+                # Generate and save the table if regeneration is forced or file doesn't exist
+                data = generation_method()
+                sorted_data = {k: data[k] for k in sorted(data)}
+                with open(filename, 'w') as file:
+                    json.dump(sorted_data, file, indent=4)
 
-        if not generate_UD_slice_table:
-            with open('UD_slice_permutation.json', 'w') as UD_slice_permutation_file:
-                data = self.generate_UD_slice_permutation_table()
-                data = {k: data[k] for k in sorted(data)}
-                json.dump(data, UD_slice_permutation_file, indent=4)
-  
     def decimal_to_ternary(self, n):
         if n == 0:
             return [0] * 7
@@ -137,6 +130,103 @@ class MoveTableGenerator:
             UD_slice_permutation_table[parent_UD_slice_coordinate] = child_UD_slice_coordinates
         
         return UD_slice_permutation_table
+    
+    def generate_corner_permutation_table(self):
+        corner_permutation_table = {}
+        indices = list(itertools.permutations(list(range(8)), 8)) # All possible ways of picking 8 items from a list of 8 where order matters
+        print(indices)
+        for index_combination in indices:
+            cubie_corner_permutations = index_combination  
+            parent_cube = cube.CubieCube()
+            parent_cube.corner_permutations = cubie_corner_permutations
+            parent_corner_permutation_coordinate = cube.CoordCube(parent_cube).calculate_corner_permutation_coordinate()
+            print(parent_corner_permutation_coordinate)
+            
+            child_corner_permutation_coordinates = []
+            for move_type in [cube.Move.U, cube.Move.F, cube.Move.L, cube.Move.D, cube.Move.R, cube.Move.B]:
+                base_cube = cube.CubieCube()
+                base_cube.corner_permutations = cubie_corner_permutations
+            
+                for turns in range(3):
+                    base_cube.rotate_clockwise(move_type)
+                    child_coordinate = cube.CoordCube(base_cube).corner_permutation_coordinate
+                    child_corner_permutation_coordinates.append(child_coordinate)
+                    
+            corner_permutation_table[parent_corner_permutation_coordinate] = child_corner_permutation_coordinates
+        
+        return corner_permutation_table
+    
+    def generate_main_edge_permutation_table(self):
+        
+        main_edge_permutation_table = {}
+        indices = list(itertools.permutations(range(8), 8))  # All possible arrangements of the 8 main edges
+        print(indices)
+        
+        for main_edge_combination in indices:
+            # Set up the cubie cube with the specific main edge permutation
+            cubie_main_edges = list(main_edge_combination) + [8, 9, 10, 11]  # Fixed UD edges
+            
+            parent_cube = cube.CubieCube()
+            parent_cube.edge_permutations = cubie_main_edges
+            
+            # Calculate the coordinate for this main edge configuration
+            parent_edge_permutation_coordinate = cube.CoordCube(parent_cube).calculate_main_edge_permutation_coordinate()
+            print(parent_edge_permutation_coordinate)
+            
+            child_edge_permutation_coordinates = []
+            
+            for move_type in [cube.Move.U, cube.Move.F, cube.Move.L, cube.Move.D, cube.Move.R, cube.Move.B]:
+                # Create a new cube with the initial main edge configuration
+                base_cube = cube.CubieCube()
+                base_cube.edge_permutations = cubie_main_edges[:]
+                
+                for turns in range(3):  # Apply 1, 2, or 3 turns
+                    base_cube.rotate_clockwise(move_type)
+                    
+                    # Calculate the new coordinate after the move
+                    child_coordinate = cube.CoordCube(base_cube).main_edge_permutation_coordinate
+                    child_edge_permutation_coordinates.append(child_coordinate)
+            
+            # Map the parent coordinate to the list of child coordinates
+            main_edge_permutation_table[parent_edge_permutation_coordinate] = child_edge_permutation_coordinates
+        
+        return main_edge_permutation_table
+
+    def generate_UD_slice_edge_permutation_table(self):
+        UD_slice_edge_permutation_table = {}
+        indices = list(itertools.permutations(range(8, 12), 4))  # All possible arrangements of the 4 UD slice edges
+        print(indices)
+        
+        for UD_slice_combination in indices:
+            # Set up the cubie cube with the specific UD slice edge permutation
+            cubie_UD_edges = list(range(8)) + list(UD_slice_combination)  # Fixed main edges
+            
+            parent_cube = cube.CubieCube()
+            parent_cube.edge_permutations = cubie_UD_edges
+            
+            # Calculate the coordinate for this UD slice configuration
+            parent_UD_slice_edge_permutation_coordinate = cube.CoordCube(parent_cube).calculate_UD_slice_edge_permutation_coordinate()
+            print(parent_UD_slice_edge_permutation_coordinate)
+            
+            child_UD_slice_edge_permutation_coordinates = []
+            
+            for move_type in [cube.Move.U, cube.Move.F, cube.Move.L, cube.Move.D, cube.Move.R, cube.Move.B]:
+                # Create a new cube with the initial UD slice edge configuration
+                base_cube = cube.CubieCube()
+                base_cube.edge_permutations = cubie_UD_edges[:]
+                
+                for turns in range(3):  # Apply 1, 2, or 3 turns
+                    base_cube.rotate_clockwise(move_type)
+                    
+                    # Calculate the new coordinate after the move
+                    child_coordinate = cube.CoordCube(base_cube).UD_slice_edge_permutation_coordinate
+                    child_UD_slice_edge_permutation_coordinates.append(child_coordinate)
+            
+            # Map the parent coordinate to the list of child coordinates
+            UD_slice_edge_permutation_table[parent_UD_slice_edge_permutation_coordinate] = child_UD_slice_edge_permutation_coordinates
+    
+        return UD_slice_edge_permutation_table
+
 
 move_tables = MoveTableGenerator(regenerate_tables=True)
 

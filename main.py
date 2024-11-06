@@ -107,7 +107,7 @@ class Renderer:
         for i, quad in enumerate(self.displayed_quadrilaterals): 
             if is_point_inside_quadrilateral(*quad, mouse_pos):
                 self.faces_clicked.append(self.displayed_quadrilaterals_indices[i])
-                print(self.faces_clicked)
+                #print(self.faces_clicked)
                 break
                 
     def create_window(self):
@@ -387,7 +387,7 @@ class CubeManager:
                 notation_arr = ['U', 'L', 'F', 'R', 'B', 'D']
                 self.rotator.rotate(self.rubiks_cube, notation_arr[self.face_index], self.clockwise)
                 self.set_colours()
-                print(''.join(self.rubiks_cube.cube_string))
+                #print(''.join(self.rubiks_cube.cube_string))
 
                 self.rotating = False 
                 self.rotation_to_execute = False
