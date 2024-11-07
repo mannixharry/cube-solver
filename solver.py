@@ -174,15 +174,39 @@ test_cube = cube.CubieCube()
     #print(coordCube)
     
 test_cube.rotate_clockwise(Move.U)
-test_cube.rotate_clockwise(Move.R2)
+test_cube.rotate_clockwise(Move.L3)
+test_cube.rotate_clockwise(Move.R3)
+test_cube.rotate_clockwise(Move.B3)
+test_cube.rotate_clockwise(Move.L2)
+test_cube.rotate_clockwise(Move.D2)
 test_cube.rotate_clockwise(Move.F)
+test_cube.rotate_clockwise(Move.D2)
+test_cube.rotate_clockwise(Move.L2)
+test_cube.rotate_clockwise(Move.D3)
+test_cube.rotate_clockwise(Move.L3)
+test_cube.rotate_clockwise(Move.F)
+test_cube.rotate_clockwise(Move.R2)
+test_cube.rotate_clockwise(Move.U3)
+test_cube.rotate_clockwise(Move.L)
+test_cube.rotate_clockwise(Move.R)
 test_cube.rotate_clockwise(Move.B)
+test_cube.rotate_clockwise(Move.U3)
+test_cube.rotate_clockwise(Move.L2)
+test_cube.rotate_clockwise(Move.U)
+test_cube.rotate_clockwise(Move.R3)
+test_cube.rotate_clockwise(Move.B2)
+test_cube.rotate_clockwise(Move.D2)
+test_cube.rotate_clockwise(Move.B2)
+test_cube.rotate_clockwise(Move.U)
+
+
+
 
 
 saved_test = cube.CubieCube(test_cube)
 
 import main
-main.main(str(cube.FaceletCube(test_cube)))
+#main.main(str(cube.FaceletCube(test_cube)))
 start_time = datetime.now()
 initial_state = cube.CoordCube(test_cube)  # Starting state, assuming this is an unsolved cube in G1
 solver = G1Solver()
@@ -239,7 +263,6 @@ def contract_solution(moves):
 
     return contracted_moves
 
-contracted_moves = contract_solution([Data.move_notation[i] for i in solution_moves] + [Data.move_notation[i] for i in g2_solution_moves])
-print(f'Solution: {contracted_moves}')
+
 import main
 main.main(str(cube.FaceletCube(saved_test)))

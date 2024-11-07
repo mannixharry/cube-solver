@@ -123,7 +123,7 @@ class PruningTableGenerator:
             visited.add(coord_tuple)
             corner_udslice_edge_table[str(coord_tuple)] = depth
 
-            for move in range(18):  # Assuming 18 possible moves
+            for move in [0,3,7,8,10,11,12,15]:  # Assuming 18 possible moves
                 next_state = cube.CoordCube(current_state)  # Copy current state
                 next_state.rotate_clockwise(move)  # Apply move
 
@@ -158,7 +158,7 @@ class PruningTableGenerator:
             visited.add(coord_tuple)
             mainedge_udslice_edge_table[str(coord_tuple)] = depth
 
-            for move in range(18):  # Assuming 18 possible moves
+            for move in [0,3,7,8,10,11,12,15]:  # Assuming 18 possible moves
                 next_state = cube.CoordCube(current_state)  # Copy current state
                 next_state.rotate_clockwise(move)  # Apply move
 
