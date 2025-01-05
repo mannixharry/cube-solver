@@ -168,22 +168,9 @@ class G2Solver:
             return move - 12
         
 # Usage:
-test_cube = cube.CubieCube()
-
+test_cube = cube.CubieCube(cube.FaceletCube('BOGWWRGRYRGBRGOWWWRGYYOBOWORYRWRGOYYWBWYBOOGBGBBRYBYOG'))
 
     #print(coordCube)
-    
-test_cube.rotate_clockwise(Move.U)
-test_cube.rotate_clockwise(Move.L3)
-test_cube.rotate_clockwise(Move.R3)
-test_cube.rotate_clockwise(Move.B3)
-test_cube.rotate_clockwise(Move.L2)
-test_cube.rotate_clockwise(Move.D2)
-test_cube.rotate_clockwise(Move.F)
-test_cube.rotate_clockwise(Move.D2)
-test_cube.rotate_clockwise(Move.L2)
-
-
 
 
 

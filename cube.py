@@ -157,6 +157,8 @@ class FaceletCube:
     
     def rotate_colours_on_face(self, move):
         face = move % 6
+        face_inconsistency_conversion = [0,1,2,5,3,4] # UFLDRB -> UFLRBD
+        face = face_inconsistency_conversion[face]
         left_pointer = 9 * face
         move_count = 1 + (move // 6)
         face_indices = self.facelets[left_pointer : left_pointer + 9]
