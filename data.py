@@ -1,6 +1,15 @@
 from enum import IntEnum
 import json
 
+class Face(IntEnum):
+    
+    U = 0
+    F = 1
+    L = 2
+    D = 3 
+    R = 4 
+    B = 5
+    
 class Corner(IntEnum):
     UFL = 0  # Upper Front Left
     UFR = 1  # Upper Front Right
@@ -142,6 +151,8 @@ class Data:
                 Move.B: [0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1],  # B move flips UB, DB, BR, BL edges
             }
 
+    colours_on_face_array = [6,3,0,7,4,1,8,5,2] # replaced-by form
+    
     corner_facelet_indices = [
             [Facelet.U6, Facelet.L2, Facelet.F0],  # UFL
             [Facelet.U8, Facelet.F2, Facelet.R0],  # UFR

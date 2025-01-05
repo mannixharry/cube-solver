@@ -88,6 +88,7 @@ class FaceletCube:
         self.edge_colours = Data.edge_colours
         self.corner_facelet_indices = Data.corner_facelet_indices
         self.edge_facelet_indices = Data.edge_facelet_indices 
+        self.colours_on_face_array = Data.colours_on_face_array
         
         self.facelets = ['x'] * 54 
         if cube_input is not None:
@@ -97,8 +98,7 @@ class FaceletCube:
                 self.facelets = self.from_cubie_cube(cube_input)
             else:
                 raise TypeError('cube_input does not match an expected type')
-           
-        
+            
     def from_cubie_cube(self, cubie_cube):
         facelets = ['x'] * 54
         
@@ -154,7 +154,21 @@ class FaceletCube:
         cubie_cube.edge_orientations = new_edge_orientations
         
         return cubie_cube
-
+    
+    def rotate_colours_on_face(self, move):
+        face = move % 6
+        left_pointer = 9 * face
+        move_count = 1 + (move // 6)
+        face_indices = self.facelets[left_pointer : left_pointer + 9]
+        for i in range(move_count):
+            new_face_indices = [0] * 9
+            for j in range(9):
+                new_face_indices[j] = face_indices[self.colours_on_face_array[j]] 
+            face_indices = new_face_indices
+        for i in range(9):
+            self.facelets[i+left_pointer] = face_indices[i]
+        
+        
     def __repr__(self):
         return ''.join(self.facelets)
 
@@ -324,7 +338,6 @@ def main():
 
     x = coordCube.calculate_corner_permutation_coordinate()
     print(x)
-    #main.main(str(FaceletCube(cube)))
 
 if __name__ == '__main__':
     main()
