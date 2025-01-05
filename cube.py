@@ -117,8 +117,8 @@ class FaceletCube:
                 facelets[self.edge_facelet_indices[i][j]] = self.edge_colours[permutation][(j + orientation) % 2]
 
         # Fill the centre pieces (fixed colours)
-        centre_colours = ['W', 'O', 'G', 'R', 'B', 'Y']
-        centre_indices = [Facelet.U4, Facelet.L4, Facelet.F4, Facelet.R4, Facelet.B4, Facelet.D4]
+        centre_colours = ['W', 'G', 'O', 'R', 'B', 'Y']
+        centre_indices = [Facelet.U4, Facelet.F4, Facelet.L4, Facelet.R4, Facelet.B4, Facelet.D4]
 
         for i in range(6):
             facelets[centre_indices[i]] = centre_colours[i]
@@ -167,7 +167,6 @@ class FaceletCube:
             face_indices = new_face_indices
         for i in range(9):
             self.facelets[i+left_pointer] = face_indices[i]
-        
         
     def __repr__(self):
         return ''.join(self.facelets)
@@ -338,6 +337,13 @@ def main():
 
     x = coordCube.calculate_corner_permutation_coordinate()
     print(x)
+    
+    test_cube = FaceletCube("BGOGWBWBRRRYGGYBYYGWGOOYRRYOGYBRWBWOROWRBYBRWGBWOYOGWO")
+    print(str(test_cube))
+    main.main(str(test_cube))
+    test_cube.rotate_colours_on_face(Move.B2)
+    print(str(test_cube))
+    main.main(str(test_cube))
 
 if __name__ == '__main__':
     main()

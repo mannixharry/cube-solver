@@ -3,7 +3,7 @@ from pygame.locals import *
 import numpy as np
 
 class RubiksCube:
-    def __init__(self, cube_string='WWWWWWWWWOOOOOOOOOGGGGGGGGGRRRRRRRRRBBBBBBBBBYYYYYYYYY'):
+    def __init__(self, cube_string='WWWWWWWWWGGGGGGGGGOOOOOOOOORRRRRRRRRBBBBBBBBBYYYYYYYYY'):
        
         self.cube_string = list(cube_string)
 
@@ -30,13 +30,13 @@ class CubeRotations:
         # Define the rotation tables for the edges around each face
         self.encoded_rotation_tables = {
             'U' : ['F0','F1', 'F2', 'L0', 'L1', 'L2', 'B0', 'B1', 'B2', 'R0', 'R1', 'R2'],
-            'L' : ['F0', 'F3', 'F6', 'D0', 'D3', 'D6', 'B8', 'B5', 'B2', 'U0', 'U3', 'U6'],
             'F' : ['U6', 'U7', 'U8', 'R0', 'R3', 'R6', 'D2', 'D1', 'D0', 'L8', 'L5', 'L2'],
+            'L' : ['F0', 'F3', 'F6', 'D0', 'D3', 'D6', 'B8', 'B5', 'B2', 'U0', 'U3', 'U6'],
             'R' : ['F2', 'F5', 'F8', 'U2', 'U5', 'U8', 'B6', 'B3', 'B0', 'D2', 'D5', 'D8'],
             'B' : ['U0', 'U1', 'U2', 'L6', 'L3', 'L0', 'D8', 'D7', 'D6', 'R2', 'R5', 'R8'],
             'D' : ['F6', 'F7', 'F8', 'R6', 'R7', 'R8', 'B6', 'B7', 'B8', 'L6', 'L7', 'L8']
         }
-        self.rotation_tables = {key: ['ULFRBD'.index(i[0])*9 + int(i[1]) for i in value] for (key, value) in self.encoded_rotation_tables.items()}
+        self.rotation_tables = {key: ['UFLRBD'.index(i[0])*9 + int(i[1]) for i in value] for (key, value) in self.encoded_rotation_tables.items()}
         
         #print(self.encoded_rotation_tables)
         #print(self.rotation_tables)
@@ -47,7 +47,7 @@ class CubeRotations:
         self._rotate_edges(cube, face, is_clockwise)
         
     def _rotate_face(self, cube, face, clockwise=True):
-        face_start = 'ULFRBD'.index(face) * 9
+        face_start = 'UFLRBD'.index(face) * 9
         facelet_indices = [6, 3, 0, 7, 4, 1, 8, 5, 2]
 
         if clockwise:
@@ -261,7 +261,7 @@ class Transformer:
         return translated_vertex
 
 class CubeManager:
-    def __init__(self, cubes, cube_string= 'WWWWWWWWWOOOOOOOOOGGGGGGGGGRRRRRRRRRBBBBBBBBBYYYYYYYYY'):
+    def __init__(self, cubes, cube_string= 'WWWWWWWWWGGGGGGGGGOOOOOOOOORRRRRRRRRBBBBBBBBBYYYYYYYYY'):
 
         self.rubiks_cube = RubiksCube(cube_string)
         self.rotator = CubeRotations()
@@ -317,7 +317,7 @@ class CubeManager:
         } #Gives the index of the faces 
         
         faces = [cube_string[i:i+9] for i in range(0, len(cube_string), 9)]
-        face_symbols  = ['U', 'L', 'F', 'R', 'B', 'D']
+        face_symbols  = ['U', 'F', 'L', 'R', 'B', 'D']
         for i, symbol in enumerate(face_symbols):
             face = []
             indices = faces_dict[symbol]
@@ -332,7 +332,7 @@ class CubeManager:
             
     def set_rotation(self, notation_input):
         if not self.rotating:
-            notation_arr = ['U', 'L', 'F', 'R', 'B', 'D']
+            notation_arr = ['U', 'F', 'L', 'R', 'B', 'D']
             face_symbol = notation_input[0]
             face_index = notation_arr.index(face_symbol)
 
@@ -384,7 +384,7 @@ class CubeManager:
 
                         self.faces[self.face_index][i].rectangles[j].vertices = [rotated_a, rotated_b, rotated_c, rotated_d]
                 
-                notation_arr = ['U', 'L', 'F', 'R', 'B', 'D']
+                notation_arr = ['U', 'F', 'L', 'R', 'B', 'D']
                 self.rotator.rotate(self.rubiks_cube, notation_arr[self.face_index], self.clockwise)
                 self.set_colours()
                 #print(''.join(self.rubiks_cube.cube_string))
@@ -410,7 +410,7 @@ class CubeManager:
 
                         self.faces[self.face_index][i].rectangles[j].vertices = [rotated_a, rotated_b, rotated_c, rotated_d]
                         
-def main(cube_string ='WWWWWWWWWOOOOOOOOOGGGGGGGGGRRRRRRRRRBBBBBBBBBYYYYYYYYY'):
+def main(cube_string ='WWWWWWWWWGGGGGGGGGOOOOOOOOORRRRRRRRRBBBBBBBBBYYYYYYYYY'):
 
     renderer = Renderer()
     projector = Projector(renderer.width, renderer.height)
