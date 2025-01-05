@@ -4,11 +4,23 @@ from data import *
 
 
 test_cube = cube.CubieCube()
-test_cube.rotate_clockwise(Move.U2)
-test_cube.rotate_clockwise(Move.D2)
-test_cube.rotate_clockwise(Move.F2)
-test_cube.rotate_clockwise(Move.B2)
+
+test_cube.rotate_clockwise(Move.U)
+test_cube.rotate_clockwise(Move.L3)
+test_cube.rotate_clockwise(Move.R3)
+test_cube.rotate_clockwise(Move.B3)
 test_cube.rotate_clockwise(Move.L2)
-test_cube.rotate_clockwise(Move.R2)
-test_cube.edge_orientations = [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0]
+test_cube.rotate_clockwise(Move.D2)
+test_cube.rotate_clockwise(Move.F)
+test_cube.rotate_clockwise(Move.D2)
+test_cube.rotate_clockwise(Move.L2)
+
+test_cube.rotate_clockwise(Move.F2)
+test_cube.rotate_clockwise(Move.L2)
+test_cube.rotate_clockwise(Move.B)
+test_cube.rotate_clockwise(Move.L)
+test_cube.rotate_clockwise(Move.R)
+
+
+
 main.main(str(cube.FaceletCube(test_cube)))

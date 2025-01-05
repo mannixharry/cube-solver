@@ -38,21 +38,21 @@ class Move(IntEnum):
     U = 0
     F = 1
     L = 2
-    R = 3
-    B = 4
-    D = 5
+    D = 3
+    R = 4
+    B = 5
     U2 = 6
     F2 = 7
     L2 = 8
-    R2 = 9
-    B2 = 10
-    D2 = 11
+    D2 = 9
+    R2 = 10
+    B2 = 11
     U3 = 12 
     F3 = 13
     L3 = 14
-    R3 = 15
-    B3 = 16
-    D3 = 17 
+    D3 = 15
+    R3 = 16
+    B3 = 17 
 
 class Facelet(IntEnum):
     U0 = 0

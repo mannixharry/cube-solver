@@ -182,22 +182,7 @@ test_cube.rotate_clockwise(Move.D2)
 test_cube.rotate_clockwise(Move.F)
 test_cube.rotate_clockwise(Move.D2)
 test_cube.rotate_clockwise(Move.L2)
-test_cube.rotate_clockwise(Move.D3)
-test_cube.rotate_clockwise(Move.L3)
-test_cube.rotate_clockwise(Move.F)
-test_cube.rotate_clockwise(Move.R2)
-test_cube.rotate_clockwise(Move.U3)
-test_cube.rotate_clockwise(Move.L)
-test_cube.rotate_clockwise(Move.R)
-test_cube.rotate_clockwise(Move.B)
-test_cube.rotate_clockwise(Move.U3)
-test_cube.rotate_clockwise(Move.L2)
-test_cube.rotate_clockwise(Move.U)
-test_cube.rotate_clockwise(Move.R3)
-test_cube.rotate_clockwise(Move.B2)
-test_cube.rotate_clockwise(Move.D2)
-test_cube.rotate_clockwise(Move.B2)
-test_cube.rotate_clockwise(Move.U)
+
 
 
 
@@ -218,7 +203,7 @@ if solution_moves:
         test_cube.rotate_clockwise(move)
         initial_state.rotate_clockwise(move)
         #print(initial_state.get_g1_coordinates())
-    #main.main(str(cube.FaceletCube(test_cube)))
+    main.main(str(cube.FaceletCube(test_cube)))
     #rint(initial_state.get_g1_coordinates())
 else:
     print("No solution found.")
@@ -266,3 +251,4 @@ def contract_solution(moves):
 
 import main
 main.main(str(cube.FaceletCube(saved_test)))
+main.main(str(cube.FaceletCube(test_cube)))
