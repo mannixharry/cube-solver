@@ -1,14 +1,5 @@
 from enum import IntEnum
 import json
-
-class Face(IntEnum):
-    
-    U = 0
-    F = 1
-    L = 2
-    D = 3 
-    R = 4 
-    B = 5
     
 class Corner(IntEnum):
     UFL = 0  # Upper Front Left
@@ -35,27 +26,30 @@ class Edge(IntEnum):
     BR = 11 # Back Right
 
 class Move(IntEnum):
-    U = 0
-    F = 1
-    L = 2
-    D = 3
-    R = 4
-    B = 5
-    U2 = 6
-    F2 = 7
-    L2 = 8
-    D2 = 9
-    R2 = 10
-    B2 = 11
-    U3 = 12 
-    F3 = 13
-    L3 = 14
-    D3 = 15
-    R3 = 16
-    B3 = 17 
+    U = 0 # U
+    F = 1 # F
+    L = 2 # L
+    D = 3 # D
+    R = 4 # R
+    B = 5 # B
+    U2 = 6 # U2
+    F2 = 7 # F2
+    L2 = 8 # L2
+    D2 = 9 # D2
+    R2 = 10 # R2
+    B2 = 11 # B2
+    U3 = 12 # U'
+    F3 = 13 # F'
+    L3 = 14 # L'
+    D3 = 15 # D'
+    R3 = 16 # R'
+    B3 = 17 # B'
 
+'''
+Facelets are numbered going across, starting in the top left of the face.
+'''
 class Facelet(IntEnum):
-    U0 = 0
+    U0 = 0 
     U1 = 1
     U2 = 2
     U3 = 3
@@ -112,47 +106,79 @@ class Facelet(IntEnum):
 
 class Data:
 
-    #move_tables = move_tables.MoveTableGenerator()
+    '''
+    The following tables define rotations for the CubieCube representation. 
+    Corner permutation and edge permutation, and their respective orientations are all treated independently.
+    The tables are in an is-replaced-by format. The index of each item in an array represents a piece code, whilst the data value
+    represents the code of the piece replacing it. 
+    For example, in corner_permutation_table the first data item, at index 0, in Move.U = [1,3,0,2,4,5,6,7] means that the piece with code
+    1 moves into the position 0 following a U move. 
+    ie: UFR replaced UFL
     
+    Position / Piece codes : [UFL, UFR, UBL, UBR, DFL, DFR, DBL, DBR]
+                             [  0,   1,   2,   3,   4,   5,   6,   7]
+    '''
+
     corner_permutation_tables = {
-            Move.U : [1, 3, 0, 2, 4, 5, 6, 7],  # UFR -> UFL, UBR -> UFR, UFL -> UBL, UBL -> UBR
-            Move.F : [4, 0, 2, 3, 5, 1, 6, 7],  # UFL -> DFL, UFR -> UFL, DFR -> UFR, DFL -> DFR
-            Move.L : [2, 1, 6, 3, 0, 5, 4, 7],  # UFL -> DFL, DFL -> DBL, DBL -> UBL, UBL -> UFL
-            Move.D : [0, 1, 2, 3, 6, 4, 7, 5],  # DFR -> DBR, DBR -> DBL, DBL -> DFL, DFL -> DFR 
-            Move.R : [0, 5, 2, 1, 4, 7, 6, 3],  # DFR -> UFR, UFR -> UBR, UBR -> DBR, DBR -> DFR
-            Move.B : [0, 1, 3, 7, 4, 5, 2, 6],  # UBR -> UBL, UBL -> DBL, DBL -> DBR, DBR -> UBR
+            Move.U : [Corner.UFR, Corner.UBR, Corner.UFL, Corner.UBL, Corner.DFL, Corner.DFR, Corner.DBL, Corner.DBR], 
+            Move.F : [Corner.DFL, Corner.UFL, Corner.UBL, Corner.UBR, Corner.DFR, Corner.UFR, Corner.DBL, Corner.DBR],
+            Move.L : [Corner.UBL, Corner.UFR, Corner.DBL, Corner.UBR, Corner.UFL, Corner.DFR, Corner.DFL, Corner.DBR],  
+            Move.D : [Corner.UFL, Corner.UFR, Corner.UBL, Corner.UBR, Corner.DBL, Corner.DFL, Corner.DBR, Corner.DFR], 
+            Move.R : [Corner.UFL, Corner.DFR, Corner.UBL, Corner.UFR, Corner.DFL, Corner.DBR, Corner.DBL, Corner.UBR],  
+            Move.B : [Corner.UFL, Corner.UFR, Corner.UBR, Corner.DBR, Corner.DFL, Corner.DFR, Corner.UBL, Corner.DBL], 
         }
- 
-    corner_orientation_tables = {
-                Move.U : [0, 0, 0, 0, 0, 0, 0, 0],  # U move doesn't change any orientation
-                Move.F : [2, 1, 0, 0, 1, 2, 0, 0],  # UFL -> 2, UFR -> 1, DFR -> 2, DFL -> 1
-                Move.L : [1, 0, 2, 0, 2, 0, 1, 0],  # UFL -> 2, UBL -> 1, DBL -> 2, DFL -> 1
-                Move.D : [0, 0, 0, 0, 0, 0, 0, 0],  # D move doesn't change any orientation
-                Move.R : [0, 2, 0, 1, 0, 1, 0, 2],  # UFR -> 2, UBR -> 1, DBR -> 2, DFR -> 1
-                Move.B : [0, 0, 1, 2, 0, 0, 2, 1],  # UBR -> 1, UBR -> 1, DBR -> 2, DBL -> 1
-            }
-
-    edge_permutation_tables = {
-                Move.U: [3, 0, 1, 2, 4, 5, 6, 7, 8, 9, 10, 11],  # UR -> UF, UF -> UL, UL -> UB, UB -> UR
-                Move.F: [8, 1, 2, 3, 9, 5, 6, 7, 4, 0, 10, 11],  # FL -> UF, UF -> FR, FR -> FD, FD -> FL
-                Move.D: [0, 1, 2, 3, 5, 6, 7, 4, 8, 9, 10, 11],  # DF -> DR, DR -> DB, DB -> DL, DL -> DF
-                Move.R: [0, 1, 2, 9, 4, 5, 6, 11, 8, 7, 10, 3],  # UR -> BR, BR -> DR, DR -> FR, FR -> UR
-                Move.L: [0, 10, 2, 3, 4, 8, 6, 7, 1, 9, 5, 11],  # UL -> FL, FL -> DL, DL -> BL, BL -> UL
-                Move.B: [0, 1, 11, 3, 4, 5, 10, 7, 8, 9, 2, 6],  # UB -> BL, BL -> DB, DB -> BR, BR -> UB
-            }
-
-            
-    edge_orientation_tables = {
-                Move.U: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],  # U move does not flip any edges
-                Move.F: [1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 0],  # F move flips UF and DF edges
-                Move.D: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],  # D move does not flip any edges
-                Move.R: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],  # R move flips UR, DR, BR, FR edges
-                Move.L: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],  # L move flips UL, DL, BL, FL edges
-                Move.B: [0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1],  # B move flips UB, DB, BR, BL edges
-            }
-
-    colours_on_face_array = [6,3,0,7,4,1,8,5,2] # replaced-by form
     
+    '''
+    0 -> No twist
+    1 -> Clockwise twist with respect to reference
+    2 -> Anti-clockwise twist with respect to reference
+    '''
+    corner_orientation_tables = {
+                Move.U : [0, 0, 0, 0, 0, 0, 0, 0],  
+                Move.F : [2, 1, 0, 0, 1, 2, 0, 0], 
+                Move.L : [1, 0, 2, 0, 2, 0, 1, 0],  
+                Move.D : [0, 0, 0, 0, 0, 0, 0, 0], 
+                Move.R : [0, 2, 0, 1, 0, 1, 0, 2],  
+                Move.B : [0, 0, 1, 2, 0, 0, 2, 1],  
+            }
+
+    '''
+    Position / Piece codes : [UF, UL, UB, UR, DF, DL, DB, DR, FL, FR, BL, BR]
+                             [ 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11]
+    '''
+    edge_permutation_tables = {
+                Move.U: [Edge.UR, Edge.UF, Edge.UL, Edge.UB, Edge.DF, Edge.DL, Edge.DB,  Edge.DR,  Edge.FL, Edge.FR, Edge.BL, Edge.BR],  
+                Move.F: [Edge.FL, Edge.UL, Edge.UB, Edge.UR, Edge.FR, Edge.DL, Edge.DB,  Edge.DR,  Edge.DF, Edge.UF, Edge.BL, Edge.BR],  
+                Move.L: [Edge.UF, Edge.BL, Edge.UB, Edge.UR, Edge.DF, Edge.FL, Edge.DB,  Edge.DR,  Edge.UL, Edge.FR, Edge.DL, Edge.BR],  
+                Move.D: [Edge.UF, Edge.UL, Edge.UB, Edge.UR, Edge.DL, Edge.DB, Edge.DR,  Edge.DF,  Edge.FL, Edge.FR, Edge.BL, Edge.BR], 
+                Move.R: [Edge.UF, Edge.UL, Edge.UB, Edge.FR, Edge.DF, Edge.DL, Edge.DB,  Edge.BR,  Edge.FL, Edge.DR, Edge.BL, Edge.UR],  
+                Move.B: [Edge.UF, Edge.UL, Edge.BR, Edge.UR, Edge.DF, Edge.DL, Edge.BL,  Edge.DR,  Edge.FL, Edge.FR, Edge.UB, Edge.DB],  
+            }
+
+    '''
+    0 -> No flip with respect to reference
+    1 -> Flipped with respect to reference
+    '''
+    edge_orientation_tables = {
+                Move.U: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                Move.F: [1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 0], 
+                Move.L: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],  
+                Move.D: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 
+                Move.R: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],  
+                Move.B: [0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1], 
+            }
+    
+    '''
+    The colours on face array defines how to cycle colours clockwise on a face using the is-replaced-by form.
+    This is used by the computer vision to correctly orient the faces for the solver after they have been captured. 
+    '''
+    colours_on_face_array = [6,3,0,7,4,1,8,5,2]
+    
+    '''
+    Used for cubie-to-facelet conversion. 
+    corner_facelet_indices stores the three facelets comprising each corner cubie. 
+    edge_facelet_indices stores the two facelets comprising each edge cubie. 
+    '''
     corner_facelet_indices = [
             [Facelet.U6, Facelet.L2, Facelet.F0],  # UFL
             [Facelet.U8, Facelet.F2, Facelet.R0],  # UFR
@@ -165,21 +191,25 @@ class Data:
         ]
 
     edge_facelet_indices = [
-            [Facelet.U7, Facelet.F1],  # UF: U, F
-            [Facelet.U3, Facelet.L1],  # UL: U, L
-            [Facelet.U1, Facelet.B1],  # UB: U, B
-            [Facelet.U5, Facelet.R1],  # UR: U, R
-            [Facelet.D1, Facelet.F7], # DF: D, F
-            [Facelet.D3, Facelet.L7], # DL: D, L
-            [Facelet.D7, Facelet.B7], # DB: D, B
-            [Facelet.D5, Facelet.R7], # DR: D, R
-            [Facelet.F3, Facelet.L5], # FL: F, L
-            [Facelet.F5, Facelet.R3], # FR: F, R
-            [Facelet.B5, Facelet.L3], # BL: B, L
-            [Facelet.B3, Facelet.R5]  # BR: B, R
+            [Facelet.U7, Facelet.F1],  # UF
+            [Facelet.U3, Facelet.L1],  # UL
+            [Facelet.U1, Facelet.B1],  # UB
+            [Facelet.U5, Facelet.R1],  # UR
+            [Facelet.D1, Facelet.F7],  # DF
+            [Facelet.D3, Facelet.L7],  # DL
+            [Facelet.D7, Facelet.B7],  # DB
+            [Facelet.D5, Facelet.R7],  # DR
+            [Facelet.F3, Facelet.L5],  # FL
+            [Facelet.F5, Facelet.R3],  # FR
+            [Facelet.B5, Facelet.L3],  # BL
+            [Facelet.B3, Facelet.R5]   # BR
         ]
   
-    # Define the colours associated with each corner and edge piece
+    '''
+    Defines the colours associated with each corner and edge piece.
+    There are subtleties in the order in which these, and the preceding tables are defined, which avoid issues related to the order of 
+    colours on the displayed cube.  
+    '''
     corner_colours = [
             ['W', 'O', 'G'],  # UFL
             ['W', 'G', 'R'],  # UFR
@@ -206,23 +236,31 @@ class Data:
             ['B', 'R'],  # BR
         ]
     
+    '''
+    Define the notation displayed to the user.
+    Used by the solver. 
+    '''
     move_notation = ['U', 'F', 'L', 'D', 'R', 'B', 'U2', 'F2', 'L2', 'D2', 'R2', 'B2', 'U3', 'F3', 'L3', 'D3', 'R3', 'B3']
 
+'''
+Class to manage the loading of move tables. 
+If not present, it will raise an error. 
 
-
+-- Need to add automatic loading of the tables -- (error correction)
+'''
 class Move_Tables:
     try: 
-        with open('corner_orientation_table.json', 'r') as corner_orientation_file:
+        with open('tables/corner_orientation_table.json', 'r') as corner_orientation_file:
             corner_orientation_table = json.load(corner_orientation_file)
-        with open('edge_orientation_table.json', 'r') as edge_orientation_file:
+        with open('tables/edge_orientation_table.json', 'r') as edge_orientation_file:
             edge_orientation_table = json.load(edge_orientation_file)
-        with open('UD_slice_permutation_table.json', 'r') as UD_slice_permutation_file:
+        with open('tables/UD_slice_permutation_table.json', 'r') as UD_slice_permutation_file:
             UD_slice_permutation_table = json.load(UD_slice_permutation_file)
-        with open('UD_slice_edge_permutation_table.json', 'r') as UD_slice_edge_permutation_file:
+        with open('tables/UD_slice_edge_permutation_table.json', 'r') as UD_slice_edge_permutation_file:
             UD_slice_edge_permutation_table = json.load(UD_slice_edge_permutation_file)
-        with open('main_edge_permutation_table.json', 'r') as main_edge_permutation_file:
+        with open('tables/main_edge_permutation_table.json', 'r') as main_edge_permutation_file:
             main_edge_permutation_table = json.load(main_edge_permutation_file)
-        with open('corner_permutation_table.json', 'r') as corner_permutation_file:
+        with open('tables/corner_permutation_table.json', 'r') as corner_permutation_file:
             corner_permutation_table = json.load(corner_permutation_file)
     except FileNotFoundError: 
         corner_orientation_table = edge_orientation_table = UD_slice_permutation_table = None

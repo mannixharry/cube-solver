@@ -306,46 +306,7 @@ class CoordCube:
         return UD_edge_permutation_coordinate
     
 def main():
-    
-    
-    cube = CubieCube()
-    coordCube = CoordCube(cube)
-    coordCube.rotate_clockwise(Move.L)
-
-    #print(coordCube)
-    
-    cube.rotate_clockwise(Move.U)
-    cube.rotate_clockwise(Move.R2)
-    cube.rotate_clockwise(Move.F)
-    cube.rotate_clockwise(Move.B)
-    cube.rotate_clockwise(Move.R)
-    cube.rotate_clockwise(Move.B2)
-    cube.rotate_clockwise(Move.R)
-    cube.rotate_clockwise(Move.U2)
-    cube.rotate_clockwise(Move.L)
-    cube.rotate_clockwise(Move.B2)
-    cube.rotate_clockwise(Move.R)
-    cube.rotate_clockwise(Move.U3)
-    cube.rotate_clockwise(Move.D3)
-    cube.rotate_clockwise(Move.R2)
-    cube.rotate_clockwise(Move.F)
-    cube.rotate_clockwise(Move.R3)
-    cube.rotate_clockwise(Move.L)
-    cube.rotate_clockwise(Move.B2)
-    cube.rotate_clockwise(Move.U2)
-    cube.rotate_clockwise(Move.F2)
-    
-    import main
-
-    x = coordCube.calculate_corner_permutation_coordinate()
-    print(x)
-    
-    test_cube = FaceletCube("BGOGWBWBRRRYGGYBYYGWGOOYRRYOGYBRWBWOROWRBYBRWGBWOYOGWO")
-    print(str(test_cube))
-    main.main(str(test_cube))
-    test_cube.rotate_colours_on_face(Move.B2)
-    print(str(test_cube))
-    main.main(str(test_cube))
+    pass
 
 if __name__ == '__main__':
     main()

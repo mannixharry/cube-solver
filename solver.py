@@ -9,9 +9,9 @@ start_time = datetime.now()
 class G1Solver:
     def __init__(self):
         # Load pruning tables
-        with open('udslice_corner_table.json', 'r') as corner_file:
+        with open('tables/udslice_corner_table.json', 'r') as corner_file:
             self.udslice_corner_table = json.load(corner_file)
-        with open('udslice_edge_table.json', 'r') as edge_file:
+        with open('tables/udslice_edge_table.json', 'r') as edge_file:
             self.udslice_edge_table = json.load(edge_file)
 
     def heuristic(self, state):
@@ -87,9 +87,9 @@ class G1Solver:
 class G2Solver:
     def __init__(self):
         # Load pruning tables for G2 stage
-        with open('main_edge_udslice_edge_table.json', 'r') as mainedge_file:
+        with open('tables/main_edge_udslice_edge_table.json', 'r') as mainedge_file:
             self.mainedge_udslice_edge_table = json.load(mainedge_file)
-        with open('corner_udslice_edge_table.json', 'r') as corner_file:
+        with open('tables/corner_udslice_edge_table.json', 'r') as corner_file:
             self.corner_udslice_edge_table = json.load(corner_file)
 
     def heuristic(self, state):
@@ -168,7 +168,7 @@ class G2Solver:
             return move - 12
         
 # Usage:
-test_cube = cube.CubieCube(cube.FaceletCube('BOGWWRGRYRGBRGOWWWRGYYOBOWORYRWRGOYYWBWYBOOGBGBBRYBYOG'))
+test_cube = cube.CubieCube(cube.FaceletCube('RRYBWYWGOORBWGWWWGYOBYOGOORYRBBRGWBORWGOBBWYYBORYYRGGG'))
 
     #print(coordCube)
 
@@ -177,7 +177,7 @@ test_cube = cube.CubieCube(cube.FaceletCube('BOGWWRGRYRGBRGOWWWRGYYOBOWORYRWRGOY
 
 saved_test = cube.CubieCube(test_cube)
 
-import main
+#import main
 #main.main(str(cube.FaceletCube(test_cube)))
 start_time = datetime.now()
 initial_state = cube.CoordCube(test_cube)  # Starting state, assuming this is an unsolved cube in G1
@@ -190,7 +190,7 @@ if solution_moves:
         test_cube.rotate_clockwise(move)
         initial_state.rotate_clockwise(move)
         #print(initial_state.get_g1_coordinates())
-    main.main(str(cube.FaceletCube(test_cube)))
+    #main.main(str(cube.FaceletCube(test_cube)))
     #rint(initial_state.get_g1_coordinates())
 else:
     print("No solution found.")
