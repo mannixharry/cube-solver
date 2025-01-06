@@ -1,50 +1,47 @@
 from data import *
 import math 
 
-import os 
-import json
-import itertools
-import cube 
-
 class CubieCube:
     def __init__(self, cube_input=None):
         
+        '''
+        The cubie-cube representation stores the configuration of a cube using a set of four arrays. 
+        It is this form of the cube, which we apply the rotation logic to.
+        '''
+
+        # Initialize the configuration arrays for a solved cube. 
         self.corner_permutations = list(range(8))
         self.corner_orientations = [0] * 8
         self.edge_permutations = list(range(12))
         self.edge_orientations = [0] * 12
         
-        self.corner_permutation_tables = Data.corner_permutation_tables
-        self.corner_orientation_tables = Data.corner_orientation_tables
-        self.edge_permutation_tables = Data.edge_permutation_tables
-        self.edge_orientation_tables = Data.edge_orientation_tables
+        # Load the dictionaries used for rotation from Data.
+        self.corner_permutation_dict, self.corner_orientation_dict, self.edge_permutation_dict, self.edge_orientation_dict = Data.cubie_move_dicts
+        self.corner_colour_table, self.edge_colour_table = Data.corner_colour_table, Data.edge_colour_table # These map colours to cubie pieces. 
+        self.corner_facelet_indices, self.edge_facelet_indices = Data.corner_facelet_indices, Data.edge_facelet_indices # These map pieces to their facelets. ie: UFL to U6, L2, F0 
 
-        self.corner_colours = Data.corner_colours
-        self.edge_colours = Data.edge_colours
-        self.corner_facelet_indices = Data.corner_facelet_indices
-        self.edge_facelet_indices = Data.edge_facelet_indices
-        
+        def load_configuration_from(cube_input): # Helper procedure to copy configuration from an input cubie_cube. (avoids repetition)
+            self.corner_permutations = cube_input.corner_permutations
+            self.corner_orientations = cube_input.corner_orientations
+            self.edge_permutations = cube_input.edge_permutations 
+            self.edge_orientations = cube_input.edge_orientations 
+
+        # Handles the cube_input parameter 
         if cube_input is not None:
-            if isinstance(cube_input, FaceletCube):
-                cubieCube = cube_input.to_cubie_cube()
-                self.corner_permutations = cubieCube.corner_permutations
-                self.corner_orientations = cubieCube.corner_orientations
-                self.edge_permutations = cubieCube.edge_permutations
-                self.edge_orientations = cubieCube.edge_orientations
-            elif isinstance(cube_input, CubieCube):
-                self.corner_permutations = cube_input.corner_permutations
-                self.corner_orientations = cube_input.corner_orientations
-                self.edge_permutations = cube_input.edge_permutations
-                self.edge_orientations = cube_input.edge_orientations
+            if isinstance(cube_input, FaceletCube): # Checks to see if a Facelet-Cube is input 
+                load_configuration_from(cube_input.to_cubie_cube())
+            elif isinstance(cube_input, CubieCube): # Checks to see if a Cubie-Cube is input 
+                load_configuration_from(cube_input)
+            elif isinstance(cube_input, str): # Checks to see if a string is input 
+                load_configuration_from(FaceletCube(cube_input).cubie_cube())
             else:
-            
                 raise TypeError('cube_input does not match an expected type')
                     
     def rotate_clockwise(self, move):
         move_count = 1 + (move // 6)
         move = move % 6 
         for m in range(move_count):
-            corner_permutation_table = self.corner_permutation_tables[move]
+            corner_permutation_table = self.corner_permutation_dict[move]
             new_corner_permutations = [0] * 8
             new_corner_orientations = [0] * 8
             for i in range(8):
@@ -54,12 +51,12 @@ class CubieCube:
             self.corner_permutations = new_corner_permutations
             self.corner_orientations = new_corner_orientations
 
-            corner_orientation_table = self.corner_orientation_tables[move]
+            corner_orientation_table = self.corner_orientation_dict[move]
             for i in range(8):
                 new_corner_orientations[i] = (self.corner_orientations[i] + corner_orientation_table[i]) % 3 
             self.corner_orientations = new_corner_orientations
 
-            edge_permutation_table = self.edge_permutation_tables[move]
+            edge_permutation_table = self.edge_permutation_dict[move]
             new_edge_permutations = [0] * 12
             new_edge_orientations = [0] * 12
             for i in range(12):
@@ -69,7 +66,7 @@ class CubieCube:
             self.edge_permutations = new_edge_permutations
             self.edge_orientations = new_edge_orientations
 
-            edge_orientation_table = self.edge_orientation_tables[move]
+            edge_orientation_table = self.edge_orientation_dict[move]
             for i in range(12):
                 new_edge_orientations[i] = (self.edge_orientations[i] + edge_orientation_table[i]) % 2 
             self.edge_orientations = new_edge_orientations
@@ -84,8 +81,8 @@ class CubieCube:
 class FaceletCube:
     def __init__(self, cube_input=None):
         
-        self.corner_colours = Data.corner_colours
-        self.edge_colours = Data.edge_colours
+        self.corner_colour_table = Data.corner_colour_table
+        self.edge_colour_table = Data.edge_colour_table
         self.corner_facelet_indices = Data.corner_facelet_indices
         self.edge_facelet_indices = Data.edge_facelet_indices 
         self.colours_on_face_array = Data.colours_on_face_array
@@ -107,14 +104,14 @@ class FaceletCube:
             permutation = cubie_cube.corner_permutations[i]
             orientation = cubie_cube.corner_orientations[i]
             for j in range(3):
-                facelets[self.corner_facelet_indices[i][j]] = (self.corner_colours[permutation])[(j+orientation)%3]
+                facelets[self.corner_facelet_indices[i][j]] = (self.corner_colour_table[permutation])[(j+orientation)%3]
 
         # Fill the edges
         for i in range(12):
             permutation = cubie_cube.edge_permutations[i]
             orientation = cubie_cube.edge_orientations[i]
             for j in range(2):
-                facelets[self.edge_facelet_indices[i][j]] = self.edge_colours[permutation][(j + orientation) % 2]
+                facelets[self.edge_facelet_indices[i][j]] = self.edge_colour_table[permutation][(j + orientation) % 2]
 
         # Fill the centre pieces (fixed colours)
         centre_colours = ['W', 'G', 'O', 'R', 'B', 'Y']
@@ -137,14 +134,14 @@ class FaceletCube:
         for i, corner_index, in enumerate(self.corner_facelet_indices): 
             colours = [self.facelets[i] for i in corner_index]
             orientation = -(colours.index('W')  if 'W' in colours else colours.index('Y')) % 3
-            permutation =  self.corner_colours.index([colours[(i-orientation)%3] for i in range(3)])
+            permutation =  self.corner_colour_table.index([colours[(i-orientation)%3] for i in range(3)])
             new_corner_permuations[i] = permutation
             new_corner_orientations[i] = orientation
             
         for i, edge_index, in enumerate(self.edge_facelet_indices): 
             colours = [self.facelets[i] for i in edge_index]
             orientation = -(colours.index('W')  if 'W' in colours else colours.index('Y') if 'Y' in colours else colours.index('G') if 'G' in colours else colours.index('B')) % 2
-            permutation =  self.edge_colours.index([colours[(i-orientation)%2] for i in range(2)])
+            permutation =  self.edge_colour_table.index([colours[(i-orientation)%2] for i in range(2)])
             new_edge_permutations[i] = permutation
             new_edge_orientations[i] = orientation
         
@@ -231,6 +228,7 @@ class CoordCube:
         return (self.corner_permutation_coordinate, self.main_edge_permutation_coordinate, self.UD_edge_permutation_coordinate)
     
     def rotate_clockwise(self, move):
+
         # Dictionary to map moves to indices for lookup
         move_conversion_dict = {
             0: 0, 6: 1, 12: 2,

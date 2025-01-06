@@ -545,6 +545,8 @@ def main(cube_string ='WWWWWWWWWGGGGGGGGGOOOOOOOOORRRRRRRRRBBBBBBBBBYYYYYYYYY'):
 
         clock.tick(60)
 
+    # Clear all events and terminate the program 
+    pygame.event.clear()
     pygame.quit()
 
 if __name__ == "__main__":

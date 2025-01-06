@@ -107,11 +107,11 @@ class Facelet(IntEnum):
 class Data:
 
     '''
-    The following tables define rotations for the CubieCube representation. 
+    The following dictionaries define rotations for the CubieCube representation. 
     Corner permutation and edge permutation, and their respective orientations are all treated independently.
-    The tables are in an is-replaced-by format. The index of each item in an array represents a piece code, whilst the data value
+    The dictionaries are in an is-replaced-by format. The index of each item in an array represents a piece code, whilst the data value
     represents the code of the piece replacing it. 
-    For example, in corner_permutation_table the first data item, at index 0, in Move.U = [1,3,0,2,4,5,6,7] means that the piece with code
+    For example, in corner_permutation_map the first data item, at index 0, in Move.U = [1,3,0,2,4,5,6,7] means that the piece with code
     1 moves into the position 0 following a U move. 
     ie: UFR replaced UFL
     
@@ -119,7 +119,7 @@ class Data:
                              [  0,   1,   2,   3,   4,   5,   6,   7]
     '''
 
-    corner_permutation_tables = {
+    __corner_permutation_dict = {
             Move.U : [Corner.UFR, Corner.UBR, Corner.UFL, Corner.UBL, Corner.DFL, Corner.DFR, Corner.DBL, Corner.DBR], 
             Move.F : [Corner.DFL, Corner.UFL, Corner.UBL, Corner.UBR, Corner.DFR, Corner.UFR, Corner.DBL, Corner.DBR],
             Move.L : [Corner.UBL, Corner.UFR, Corner.DBL, Corner.UBR, Corner.UFL, Corner.DFR, Corner.DFL, Corner.DBR],  
@@ -133,7 +133,7 @@ class Data:
     1 -> Clockwise twist with respect to reference
     2 -> Anti-clockwise twist with respect to reference
     '''
-    corner_orientation_tables = {
+    __corner_orientation_dict = {
                 Move.U : [0, 0, 0, 0, 0, 0, 0, 0],  
                 Move.F : [2, 1, 0, 0, 1, 2, 0, 0], 
                 Move.L : [1, 0, 2, 0, 2, 0, 1, 0],  
@@ -146,7 +146,7 @@ class Data:
     Position / Piece codes : [UF, UL, UB, UR, DF, DL, DB, DR, FL, FR, BL, BR]
                              [ 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11]
     '''
-    edge_permutation_tables = {
+    __edge_permutation_dict = {
                 Move.U: [Edge.UR, Edge.UF, Edge.UL, Edge.UB, Edge.DF, Edge.DL, Edge.DB,  Edge.DR,  Edge.FL, Edge.FR, Edge.BL, Edge.BR],  
                 Move.F: [Edge.FL, Edge.UL, Edge.UB, Edge.UR, Edge.FR, Edge.DL, Edge.DB,  Edge.DR,  Edge.DF, Edge.UF, Edge.BL, Edge.BR],  
                 Move.L: [Edge.UF, Edge.BL, Edge.UB, Edge.UR, Edge.DF, Edge.FL, Edge.DB,  Edge.DR,  Edge.UL, Edge.FR, Edge.DL, Edge.BR],  
@@ -159,7 +159,7 @@ class Data:
     0 -> No flip with respect to reference
     1 -> Flipped with respect to reference
     '''
-    edge_orientation_tables = {
+    __edge_orientation_dict = {
                 Move.U: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
                 Move.F: [1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 0], 
                 Move.L: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],  
@@ -169,13 +169,19 @@ class Data:
             }
     
     '''
+    Array to store dictionaries used in cubie-cube rotations. 
+    '''
+    cubie_move_dicts = [__corner_permutation_dict, __corner_orientation_dict, __edge_permutation_dict, __edge_orientation_dict]
+    
+
+    '''
     The colours on face array defines how to cycle colours clockwise on a face using the is-replaced-by form.
     This is used by the computer vision to correctly orient the faces for the solver after they have been captured. 
     '''
     colours_on_face_array = [6,3,0,7,4,1,8,5,2]
     
     '''
-    Used for cubie-to-facelet conversion. 
+    Used for cubie-facelet conversion. 
     corner_facelet_indices stores the three facelets comprising each corner cubie. 
     edge_facelet_indices stores the two facelets comprising each edge cubie. 
     '''
@@ -210,7 +216,7 @@ class Data:
     There are subtleties in the order in which these, and the preceding tables are defined, which avoid issues related to the order of 
     colours on the displayed cube.  
     '''
-    corner_colours = [
+    corner_colour_table = [
             ['W', 'O', 'G'],  # UFL
             ['W', 'G', 'R'],  # UFR
             ['W', 'B', 'O'],  # UBL
@@ -221,7 +227,7 @@ class Data:
             ['Y', 'B', 'R'],  # DBR
         ]
 
-    edge_colours = [
+    edge_colour_table = [
             ['W', 'G'],  # UF
             ['W', 'O'],  # UL
             ['W', 'B'],  # UB
@@ -244,7 +250,7 @@ class Data:
 
 '''
 Class to manage the loading of move tables. 
-If not present, it will raise an error. 
+If a move table is not found, it will raise an error. 
 
 -- Need to add automatic loading of the tables -- (error correction)
 '''
