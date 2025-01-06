@@ -29,21 +29,21 @@ class Move(IntEnum):
     U = 0 # U
     F = 1 # F
     L = 2 # L
-    D = 3 # D
-    R = 4 # R
-    B = 5 # B
+    R = 3 # R
+    B = 4 # B
+    D = 5 # D
     U2 = 6 # U2
     F2 = 7 # F2
     L2 = 8 # L2
-    D2 = 9 # D2
-    R2 = 10 # R2
-    B2 = 11 # B2
+    R2 = 9 # R2
+    B2 = 10 # B2
+    D2 = 11 # D2
     U3 = 12 # U'
     F3 = 13 # F'
     L3 = 14 # L'
-    D3 = 15 # D'
-    R3 = 16 # R'
-    B3 = 17 # B'
+    R3 = 15 # R'
+    B3 = 16 # B'
+    D3 = 17 # D'
 
 '''
 Facelets are numbered going across, starting in the top left of the face.
