@@ -52,7 +52,7 @@ class PruningTableGenerator:
         queue = deque([(initial_state, 0)])  # (cube_state, depth)
         visited = set()
 
-        while queue and len(udslice_corner_table) <= 1013760:
+        while queue and len(udslice_corner_table) <= 2048 * 495:
             current_state, depth = queue.popleft()
             coord_tuple = (
                 current_state.UD_slice_coordinate,
@@ -87,7 +87,7 @@ class PruningTableGenerator:
         queue = deque([(initial_state, 0)])  # (cube_state, depth)
         visited = set()
 
-        while queue and len(udslice_edge_table) <= 1082565:
+        while queue and len(udslice_edge_table) <= 2187 * 495:
             current_state, depth = queue.popleft()
             coord_tuple = (
                 current_state.UD_slice_coordinate,

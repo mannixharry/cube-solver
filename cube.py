@@ -122,64 +122,96 @@ class FaceletCube:
         # Initialize the facelet representation of a solved cube. 
         self.facelets = list('WWWWWWWWWGGGGGGGGGOOOOOOOOORRRRRRRRRBBBBBBBBBYYYYYYYYY')
 
+        # Handles the cube_input parameter. 
         if cube_input is not None:
-            if isinstance(cube_input, str):
+            if isinstance(cube_input, FaceletCube):
+                self.facelets = cube_input.facelets
+            elif isinstance(cube_input, str):
                 self.facelets = list(cube_input)
             elif isinstance(cube_input, CubieCube):
-                self.facelets = self.from_cubie_cube(cube_input)
+                self.facelets = self.from_cubie_cube(cube_input).facelets
             else:
                 raise TypeError('cube_input does not match an expected type')
-            
+    
+    # Converts a cubie representation to a facelet representation. 
     def from_cubie_cube(self, cubie_cube):
-        facelets = ['x'] * 54
         
-        # Fill the corners
+        facelets = [''] * 54
+        
+        # Iteratively load the colour data for each corner into the facelet array.  
         for i in range(8):
+            # Retrieve the piece code and orientation of the corner in position i. 
             permutation = cubie_cube.corner_permutations[i]
             orientation = cubie_cube.corner_orientations[i]
             for j in range(3):
+                # Map the colours of the retrieved piece to the facelet indices of the position. 
                 facelets[self.corner_facelet_indices[i][j]] = (self.corner_colour_table[permutation])[(j+orientation)%3]
 
-        # Fill the edges
+        # Load the colour data for each edge into the facelet array. 
         for i in range(12):
             permutation = cubie_cube.edge_permutations[i]
             orientation = cubie_cube.edge_orientations[i]
             for j in range(2):
                 facelets[self.edge_facelet_indices[i][j]] = self.edge_colour_table[permutation][(j + orientation) % 2]
 
-        # Fill the centre pieces (fixed colours)
+        # Fill the centre pieces (these are fixed).
         centre_colours = ['W', 'G', 'O', 'R', 'B', 'Y']
         centre_indices = [Facelet.U4, Facelet.F4, Facelet.L4, Facelet.R4, Facelet.B4, Facelet.D4]
-
         for i in range(6):
             facelets[centre_indices[i]] = centre_colours[i]
-            
-        return facelets
+        
+        # Create a facelet_cube with the calculated facelets to return.
+        facelet_string = str(''.join(facelets))
+        facelet_cube = FaceletCube(facelet_string)
+        return facelet_cube
     
+    # Converts a facelet representation of a cube to a cubie representation. 
     def to_cubie_cube(self):
         
+        # Initialize a new cubie_cube and temporary variables. 
         cubie_cube = CubieCube()
 
-        new_corner_permuations = [0] * 8
+        # Initialize the configuration arrays for a solved cube (temporary). 
+        new_corner_permutations = list(range(8))
         new_corner_orientations = [0] * 8
-        new_edge_permutations = [0] * 12
+        new_edge_permutations = list(range(12))
         new_edge_orientations = [0] * 12
 
-        for i, corner_index, in enumerate(self.corner_facelet_indices): 
-            colours = [self.facelets[i] for i in corner_index]
-            orientation = -(colours.index('W')  if 'W' in colours else colours.index('Y')) % 3
-            permutation =  self.corner_colour_table.index([colours[(i-orientation)%3] for i in range(3)])
-            new_corner_permuations[i] = permutation
+
+        for i, corner_index in enumerate(self.corner_facelet_indices): 
+            # Get the colours for the current corner's facelets
+            colours = [self.facelets[idx] for idx in corner_index]
+
+            # Determine the orientation based on the index of 'W' or 'Y' in the colours array. 
+            orientation = -(colours.index('W') if 'W' in colours else colours.index('Y')) % 3
+
+            # Determine the permutation using the oriented colors
+            oriented_colours = [colours[(j - orientation) % 3] for j in range(3)]
+            permutation = self.corner_colour_table.index(oriented_colours)
+
+            # Assign to the respective corner arrays
+            new_corner_permutations[i] = permutation
             new_corner_orientations[i] = orientation
-            
-        for i, edge_index, in enumerate(self.edge_facelet_indices): 
-            colours = [self.facelets[i] for i in edge_index]
-            orientation = -(colours.index('W')  if 'W' in colours else colours.index('Y') if 'Y' in colours else colours.index('G') if 'G' in colours else colours.index('B')) % 2
-            permutation =  self.edge_colour_table.index([colours[(i-orientation)%2] for i in range(2)])
+        
+
+        for i, edge_index in enumerate(self.edge_facelet_indices): 
+            # Get the colors for the current edge's facelets
+            colours = [self.facelets[idx] for idx in edge_index]
+
+            # Determine the orientation based on the priority of colors
+            orientation_colors = ['W', 'Y', 'G', 'B']
+            orientation = -next(colours.index(color) for color in orientation_colors if color in colours) % 2
+
+            # Determine the permutation using the oriented colors
+            oriented_colours = [colours[(j - orientation) % 2] for j in range(2)]
+            permutation = self.edge_colour_table.index(oriented_colours)
+
+            # Assign to the respective edge arrays
             new_edge_permutations[i] = permutation
             new_edge_orientations[i] = orientation
         
-        cubie_cube.corner_permutations = new_corner_permuations
+        # Update the new cubie-cube's configuration. 
+        cubie_cube.corner_permutations = new_corner_permutations
         cubie_cube.corner_orientations = new_corner_orientations
         cubie_cube.edge_permutations = new_edge_permutations
         cubie_cube.edge_orientations = new_edge_orientations

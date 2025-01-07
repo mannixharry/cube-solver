@@ -168,7 +168,7 @@ class G2Solver:
             return move - 12
         
 # Usage:
-test_cube = cube.CubieCube('YBYYWWGYYWBOWGRWRWRGROOOBGBBRGBRWGOYOOBBBYGRWOYOWYGRGR')
+test_cube = cube.CubieCube('YYOWWWYWWGRRGGGWGORGRRORGROBOYOROBBOGBBBBBYORGYWYYWWYB')
 
 
 
@@ -236,7 +236,5 @@ def contract_solution(moves):
 
 import main
 main.main(str(cube.FaceletCube(saved_test)))
-main.main(str(cube.FaceletCube(test_cube)))
-print(cube.FaceletCube(test_cube))
-coord_cube = cube.CoordCube(test_cube)
-print(coord_cube.get_g2_coordinates())
+
+

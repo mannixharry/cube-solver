@@ -4,9 +4,13 @@ from data import *
 
 
 test_cube = cube.CubieCube()
+test_cube.rotate_clockwise(Move.U2)
+test_cube.rotate_clockwise(Move.D2)
+test_cube.rotate_clockwise(Move.F2)
 
-test_cube.rotate_clockwise(Move.U)
-test_cube.rotate_clockwise(Move.L3)
+facelet_cube = cube.FaceletCube(test_cube)
+new_test = cube.CubieCube(facelet_cube)
 
 
 main.main(str(cube.FaceletCube(test_cube)))
+main.main(str(cube.FaceletCube(new_test)))
