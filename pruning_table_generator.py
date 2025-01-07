@@ -126,7 +126,7 @@ class PruningTableGenerator:
             current_state, depth = queue.popleft()
             coord_tuple = (
                 current_state.corner_permutation_coordinate,
-                current_state.UD_slice_edge_permutation_coordinate
+                current_state.four_edge_permutation_coordinate
             )
 
             if coord_tuple in visited:
@@ -141,7 +141,7 @@ class PruningTableGenerator:
 
                 next_coord_tuple = (
                     next_state.corner_permutation_coordinate,
-                    next_state.UD_slice_edge_permutation_coordinate
+                    next_state.four_edge_permutation_coordinate
                 )
 
                 if next_coord_tuple not in visited:
@@ -160,8 +160,8 @@ class PruningTableGenerator:
         while queue and len(mainedge_udslice_edge_table) < 40320 * 24:  # Max states for main edge and UD slice edge permutations
             current_state, depth = queue.popleft()
             coord_tuple = (
-                current_state.main_edge_permutation_coordinate,
-                current_state.UD_slice_edge_permutation_coordinate
+                current_state.eight_edge_permutation_coordinate,
+                current_state.four_edge_permutation_coordinate
             )
 
             if coord_tuple in visited:
@@ -175,8 +175,8 @@ class PruningTableGenerator:
                 next_state.rotate_clockwise(move)  # Apply move
 
                 next_coord_tuple = (
-                    next_state.main_edge_permutation_coordinate,
-                    next_state.UD_slice_edge_permutation_coordinate
+                    next_state.eight_edge_permutation_coordinate,
+                    next_state.four_edge_permutation_coordinate
                 )
 
                 if next_coord_tuple not in visited:

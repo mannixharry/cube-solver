@@ -16,8 +16,8 @@ class MoveTableGenerator:
             "edge_orientation_table": ("edge_orientation_table.json", self.generate_edge_orientation_table),
             "UD_slice_table": ("UD_slice_permutation_table.json", self.generate_UD_slice_permutation_table),
             "corner_permutation_table": ("corner_permutation_table.json", self.generate_corner_permutation_table),
-            "main_edge_permutation_table": ("main_edge_permutation_table.json", self.generate_main_edge_permutation_table),
-            "UD_slice_edge_permutation_table": ("UD_slice_edge_permutation_table.json", self.generate_UD_slice_edge_permutation_table),
+            "eight_edge_permutation_table": ("eight_edge_permutation_table.json", self.generate_main_edge_permutation_table),
+            "four_edge_permutation_table": ("four_edge_permutation_table.json", self.generate_UD_slice_edge_permutation_table),
         }
 
         # Check if regeneration is required or the files already exist
@@ -61,7 +61,7 @@ class MoveTableGenerator:
             
             parent_orientation_coordinate = cube.CoordCube(parent_cube).corner_orientation_coordinate
 
-            child_orientation_coordinates = []
+            child_orientation_coordinates = [''] * 18
             for move_type in [cube.Move.U, cube.Move.F, cube.Move.L, cube.Move.R, cube.Move.B, cube.Move.D]:
                 
                 base_cube = cube.CubieCube()
@@ -69,7 +69,7 @@ class MoveTableGenerator:
                 for turns in range(3):
                     base_cube.rotate_clockwise(move_type)
                     child_coordinate = cube.CoordCube(base_cube).corner_orientation_coordinate
-                    child_orientation_coordinates.append(child_coordinate)
+                    child_orientation_coordinates[move_type + 6*turns] = child_coordinate
                     
             corner_orientation_table[parent_orientation_coordinate] = child_orientation_coordinates
         
@@ -87,7 +87,7 @@ class MoveTableGenerator:
             
             parent_orientation_coordinate = cube.CoordCube(parent_cube).edge_orientation_coordinate
 
-            child_orientation_coordinates = []
+            child_orientation_coordinates = [''] * 18
             for move_type in [cube.Move.U, cube.Move.F, cube.Move.L, cube.Move.R, cube.Move.B, cube.Move.D]:
                 
                 base_cube = cube.CubieCube()
@@ -95,7 +95,7 @@ class MoveTableGenerator:
                 for turns in range(3):
                     base_cube.rotate_clockwise(move_type)
                     child_coordinate = cube.CoordCube(base_cube).edge_orientation_coordinate
-                    child_orientation_coordinates.append(child_coordinate)
+                    child_orientation_coordinates[move_type + 6*turns] = child_coordinate
                     
             edge_orientation_table[parent_orientation_coordinate] = child_orientation_coordinates
         
@@ -120,7 +120,7 @@ class MoveTableGenerator:
             parent_cube = cube.CubieCube()
             parent_cube.edge_permutations = cubie_UD_permutations
             parent_UD_slice_coordinate = cube.CoordCube(parent_cube).UD_slice_coordinate
-            child_UD_slice_coordinates = []
+            child_UD_slice_coordinates = [''] * 18
             for move_type in [cube.Move.U, cube.Move.F, cube.Move.L, cube.Move.R, cube.Move.B, cube.Move.D]:
 
                 base_cube = cube.CubieCube()
@@ -129,7 +129,7 @@ class MoveTableGenerator:
                 for turns in range(3):
                     base_cube.rotate_clockwise(move_type)
                     child_coordinate = cube.CoordCube(base_cube).UD_slice_coordinate
-                    child_UD_slice_coordinates.append(child_coordinate)
+                    child_UD_slice_coordinates[move_type + 6*turns] = child_coordinate
                     
             UD_slice_permutation_table[parent_UD_slice_coordinate] = child_UD_slice_coordinates
         
@@ -143,7 +143,7 @@ class MoveTableGenerator:
             parent_cube = cube.CubieCube()
             parent_cube.corner_permutations = cubie_corner_permutations
             parent_corner_permutation_coordinate = cube.CoordCube(parent_cube).calculate_corner_permutation_coordinate()
-            child_corner_permutation_coordinates = []
+            child_corner_permutation_coordinates = [''] * 18
             for move_type in [cube.Move.U, cube.Move.F, cube.Move.L, cube.Move.R, cube.Move.B, cube.Move.D]:
                 base_cube = cube.CubieCube()
                 base_cube.corner_permutations = cubie_corner_permutations
@@ -151,7 +151,7 @@ class MoveTableGenerator:
                 for turns in range(3):
                     base_cube.rotate_clockwise(move_type)
                     child_coordinate = cube.CoordCube(base_cube).corner_permutation_coordinate
-                    child_corner_permutation_coordinates.append(child_coordinate)
+                    child_corner_permutation_coordinates[move_type + 6*turns] = child_coordinate
                     
             corner_permutation_table[parent_corner_permutation_coordinate] = child_corner_permutation_coordinates
         
@@ -169,8 +169,8 @@ class MoveTableGenerator:
             parent_cube.edge_permutations = cubie_main_edges
             
             # Calculate the coordinate for this main edge configuration
-            parent_edge_permutation_coordinate = cube.CoordCube(parent_cube).calculate_main_edge_permutation_coordinate()            
-            child_edge_permutation_coordinates = []
+            parent_edge_permutation_coordinate = cube.CoordCube(parent_cube).calculate_eight_edge_permutation_coordinate()            
+            child_edge_permutation_coordinates = [''] * 18
             
             for move_type in [cube.Move.U, cube.Move.F, cube.Move.L, cube.Move.R, cube.Move.B, cube.Move.D]:
                 # Create a new cube with the initial main edge configuration
@@ -181,8 +181,8 @@ class MoveTableGenerator:
                     base_cube.rotate_clockwise(move_type)
                     
                     # Calculate the new coordinate after the move
-                    child_coordinate = cube.CoordCube(base_cube).main_edge_permutation_coordinate
-                    child_edge_permutation_coordinates.append(child_coordinate)
+                    child_coordinate = cube.CoordCube(base_cube).eight_edge_permutation_coordinate
+                    child_edge_permutation_coordinates[move_type + 6*turns] = child_coordinate
             
             # Map the parent coordinate to the list of child coordinates
             main_edge_permutation_table[parent_edge_permutation_coordinate] = child_edge_permutation_coordinates
@@ -200,8 +200,8 @@ class MoveTableGenerator:
             parent_cube.edge_permutations = cubie_UD_edges
             
             # Calculate the coordinate for this UD slice configuration
-            parent_UD_slice_edge_permutation_coordinate = cube.CoordCube(parent_cube).calculate_UD_slice_edge_permutation_coordinate()        
-            child_UD_slice_edge_permutation_coordinates = []
+            parent_UD_slice_edge_permutation_coordinate = cube.CoordCube(parent_cube).calculate_four_edge_permutation_coordinate()        
+            child_UD_slice_edge_permutation_coordinates = [''] * 18
             
             for move_type in [cube.Move.U, cube.Move.F, cube.Move.L, cube.Move.R, cube.Move.B, cube.Move.D]:
                 # Create a new cube with the initial UD slice edge configuration
@@ -212,8 +212,8 @@ class MoveTableGenerator:
                     base_cube.rotate_clockwise(move_type)
                     
                     # Calculate the new coordinate after the move
-                    child_coordinate = cube.CoordCube(base_cube).UD_slice_edge_permutation_coordinate
-                    child_UD_slice_edge_permutation_coordinates.append(child_coordinate)
+                    child_coordinate = cube.CoordCube(base_cube).four_edge_permutation_coordinate
+                    child_UD_slice_edge_permutation_coordinates[move_type + 6*turns] = child_coordinate
             
             # Map the parent coordinate to the list of child coordinates
             UD_slice_edge_permutation_table[parent_UD_slice_edge_permutation_coordinate] = child_UD_slice_edge_permutation_coordinates

@@ -178,7 +178,7 @@ class Data:
     The colours on face array defines how to cycle colours clockwise on a face using the is-replaced-by form.
     This is used by the computer vision to correctly orient the faces for the solver after they have been captured. 
     '''
-    colours_on_face_array = [6,3,0,7,4,1,8,5,2]
+    colours_on_face_map = [6,3,0,7,4,1,8,5,2]
     
     '''
     Used for cubie-facelet conversion. 
@@ -268,10 +268,10 @@ class Move_Tables:
             edge_orientation_table = json.load(edge_orientation_file)
         with open('move_tables/UD_slice_permutation_table.json', 'r') as UD_slice_permutation_file:
             UD_slice_permutation_table = json.load(UD_slice_permutation_file)
-        with open('move_tables/UD_slice_edge_permutation_table.json', 'r') as UD_slice_edge_permutation_file:
-            UD_slice_edge_permutation_table = json.load(UD_slice_edge_permutation_file)
-        with open('move_tables/main_edge_permutation_table.json', 'r') as main_edge_permutation_file:
-            main_edge_permutation_table = json.load(main_edge_permutation_file)
+        with open('move_tables/four_edge_permutation_table.json', 'r') as four_edge_permutation_file:
+            four_edge_permutation_table = json.load(four_edge_permutation_file)
+        with open('move_tables/eight_edge_permutation_table.json', 'r') as eight_edge_permutation_file:
+            eight_edge_permutation_table = json.load(eight_edge_permutation_file)
         with open('move_tables/corner_permutation_table.json', 'r') as corner_permutation_file:
             corner_permutation_table = json.load(corner_permutation_file)
     except FileNotFoundError: 

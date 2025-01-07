@@ -94,13 +94,13 @@ class G2Solver:
 
     def heuristic(self, state):
         """Get the heuristic estimate for the state based on the pruning tables."""
-        coord_tuple_mainedge = (state.main_edge_permutation_coordinate, state.UD_slice_edge_permutation_coordinate)
-        coord_tuple_corner = (state.corner_permutation_coordinate, state.UD_slice_edge_permutation_coordinate)
+        coord_tuple_mainedge = (state.eight_edge_permutation_coordinate, state.four_edge_permutation_coordinate)
+        print(state.corner_permutation_coordinate, state.four_edge_permutation_coordinate)
+        coord_tuple_corner = (state.corner_permutation_coordinate, state.four_edge_permutation_coordinate)
         
         # Get heuristic depths from both tables, defaulting to a high depth if not found
         mainedge_depth = self.mainedge_udslice_edge_table.get(str(coord_tuple_mainedge), 18)  # Fallback to max depth
         corner_depth = self.corner_udslice_edge_table.get(str(coord_tuple_corner), 18)  #Fallback to max depth
-
         # Use the maximum as a combined heuristic
         return max(int(mainedge_depth), int(corner_depth))
 
@@ -128,8 +128,8 @@ class G2Solver:
 
         # Goal check for G2 (solved state)
         if (
-            state.main_edge_permutation_coordinate == 0 and
-            state.UD_slice_edge_permutation_coordinate == 0 and
+            state.eight_edge_permutation_coordinate == 0 and
+            state.four_edge_permutation_coordinate == 0 and
             state.corner_permutation_coordinate == 0
         ):
             print('Found G2 solution')
@@ -236,5 +236,5 @@ def contract_solution(moves):
 
 import main
 main.main(str(cube.FaceletCube(saved_test)))
-
-
+main.main(str(cube.FaceletCube(test_cube)))
+exit()
