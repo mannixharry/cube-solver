@@ -9,9 +9,9 @@ start_time = datetime.now()
 class G1Solver:
     def __init__(self):
         # Load pruning tables
-        with open('tables/udslice_corner_table.json', 'r') as corner_file:
+        with open('pruning_tables/udslice_corner_table.json', 'r') as corner_file:
             self.udslice_corner_table = json.load(corner_file)
-        with open('tables/udslice_edge_table.json', 'r') as edge_file:
+        with open('pruning_tables/udslice_edge_table.json', 'r') as edge_file:
             self.udslice_edge_table = json.load(edge_file)
 
     def heuristic(self, state):
@@ -87,9 +87,9 @@ class G1Solver:
 class G2Solver:
     def __init__(self):
         # Load pruning tables for G2 stage
-        with open('tables/main_edge_udslice_edge_table.json', 'r') as mainedge_file:
+        with open('pruning_tables/main_edge_udslice_edge_table.json', 'r') as mainedge_file:
             self.mainedge_udslice_edge_table = json.load(mainedge_file)
-        with open('tables/corner_udslice_edge_table.json', 'r') as corner_file:
+        with open('pruning_tables/corner_udslice_edge_table.json', 'r') as corner_file:
             self.corner_udslice_edge_table = json.load(corner_file)
 
     def heuristic(self, state):
@@ -136,7 +136,7 @@ class G2Solver:
             return path[:]  # Return the current path as solution
 
         min_cost = float('inf')
-        for move in [0,3,7,8,10,11,12,15]:  # Only use 10 possible moves for G2 stage
+        for move in Data.g2_allowed_moves:  # Only use 10 possible moves for G2 stage
             if path and move == self.inverse_move(path[-1]):
                 continue  # Skip inverse of previous move to avoid redundancy
             
@@ -168,9 +168,7 @@ class G2Solver:
             return move - 12
         
 # Usage:
-test_cube = cube.CubieCube(cube.FaceletCube('RRYBWYWGOORBWGWWWGYOBYOGOORYRBBRGWBORWGOBBWYYBORYYRGGG'))
-
-    #print(coordCube)
+test_cube = cube.CubieCube('YBYYWWGYYWBOWGRWRWRGROOOBGBBRGBRWGOYOOBBBYGRWOYOWYGRGR')
 
 
 
@@ -239,3 +237,6 @@ def contract_solution(moves):
 import main
 main.main(str(cube.FaceletCube(saved_test)))
 main.main(str(cube.FaceletCube(test_cube)))
+print(cube.FaceletCube(test_cube))
+coord_cube = cube.CoordCube(test_cube)
+print(coord_cube.get_g2_coordinates())

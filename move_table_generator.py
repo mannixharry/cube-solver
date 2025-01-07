@@ -1,16 +1,13 @@
 import os 
 import json
 import itertools
-
-import os
-import sys
 import cube 
 
 class MoveTableGenerator:
      
     def __init__(self, regenerate_tables=False):
         # Define the directory where the tables will be saved
-        tables_dir = os.path.join(os.path.dirname(__file__), 'tables')
+        tables_dir = os.path.join(os.path.dirname(__file__), 'move_tables')
         os.makedirs(tables_dir, exist_ok=True)  # Ensure the directory exists
 
         # Define all tables with their respective file paths and generation methods
@@ -65,7 +62,7 @@ class MoveTableGenerator:
             parent_orientation_coordinate = cube.CoordCube(parent_cube).corner_orientation_coordinate
 
             child_orientation_coordinates = []
-            for move_type in [cube.Move.U, cube.Move.F, cube.Move.L, cube.Move.D, cube.Move.R, cube.Move.B]:
+            for move_type in [cube.Move.U, cube.Move.F, cube.Move.L, cube.Move.R, cube.Move.B, cube.Move.D]:
                 
                 base_cube = cube.CubieCube()
                 base_cube.corner_orientations = cubie_corner_orientation
@@ -91,7 +88,7 @@ class MoveTableGenerator:
             parent_orientation_coordinate = cube.CoordCube(parent_cube).edge_orientation_coordinate
 
             child_orientation_coordinates = []
-            for move_type in [cube.Move.U, cube.Move.F, cube.Move.L, cube.Move.D, cube.Move.R, cube.Move.B]:
+            for move_type in [cube.Move.U, cube.Move.F, cube.Move.L, cube.Move.R, cube.Move.B, cube.Move.D]:
                 
                 base_cube = cube.CubieCube()
                 base_cube.edge_orientations = cubie_edge_orientation
@@ -124,7 +121,7 @@ class MoveTableGenerator:
             parent_cube.edge_permutations = cubie_UD_permutations
             parent_UD_slice_coordinate = cube.CoordCube(parent_cube).UD_slice_coordinate
             child_UD_slice_coordinates = []
-            for move_type in [cube.Move.U, cube.Move.F, cube.Move.L, cube.Move.D, cube.Move.R, cube.Move.B]:
+            for move_type in [cube.Move.U, cube.Move.F, cube.Move.L, cube.Move.R, cube.Move.B, cube.Move.D]:
 
                 base_cube = cube.CubieCube()
                 base_cube.edge_permutations = cubie_UD_permutations
@@ -147,7 +144,7 @@ class MoveTableGenerator:
             parent_cube.corner_permutations = cubie_corner_permutations
             parent_corner_permutation_coordinate = cube.CoordCube(parent_cube).calculate_corner_permutation_coordinate()
             child_corner_permutation_coordinates = []
-            for move_type in [cube.Move.U, cube.Move.F, cube.Move.L, cube.Move.D, cube.Move.R, cube.Move.B]:
+            for move_type in [cube.Move.U, cube.Move.F, cube.Move.L, cube.Move.R, cube.Move.B, cube.Move.D]:
                 base_cube = cube.CubieCube()
                 base_cube.corner_permutations = cubie_corner_permutations
             
@@ -175,7 +172,7 @@ class MoveTableGenerator:
             parent_edge_permutation_coordinate = cube.CoordCube(parent_cube).calculate_main_edge_permutation_coordinate()            
             child_edge_permutation_coordinates = []
             
-            for move_type in [cube.Move.U, cube.Move.F, cube.Move.L, cube.Move.D, cube.Move.R, cube.Move.B]:
+            for move_type in [cube.Move.U, cube.Move.F, cube.Move.L, cube.Move.R, cube.Move.B, cube.Move.D]:
                 # Create a new cube with the initial main edge configuration
                 base_cube = cube.CubieCube()
                 base_cube.edge_permutations = cubie_main_edges[:]
@@ -206,7 +203,7 @@ class MoveTableGenerator:
             parent_UD_slice_edge_permutation_coordinate = cube.CoordCube(parent_cube).calculate_UD_slice_edge_permutation_coordinate()        
             child_UD_slice_edge_permutation_coordinates = []
             
-            for move_type in [cube.Move.U, cube.Move.F, cube.Move.L, cube.Move.D, cube.Move.R, cube.Move.B]:
+            for move_type in [cube.Move.U, cube.Move.F, cube.Move.L, cube.Move.R, cube.Move.B, cube.Move.D]:
                 # Create a new cube with the initial UD slice edge configuration
                 base_cube = cube.CubieCube()
                 base_cube.edge_permutations = cubie_UD_edges[:]
@@ -224,5 +221,7 @@ class MoveTableGenerator:
         return UD_slice_edge_permutation_table
 
 
-move_tables = MoveTableGenerator(regenerate_tables=True)
-
+if __name__ == '__main__':
+    print('Generating move tables...')
+    move_tables = MoveTableGenerator(regenerate_tables=True)
+    print('Move table generation complete')

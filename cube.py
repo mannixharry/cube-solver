@@ -31,7 +31,7 @@ class CubieCube:
             elif isinstance(cube_input, CubieCube): # Checks to see if a Cubie-Cube is input.
                 load_configuration_from(cube_input)
             elif isinstance(cube_input, str): # Checks to see if a string is input.
-                load_configuration_from(FaceletCube(cube_input).cubie_cube())
+                load_configuration_from(FaceletCube(cube_input).to_cubie_cube())
             else:
                 raise TypeError('cube_input does not match an expected type')
 
@@ -188,8 +188,6 @@ class FaceletCube:
     
     def rotate_colours_on_face(self, move):
         face = move % 6
-        face_inconsistency_conversion = [0,1,2,5,3,4] # UFLDRB -> UFLRBD
-        face = face_inconsistency_conversion[face]
         left_pointer = 9 * face
         move_count = 1 + (move // 6)
         face_indices = self.facelets[left_pointer : left_pointer + 9]
@@ -210,14 +208,16 @@ class CoordCube:
     def __init__(self, cube_input=None):
 
         # Import move tables for rotations and transitions
-
-        self.corner_orientation_table = Move_Tables.corner_orientation_table
-        self.edge_orientation_table = Move_Tables.edge_orientation_table
-        self.UD_slice_permutation_table = Move_Tables.UD_slice_permutation_table
-        self.main_edge_permutation_table = Move_Tables.main_edge_permutation_table
-        self.UD_slice_edge_permutation_table = Move_Tables.UD_slice_edge_permutation_table
-        self.corner_permutation_table = Move_Tables.corner_permutation_table
-       
+        try: 
+            self.corner_orientation_table = Move_Tables.corner_orientation_table
+            self.edge_orientation_table = Move_Tables.edge_orientation_table
+            self.UD_slice_permutation_table = Move_Tables.UD_slice_permutation_table
+            self.main_edge_permutation_table = Move_Tables.main_edge_permutation_table
+            self.UD_slice_edge_permutation_table = Move_Tables.UD_slice_edge_permutation_table
+            self.corner_permutation_table = Move_Tables.corner_permutation_table
+        except:
+            pass
+            
         # Default values if no cube input is provided
         self.corner_permutations = list(range(8))
         self.corner_orientations = [0] * 8
@@ -259,7 +259,7 @@ class CoordCube:
         return (self.corner_orientation_coordinate, self.edge_orientation_coordinate, self.UD_slice_coordinate)
     
     def get_g2_coordinates(self):
-        return (self.corner_permutation_coordinate, self.main_edge_permutation_coordinate, self.UD_edge_permutation_coordinate)
+        return (self.corner_permutation_coordinate, self.main_edge_permutation_coordinate, self.UD_slice_edge_permutation_coordinate)
     
     def rotate_clockwise(self, move):
 
@@ -273,7 +273,10 @@ class CoordCube:
             5: 15, 11: 16, 17: 17
         }
 
-        
+        #UFLRBD
+        # currently using UFLDRB
+
+
 
         move_integer = move_conversion_dict[move]
 
