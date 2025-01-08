@@ -238,86 +238,112 @@ class FaceletCube:
 
   
 class CoordCube:
-    
     def __init__(self, cube_input=None):
-
         # Import move tables for rotations and transitions
         try: 
-            self.g1_move_tables = [Move_Tables.corner_orientation_table, Move_Tables.edge_orientation_table, Move_Tables.UD_slice_permutation_table]
-            self.g2_move_tables = [Move_Tables.eight_edge_permutation_table, Move_Tables.four_edge_permutation_table, Move_Tables.corner_permutation_table]
-        except:
+            self.g1_move_tables = [
+                Move_Tables.corner_orientation_table,
+                Move_Tables.edge_orientation_table,
+                Move_Tables.UD_slice_permutation_table
+            ]
+            self.g2_move_tables = [
+                Move_Tables.eight_edge_permutation_table,
+                Move_Tables.four_edge_permutation_table,
+                Move_Tables.corner_permutation_table
+            ]
+        except ImportError:
             pass
-            
-        # Inialize the CoordCube representation of a solved cube. 
+
+        # Initialize the CoordCube representation of a solved cube. 
         self.corner_orientation_coordinate = self.edge_orientation_coordinate = self.UD_slice_coordinate = 0
         self.eight_edge_permutation_coordinate = self.four_edge_permutation_coordinate = self.corner_permutation_coordinate = 0
 
         self.cubie_cube = CubieCube()
 
+        def load_configuration_from(cube_input):  # Helper procedure to copy configuration from an input CoordCube
+            self.corner_orientation_coordinate = cube_input.corner_orientation_coordinate
+            self.edge_orientation_coordinate = cube_input.edge_orientation_coordinate
+            self.UD_slice_coordinate = cube_input.UD_slice_coordinate
+            self.eight_edge_permutation_coordinate = cube_input.eight_edge_permutation_coordinate
+            self.four_edge_permutation_coordinate = cube_input.four_edge_permutation_coordinate
+            self.corner_permutation_coordinate = cube_input.corner_permutation_coordinate
+
         # Load cube configuration.
         if cube_input is not None:
-
             if isinstance(cube_input, CoordCube):
+                self.cubie_cube = None  # Unnecessary since calculate_..._coordinate will never be called.
+                load_configuration_from(cube_input)
+            elif isinstance(cube_input, CubieCube):
+                coord_cube = self.from_cubie_cube(cube_input)
+                load_configuration_from(coord_cube)
 
-                self.corner_orientation_coordinate = cube_input.corner_orientation_coordinate
-                self.edge_orientation_coordinate = cube_input.edge_orientation_coordinate
-                self.UD_slice_coordinate = cube_input.UD_slice_coordinate
-                self.eight_edge_permutation_coordinate = cube_input.eight_edge_permutation_coordinate
-                self.four_edge_permutation_coordinate = cube_input.four_edge_permutation_coordinate
-                self.corner_permutation_coordinate = cube_input.corner_permutation_coordinate
+        self.g1_coordinates = [
+            self.corner_orientation_coordinate,
+            self.edge_orientation_coordinate,
+            self.UD_slice_coordinate
+        ]
+        self.g2_coordinates = [
+            self.eight_edge_permutation_coordinate,
+            self.four_edge_permutation_coordinate,
+            self.corner_permutation_coordinate
+        ]
 
-                self.cubie_cube = None # Unnecessary since calculate_..._coordinate will never be called (as coordinates already determined)
-                
-            if isinstance(cube_input, CubieCube):
-        
-                # Initialize coordinates from the corner and edge orientations
-                print('worked')
-                self.cubie_cube = cube_input
+    def from_cubie_cube(self, cubie_cube):
+        # Creates a new CoordCube from a CubieCube.
+        coord_cube = CoordCube()
+        coord_cube.cubie_cube = cubie_cube
 
-                self.corner_orientation_coordinate = self.calculate_corner_orientation_coordinate()
-                self.edge_orientation_coordinate = self.calculate_edge_orientation_coordinate()
-                self.UD_slice_coordinate = self.calculate_UD_slice_coordinate()
-                self.eight_edge_permutation_coordinate = self.calculate_eight_edge_permutation_coordinate()
-                self.four_edge_permutation_coordinate = self.calculate_four_edge_permutation_coordinate()
-                self.corner_permutation_coordinate = self.calculate_corner_permutation_coordinate()
+        # Calculate all coordinates
+        coord_cube.corner_orientation_coordinate = coord_cube.calculate_corner_orientation_coordinate()
+        coord_cube.edge_orientation_coordinate = coord_cube.calculate_edge_orientation_coordinate()
+        coord_cube.UD_slice_coordinate = coord_cube.calculate_UD_slice_coordinate()
+        coord_cube.eight_edge_permutation_coordinate = coord_cube.calculate_eight_edge_permutation_coordinate()
+        coord_cube.four_edge_permutation_coordinate = coord_cube.calculate_four_edge_permutation_coordinate()
+        coord_cube.corner_permutation_coordinate = coord_cube.calculate_corner_permutation_coordinate()
 
 
-        
-        self.g1_coordinates = [self.corner_orientation_coordinate, self.edge_orientation_coordinate, self.UD_slice_coordinate]
-        self.g2_coordinates = [self.eight_edge_permutation_coordinate, self.four_edge_permutation_coordinate, self.corner_permutation_coordinate]
+        coord_cube.g1_coordinates = [coord_cube.corner_orientation_coordinate, coord_cube.edge_orientation_coordinate, coord_cube.UD_slice_coordinate]
+        coord_cube.g2_coordinates = [coord_cube.eight_edge_permutation_coordinate, coord_cube.four_edge_permutation_coordinate, coord_cube.corner_permutation_coordinate]
 
-    def get_g1_coordinates(self):
-        return self.g1_coordinates
-    
-    def get_g2_coordinates(self):
-        return self.get_g2_coordinates
-    
+        return coord_cube
+
     def update_coordinates(self):
         self.corner_orientation_coordinate, self.edge_orientation_coordinate, self.UD_slice_coordinate = self.g1_coordinates
         self.eight_edge_permutation_coordinate, self.four_edge_permutation_coordinate, self.corner_permutation_coordinate = self.g2_coordinates
-    
-    def rotate_clockwise(self, move):
 
+    def rotate_clockwise(self, move):
         # Update coordinates based on move
         self.g1_coordinates = [(self.g1_move_tables[i])[str(self.g1_coordinates[i])][move] for i in range(3)]
         self.g2_coordinates = [(self.g2_move_tables[i])[str(self.g2_coordinates[i])][move] for i in range(3)]
-
         self.update_coordinates()
 
     def __repr__(self):
-        return str((self.corner_orientation_coordinate, self.edge_orientation_coordinate, self.UD_slice_coordinate, self.eight_edge_permutation_coordinate, self.UD_edge_permutation_coordinate, self.corner_permutation_coordinate))
-    # Calculation methods for each coordinate
+        return str((
+            self.corner_orientation_coordinate,
+            self.edge_orientation_coordinate,
+            self.UD_slice_coordinate,
+            self.eight_edge_permutation_coordinate,
+            self.four_edge_permutation_coordinate,
+            self.corner_permutation_coordinate
+        ))
+
+
+    '''
+    Calculation methods for each coordinate.
+
+    corner_orientation_coordinate : the orientation array is treated as a ternary number. This is converted to decimal to find the coordinate. 
+    edge_orientation_coordinate : this is the same as for the corner orientation, only binary is used. 
+    etc... 
+
+    '''
 
     def calculate_corner_orientation_coordinate(self):
-        # Converts corner orientations to a unique integer (range 0 to 3^7-1)
         return sum(self.cubie_cube.corner_orientations[i] * (3 ** i) for i in range(7))
 
     def calculate_edge_orientation_coordinate(self):
-        # Converts edge orientations to a unique integer (range 0 to 2^11-1)
         return sum(self.cubie_cube.edge_orientations[i] * (2 ** i) for i in range(11))
-    
+
     def calculate_UD_slice_coordinate(self):
-        # Converts UD slice positions to a unique integer
         slice_indices = [1 if i in [8, 9, 10, 11] else 0 for i in self.cubie_cube.edge_permutations]
         UD_slice_coordinate = 0
         occupied_count = 0
@@ -328,16 +354,15 @@ class CoordCube:
                 if slice_indices[i] == 1:
                     start_counting = True
             elif slice_indices[i] == 0:
-                UD_slice_coordinate += math.comb(i, occupied_count) 
+                UD_slice_coordinate += math.comb(i, occupied_count)
             else:
-                occupied_count += 1 
-             
+                occupied_count += 1
+
         return UD_slice_coordinate
-    
+
     def calculate_corner_permutation_coordinate(self):
         corner_permutation_coordinate = 0
         for i in range(8):
-            # Count elements to the right of i that are smaller than element i
             smaller_count = sum(1 for j in range(i) if self.cubie_cube.corner_permutations[j] > self.cubie_cube.corner_permutations[i])
             corner_permutation_coordinate += smaller_count * math.factorial(i)
         return corner_permutation_coordinate
@@ -345,18 +370,16 @@ class CoordCube:
     def calculate_eight_edge_permutation_coordinate(self):
         eight_edge_permutation_coordinate = 0
         for i in range(8):
-            # Count elements to the right of i that are smaller than element i
             smaller_count = sum(1 for j in range(i) if self.cubie_cube.edge_permutations[j] > self.cubie_cube.edge_permutations[i])
             eight_edge_permutation_coordinate += smaller_count * math.factorial(i)
         return eight_edge_permutation_coordinate
 
     def calculate_four_edge_permutation_coordinate(self):
-        UD_edge_permutation_coordinate = 0
+        four_edge_permutation_coordinate = 0
         for i in range(4):
-            # Similar logic but for UD edges
             smaller_count = sum(1 for j in range(i) if self.cubie_cube.edge_permutations[j + 8] > self.cubie_cube.edge_permutations[i + 8])
-            UD_edge_permutation_coordinate += smaller_count * math.factorial(i)
-        return UD_edge_permutation_coordinate
+            four_edge_permutation_coordinate += smaller_count * math.factorial(i)
+        return four_edge_permutation_coordinate
     
 def main():
     pass

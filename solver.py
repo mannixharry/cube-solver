@@ -95,7 +95,6 @@ class G2Solver:
     def heuristic(self, state):
         """Get the heuristic estimate for the state based on the pruning tables."""
         coord_tuple_mainedge = (state.eight_edge_permutation_coordinate, state.four_edge_permutation_coordinate)
-        print(state.corner_permutation_coordinate, state.four_edge_permutation_coordinate)
         coord_tuple_corner = (state.corner_permutation_coordinate, state.four_edge_permutation_coordinate)
         
         # Get heuristic depths from both tables, defaulting to a high depth if not found
