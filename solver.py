@@ -63,6 +63,10 @@ class Solver:
 
         def ida_star(self, initial_state):
             """Perform IDA* search from the initial state."""
+            # Check if the initial state is already in the goal state
+            if all(getattr(initial_state, attr) == value for attr, value in self.goal_state.items()):
+                return []  # No moves needed
+
             path = []
             threshold = self.heuristic(initial_state)
 
