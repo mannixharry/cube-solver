@@ -182,10 +182,10 @@ class FaceletCube:
             colours = [self.facelets[idx] for idx in corner_index]
 
             # Determine the orientation based on the index of 'W' or 'Y' in the colours array. 
-            orientation = (colours.index('W') if 'W' in colours else colours.index('Y'))
+            orientation = -(colours.index('W') if 'W' in colours else colours.index('Y')) % 3
 
             # Reverse the orientation of the colours (by cycling the array) so they can be used to find the piece.
-            oriented_colours = [colours[(j + orientation) % 3] for j in range(3)]
+            oriented_colours = [colours[(j - orientation) % 3] for j in range(3)]
             permutation = self.corner_colour_table.index(oriented_colours)
 
             # Assign to the respective corner arrays

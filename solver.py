@@ -1,239 +1,205 @@
-import cube  # Assuming cube contains CoordCube and rotation functions
+import cube
 import json
 from data import * 
 from datetime import datetime
 
-# Start timer
-start_time = datetime.now()
-
-class G1Solver:
+class Solver:
     def __init__(self):
-        # Load pruning tables
-        with open('pruning_tables/udslice_corner_table.json', 'r') as corner_file:
-            self.udslice_corner_table = json.load(corner_file)
-        with open('pruning_tables/udslice_edge_table.json', 'r') as edge_file:
-            self.udslice_edge_table = json.load(edge_file)
+        """
+        Initialize the solver with built-in G1 and G2 solvers.
+        """
+        self.g1_solver = self.StageSolver(
+            pruning_data=[
+                ('pruning_tables/udslice_corner_table.json', ['UD_slice_coordinate', 'corner_orientation_coordinate']),
+                ('pruning_tables/udslice_edge_table.json', ['UD_slice_coordinate', 'edge_orientation_coordinate']),
+            ],
+            goal_state={
+                'corner_orientation_coordinate': 0,
+                'edge_orientation_coordinate': 0,
+                'UD_slice_coordinate': 0,
+            },
+            max_depth=12,
+            allowed_moves=list(range(18))  # All moves allowed for G1
+        )
 
-    def heuristic(self, state):
-        """Get the heuristic estimate for the state based on the pruning tables."""
-        coord_tuple_corner = (state.UD_slice_coordinate, state.corner_orientation_coordinate)
-        coord_tuple_edge = (state.UD_slice_coordinate, state.edge_orientation_coordinate)
-        
-        # Get heuristic depths from both tables, defaulting to a high depth if not found
-        corner_depth = self.udslice_corner_table.get(str(coord_tuple_corner), 12)  # Fallback to max depth
-        edge_depth = self.udslice_edge_table.get(str(coord_tuple_edge), 12)  # Fallback to max depth
+        self.g2_solver = self.StageSolver(
+            pruning_data=[
+                ('pruning_tables/main_edge_udslice_edge_table.json', ['eight_edge_permutation_coordinate', 'four_edge_permutation_coordinate']),
+                ('pruning_tables/corner_udslice_edge_table.json', ['corner_permutation_coordinate', 'four_edge_permutation_coordinate']),
+            ],
+            goal_state={
+                'eight_edge_permutation_coordinate': 0,
+                'four_edge_permutation_coordinate': 0,
+                'corner_permutation_coordinate': 0,
+            },
+            max_depth=18,
+            allowed_moves=Data.g2_allowed_moves  # Restricted moves for G2
+        )
 
-    # Use the maximum as a combined heuristic
-        return max(int(corner_depth), int(edge_depth))
-        
-    def ida_star(self, initial_state):
-        """Perform IDA* search from the initial state."""
-        path = []
-        threshold = self.heuristic(initial_state)
+    class StageSolver:
+        def __init__(self, pruning_data, goal_state, max_depth, allowed_moves):
+            """
+            Initialize a stage solver with specific parameters.
+            """
+            self.coord_tuples = [i[1] for i in pruning_data]
+            self.pruning_tables = [self.load_pruning_table(i[0]) for i in pruning_data]
+            self.goal_state = goal_state
+            self.max_depth = max_depth
+            self.allowed_moves = allowed_moves
 
-        while True:
-            result = self.search(initial_state, 0, threshold, path)
-            if isinstance(result, list):  # Solution found
-                return result
-            if result == float('inf'):  # No solution exists within the current threshold
-                return None
-            threshold = result  # Increase threshold for the next iteration
+        @staticmethod
+        def load_pruning_table(file_path):
+            """Load a pruning table from a JSON file."""
+            with open(file_path, 'r') as file:
+                return json.load(file)
 
-    def search(self, state, g, threshold, path):
-        """Recursive search function for IDA* with a depth limit."""
-        if g > 12:  # Stop if depth exceeds maximum limit
-            return float('inf')
-        
-        f = g + self.heuristic(state)
-        if f > threshold:
-            return f  # Return the cost threshold should increase to
+        def heuristic(self, state):
+            """Calculate the heuristic estimate for the given state."""
+            depths = [
+                table.get(str(tuple(getattr(state, attr) for attr in coord_tuple)), self.max_depth)
+                for table, coord_tuple in zip(self.pruning_tables, self.coord_tuples)
+            ]
+            return max(map(int, depths))
 
-        # Goal check for G1 (UD slice edges correctly positioned, corners oriented)
-        if state.corner_orientation_coordinate == 0 and state.edge_orientation_coordinate == 0 and state.UD_slice_coordinate == 0:
-            print('Found G1 solution')
-            return path[:]  # Return the current path as solution
+        def ida_star(self, initial_state):
+            """Perform IDA* search from the initial state."""
+            path = []
+            threshold = self.heuristic(initial_state)
 
-        min_cost = float('inf')
-        for move in range(18):  # Iterate through 18 possible moves
-            if path and move == self.inverse_move(path[-1]):
-                continue  # Skip inverse of previous move to avoid redundancy
-            
-            # Apply move
-            next_state = cube.CoordCube(state)  # Copy current state
-            next_state.rotate_clockwise(move)  # Apply move
+            while True:
+                result = self.search(initial_state, 0, threshold, path)
+                if isinstance(result, list):  # Solution found
+                    return result
+                if result == float('inf'):  # No solution exists within the current threshold
+                    return None
+                threshold = result  # Increase threshold for the next iteration
 
-            # Add move to path
-            path.append(move)
-            
-            result = self.search(next_state, g + 1, threshold, path)
-            if isinstance(result, list):  # Solution found
-                return result
-            if result < min_cost:
-                min_cost = result  # Update minimum cost for next threshold
+        def search(self, state, g, threshold, path):
+            """Recursive search function for IDA*."""
+            if g > self.max_depth:
+                return float('inf')
 
-            # Backtrack
-            path.pop()
-        
-        return min_cost
-    def inverse_move(self, move):
-        """Returns the inverse of a move."""
-        if 0 <= move < 6:       # For moves 0 to 5, inverse is move + 12 (counterclockwise turn)
-            return move + 12
-        elif 6 <= move < 12:    # For moves 6 to 11, half-turns are their own inverse
-            return move
-        elif 12 <= move < 18:   # For moves 12 to 17, inverse is move - 12 (clockwise turn)
-            return move - 12
+            f = g + self.heuristic(state)
+            if f > threshold:
+                return f
 
-class G2Solver:
-    def __init__(self):
-        # Load pruning tables for G2 stage
-        with open('pruning_tables/main_edge_udslice_edge_table.json', 'r') as mainedge_file:
-            self.mainedge_udslice_edge_table = json.load(mainedge_file)
-        with open('pruning_tables/corner_udslice_edge_table.json', 'r') as corner_file:
-            self.corner_udslice_edge_table = json.load(corner_file)
+            if all(getattr(state, attr) == value for attr, value in self.goal_state.items()):
+                return path[:]
 
-    def heuristic(self, state):
-        """Get the heuristic estimate for the state based on the pruning tables."""
-        coord_tuple_mainedge = (state.eight_edge_permutation_coordinate, state.four_edge_permutation_coordinate)
-        coord_tuple_corner = (state.corner_permutation_coordinate, state.four_edge_permutation_coordinate)
-        
-        # Get heuristic depths from both tables, defaulting to a high depth if not found
-        mainedge_depth = self.mainedge_udslice_edge_table.get(str(coord_tuple_mainedge), 18)  # Fallback to max depth
-        corner_depth = self.corner_udslice_edge_table.get(str(coord_tuple_corner), 18)  #Fallback to max depth
-        # Use the maximum as a combined heuristic
-        return max(int(mainedge_depth), int(corner_depth))
+            min_cost = float('inf')
+            for move in self.allowed_moves:
+                if path and move == self.inverse_move(path[-1]):
+                    continue  # Skip inverse of previous move
+                
+                next_state = cube.CoordCube(state)
+                next_state.rotate_clockwise(move)
 
-    def ida_star(self, initial_state):
-        """Perform IDA* search from the initial state."""
-        path = []
-        threshold = self.heuristic(initial_state)
+                path.append(move)
+                result = self.search(next_state, g + 1, threshold, path)
+                if isinstance(result, list):
+                    return result
+                if result < min_cost:
+                    min_cost = result
 
-        while True:
-            result = self.search(initial_state, 0, threshold, path)
-            if isinstance(result, list):  # Solution found
-                return result
-            if result == float('inf'):  # No solution exists within the current threshold
-                return None
-            threshold = result  # Increase threshold for the next iteration
+                path.pop()  # Backtrack
 
-    def search(self, state, g, threshold, path):
-        """Recursive search function for IDA* with a depth limit."""
-        if g > 18:  # Stop if depth exceeds maximum limit
-            return float('inf')
-        
-        f = g + self.heuristic(state)
-        if f > threshold:
-            return f  # Return the cost threshold should increase to
+            return min_cost
 
-        # Goal check for G2 (solved state)
-        if (
-            state.eight_edge_permutation_coordinate == 0 and
-            state.four_edge_permutation_coordinate == 0 and
-            state.corner_permutation_coordinate == 0
-        ):
-            print('Found G2 solution')
-            return path[:]  # Return the current path as solution
+        @staticmethod
+        def inverse_move(move):
+            """Returns the inverse of a move."""
+            if 0 <= move < 6:
+                return move + 12
+            elif 6 <= move < 12:
+                return move
+            elif 12 <= move < 18:
+                return move - 12
 
-        min_cost = float('inf')
-        for move in Data.g2_allowed_moves:  # Only use 10 possible moves for G2 stage
-            if path and move == self.inverse_move(path[-1]):
-                continue  # Skip inverse of previous move to avoid redundancy
-            
-            # Apply move
-            next_state = cube.CoordCube(state)  # Copy current state
-            next_state.rotate_clockwise(move)  # Apply move
+    @staticmethod
+    def contract_solution(solution):
+        """
+        Simplify a sequence of moves by combining consecutive rotations on the same face.
+        """
+        contracted_solution = []
+        current_face = None
+        current_turn_count = 0
 
-            # Add move to path
-            path.append(move)
-            
-            result = self.search(next_state, g + 1, threshold, path)
-            if isinstance(result, list):  # Solution found
-                return result
-            if result < min_cost:
-                min_cost = result  # Update minimum cost for next threshold
+        for move in solution:
+            face = move % 6
+            turn_count = 1 + (move // 6)
 
-            # Backtrack
-            path.pop()
-        
-        return min_cost
-
-    def inverse_move(self, move):
-        """Returns the inverse of a move."""
-        if 0 <= move < 6:       # For moves 0 to 5, inverse is move + 12 (counterclockwise turn)
-            return move + 12
-        elif 6 <= move < 12:    # For moves 6 to 11, half-turns are their own inverse
-            return move
-        elif 12 <= move < 18:   # For moves 12 to 17, inverse is move - 12 (clockwise turn)
-            return move - 12
-        
-# Usage:
-test_cube = cube.CubieCube('YYOWWWYWWGRRGGGWGORGRRORGROBOYOROBBOGBBBBBYORGYWYYWWYB')
-
-
-
-
-saved_test = cube.CubieCube(test_cube)
-
-#import main
-#main.main(str(cube.FaceletCube(test_cube)))
-start_time = datetime.now()
-initial_state = cube.CoordCube(test_cube)  # Starting state, assuming this is an unsolved cube in G1
-solver = G1Solver()
-solution_moves = solver.ida_star(initial_state)
-
-if solution_moves:
-    print("Solution found (in terms of move numbers 0-17):", [Data.move_notation[i] for i in solution_moves])
-    for move in solution_moves:
-        test_cube.rotate_clockwise(move)
-        initial_state.rotate_clockwise(move)
-        #print(initial_state.get_g1_coordinates())
-    #main.main(str(cube.FaceletCube(test_cube)))
-    #rint(initial_state.get_g1_coordinates())
-else:
-    print("No solution found.")
-
-print(f'Time to G1: {datetime.now() - start_time}')
-
-# Usage
-initial_state_g2 = cube.CoordCube(test_cube)  # Starting from the G1-solved state for G2 solving
-g2_solver = G2Solver()
-g2_solution_moves = g2_solver.ida_star(initial_state_g2)
-
-if g2_solution_moves:
-    print("Solution found for G2 (move numbers 0-9):", [Data.move_notation[i] for i in g2_solution_moves])
-    for move in g2_solution_moves:
-        test_cube.rotate_clockwise(move)
-        initial_state.rotate_clockwise(move)
-        
-print(f'Time to G2: {datetime.now() - start_time}')
-
-def contract_solution(moves):
-    contracted_moves = []
-    i = 0
-
-    while i < len(moves):
-        if i + 1 < len(moves) and moves[i] == moves[i + 1]:
-            # Check for double moves
-            if i + 2 < len(moves) and moves[i] == moves[i + 2]:
-                # Triple move (e.g., U U U becomes U')
-                contracted_moves.append(moves[i] + '3')
-                i += 3
+            if current_face == face:
+                current_turn_count += turn_count
             else:
-                # Double move (e.g., U U becomes U2)
-                contracted_moves.append(moves[i] + '2')
-                i += 2
-        elif i + 1 < len(moves) and moves[i] + '3' == moves[i + 1] or moves[i] == moves[i + 1] + '3':
-            # Move followed by its inverse (e.g., U U' or U' U cancels out)
-            i += 2
+                if current_face is not None:
+                    final_turn_count = current_turn_count % 4
+                    if final_turn_count != 0:
+                        contracted_move = current_face + 6 * (final_turn_count - 1)
+                        contracted_solution.append(contracted_move)
+                current_face = face
+                current_turn_count = turn_count
+
+        if current_face is not None:
+            final_turn_count = current_turn_count % 4
+            if final_turn_count != 0:
+                contracted_move = current_face + 6 * (final_turn_count - 1)
+                contracted_solution.append(contracted_move)
+
+        return contracted_solution
+
+    def solve_cube(self, cube_input):
+        """
+        Solve the given cube, starting from the G1 stage and progressing to G2.
+        """
+        start_time = datetime.now()
+
+        if isinstance(cube_input, cube.CubieCube):
+            cubie_input = cube_input
+        elif isinstance(cube_input, str):
+            cubie_input = cube.CubieCube(cube_input)
+        elif isinstance(cube_input, cube.FaceletCube):
+            cubie_input = cube_input.to_cubie_cube()
         else:
-            # Single move, add as-is
-            contracted_moves.append(moves[i])
-            i += 1
+            raise ("Error: cube_input does not match expected type")
+        initial_state = cube.CoordCube(cubie_input)
 
-    return contracted_moves
+        # Solve G1
+        g1_solution = self.g1_solver.ida_star(initial_state)
+        if not g1_solution:
+            raise ValueError("Error: No G1 solution found.")
+        print("G1 Solution:", [Data.move_notation[i] for i in g1_solution])
+
+        for move in g1_solution:
+            cubie_input.rotate_clockwise(move)
+            initial_state.rotate_clockwise(move)
+
+        print(f"Time to G1: {datetime.now() - start_time}")
+
+        # Solve G2
+        initial_state_g2 = cube.CoordCube(cubie_input)
+        g2_solution = self.g2_solver.ida_star(initial_state_g2)
+        if not g2_solution:
+            raise ValueError("Error: No G2 solution found.")
+        print("G2 Solution:", [Data.move_notation[i] for i in g2_solution])
+
+        for move in g2_solution:
+            cubie_input.rotate_clockwise(move)
+
+        print(f"Time to G2: {datetime.now() - start_time}")
+
+        full_solution = g1_solution + g2_solution
+        contracted_solution = self.contract_solution(full_solution)
+
+        print(f"\nWhole Solution ({len(contracted_solution)} moves):", [Data.move_notation[i] for i in contracted_solution])
+        #print("\nSolution Move Code:", full_solution)
+
+        return contracted_solution, full_solution
+
+if __name__ == "__main__":
+    solver = Solver()
+
+    test_cube = cube.CubieCube('OWWWWYYRBGGROGGRBBGGRGOBWOBYBGORYORWRRYRBYGWBWWYYYBOOO')
 
 
-import main
-main.main(str(cube.FaceletCube(saved_test)))
-main.main(str(cube.FaceletCube(test_cube)))
-exit()
+
+    contracted_solution, full_solution = solver.solve_cube(test_cube)
