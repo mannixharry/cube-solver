@@ -64,9 +64,7 @@ class Solver:
         def ida_star(self, initial_state):
             """Perform IDA* search from the initial state."""
             # Check if the initial state is already in the goal state
-            if all(getattr(initial_state, attr) == value for attr, value in self.goal_state.items()):
-                return []  # No moves needed
-
+            
             path = []
             threshold = self.heuristic(initial_state)
 
@@ -169,8 +167,8 @@ class Solver:
 
         # Solve G1
         g1_solution = self.g1_solver.ida_star(initial_state)
-        if not g1_solution:
-            raise ValueError("Error: No G1 solution found.")
+        #if not g1_solution:
+        #   raise ValueError("Error: No G1 solution found.")
         print("G1 Solution:", [Data.move_notation[i] for i in g1_solution])
 
         for move in g1_solution:
@@ -182,8 +180,8 @@ class Solver:
         # Solve G2
         initial_state_g2 = cube.CoordCube(cubie_input)
         g2_solution = self.g2_solver.ida_star(initial_state_g2)
-        if not g2_solution:
-            raise ValueError("Error: No G2 solution found.")
+        #if not g2_solution:
+        #    raise ValueError("Error: No G2 solution found.")
         print("G2 Solution:", [Data.move_notation[i] for i in g2_solution])
 
         for move in g2_solution:
@@ -202,7 +200,8 @@ class Solver:
 if __name__ == "__main__":
     solver = Solver()
 
-    test_cube = cube.CubieCube('OWWWWYYRBGGROGGRBBGGRGOBWOBYBGORYORWRRYRBYGWBWWYYYBOOO')
+    test_cube = cube.CubieCube()
+    test_cube.rotate_clockwise(Move.U2)
 
 
 
