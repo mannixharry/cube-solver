@@ -64,7 +64,7 @@ class Solver:
         def ida_star(self, initial_state):
             """Perform IDA* search from the initial state."""
             # Check if the initial state is already in the goal state
-            
+
             path = []
             threshold = self.heuristic(initial_state)
 
@@ -172,7 +172,7 @@ class Solver:
         print("G1 Solution:", [Data.move_notation[i] for i in g1_solution])
 
         for move in g1_solution:
-            cubie_input.rotate_clockwise(move)
+            cubie_input.move(move)
             initial_state.rotate_clockwise(move)
 
         print(f"Time to G1: {datetime.now() - start_time}")
@@ -185,7 +185,7 @@ class Solver:
         print("G2 Solution:", [Data.move_notation[i] for i in g2_solution])
 
         for move in g2_solution:
-            cubie_input.rotate_clockwise(move)
+            cubie_input.move(move)
 
         print(f"Time to G2: {datetime.now() - start_time}")
 
@@ -201,7 +201,7 @@ if __name__ == "__main__":
     solver = Solver()
 
     test_cube = cube.CubieCube()
-    test_cube.rotate_clockwise(Move.U2)
+    test_cube.move(Move.U2)
 
 
 

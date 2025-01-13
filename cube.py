@@ -36,7 +36,7 @@ class CubieCube:
                 raise TypeError('cube_input does not match an expected type')
 
     # This procedure manages cubie-cube rotations.                
-    def rotate_clockwise(self, move):
+    def move(self, move):
 
         '''
         Move is given as an integer between 0-17. Move modulo 6 gives the face being turned. Whilst (Move div 6) + 1 gives the number of times

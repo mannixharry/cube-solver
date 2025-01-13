@@ -15,9 +15,6 @@ class Renderer:
         self.font = pygame.font.SysFont('Arial', 20)
         self.colour = (0, 0, 0)
         
-        self.displayed_quadrilaterals = []
-        self.displayed_quadrilaterals_indices = []
-        
         self.faces_clicked = []
 
     def detect_facelet_click(self, mouse_pos):
@@ -29,12 +26,13 @@ class Renderer:
             u, v = (dot11 * dot02 - dot01 * dot12) * invDenom, (dot00 * dot12 - dot01 * dot02) * invDenom
             return u >= 0 and v >= 0 and u + v <= 1
     
-        def is_point_inside_quadrilateral(A, B, C, D, P):
-            A, B, C, D, P = np.array(A), np.array(B), np.array(C), np.array(D), np.array(P)
+        def is_point_inside_quadrilateral(corners, P):
+            A, B, C, D, = [np.array(i) for i in corners]
+            P = np.array(P)
             return is_point_inside_triangle(A, B, C, P) or is_point_inside_triangle(A, C, D, P)
         
         for i, quad in enumerate(self.displayed_quadrilaterals): 
-            if is_point_inside_quadrilateral(*quad, mouse_pos):
+            if is_point_inside_quadrilateral(quad, mouse_pos):
                 self.faces_clicked.append(self.displayed_quadrilaterals_indices[i])
                 print(self.faces_clicked)
                 break
@@ -58,6 +56,7 @@ class Renderer:
     
     def clear_screen(self):
         self.screen.fill((255, 255, 255))
+        self.displayed_quadrilaterals, self.displayed_quadrilaterals_indices = [], []
     
     def draw_line(self, a, b, colour):
         pygame.draw.line(self.screen, colour, a, b, self.thickness*3)
@@ -65,9 +64,9 @@ class Renderer:
     def draw_rectangle(self, corners, colour):
         if colour:
             pygame.draw.polygon(self.screen, colour, corners)
-            pygame.draw.polygon(self.screen, 'black', corners, self.thickness*2)
         else: 
             pygame.draw.polygon(self.screen, 'black', corners)
+        pygame.draw.polygon(self.screen, 'black', corners, self.thickness*2)
 
     def add_displayed_quadrilateral(self, rectangle, index):
 
@@ -172,7 +171,7 @@ class Transformer:
 
     
     @staticmethod
-    def transform_vector(rotation_matrix, vertex): # adjust this so that the rotation matrix is input 
+    def transform_vector(rotation_matrix, vertex):
         rotated_vertex = rotation_matrix @ vertex 
         translated_vertex = rotated_vertex + np.array([0, 0, 8]) 
         return translated_vertex
@@ -185,8 +184,9 @@ class CubeManager:
         self.outer_rectangles = []
         self.faces = []
 
-        self.frames_per_rotation = 60
-        self.rotating = self.rotation_to_execute = False
+        self.frames_per_face_turn = 60
+        self.face_turning = self.face_turn_to_execute = False
+        self.cube_rotating = self.cube_rotation_to_execute = False
 
         self.renderer = Renderer()
         self.projector = Projector(self.renderer.width, self.renderer.height)
@@ -196,6 +196,7 @@ class CubeManager:
         self.process_cube_faces()
 
         self.angle_x = self.angle_y = self.angle_z = 0
+        self.current_cube_rotation_angle = [0,0,0]
 
         self.rotation_speed = 0.05
 
@@ -237,53 +238,99 @@ class CubeManager:
                 
                 face.append(self.cubes[cube_index])
             self.faces.append(face)
-            
-    def set_rotation(self, move):
-        if not self.rotating:
-            move_type = move % 6 
-            turn_count = 1 + (move // 6)
 
-            face = self.faces[move_type]
-            c = [1, 2, -1][turn_count-1]
-            if move_type in [Move.R, Move.D, Move.F]:
-                c *= -1 
 
-            if move_type in [Move.U, Move.D]:
-                angle = [0,c,0]
-            if move_type in [Move.L, Move.R]:
-                angle = [c,0,0]
-            if move_type in [Move.F, Move.B]:
-                angle = [0,0,c]
-            angle = np.multiply(angle, np.pi/2)
+    # This is all wrong 
+        
+    def set_cube_rotation(self, target_angle, frames):
+        """Initialize cube rotation animation."""
+        self.cube_target_angle = np.array(target_angle)  # Rotation target for each axis
+        self.cube_rotation_to_execute = True
+        self.frames_per_cube_turn = frames
+        self.cube_initial_angle = np.copy(self.current_cube_rotation_angle)
+        self.current_cube_rotation_frame = 0
+        self.cube_rotating = True
 
-            self.rotating_face, self.move, self.target_angle, self.rotation_to_execute = face, move, angle, True
-            return move, face, np.multiply(angle, np.pi/2)
 
-    def rotate_face(self):
-        # add varying rotation speed according to curve in animation 
-        if not self.rotating:
-            if self.rotation_to_execute:
-                self.rotating = True
-            self.current_frame = 0
-            self.last_angle = 0
+    def change_cube_rotation(self, angle_delta):
+        """Increment cube rotation angles."""
+        self.current_cube_rotation_angle = np.add(self.current_cube_rotation_angle, angle_delta)
+
+
+    def get_cube_rotation_matrix(self):
+        """Return the current rotation matrix for rendering."""
+        if self.cube_rotation_to_execute:
+            if self.cube_rotating:
+                if self.current_cube_rotation_frame < self.frames_per_cube_turn:
+                    self.current_cube_rotation_frame += 1
+                    
+                    # Compute interpolation factor using sinusoidal easing
+                    interpolation_factor = np.sin(np.pi * self.current_cube_rotation_frame / (2 * self.frames_per_cube_turn))
+                    # Compute the current interpolated rotation angle
+                    current_angle = self.cube_initial_angle + interpolation_factor * (self.cube_target_angle - self.cube_initial_angle)
+                    # Update rotation matrix for rendering
+                    rotation_matrix = Transformer.create_rotation_matrix(current_angle)
+                    
+                else:
+                    # Finalize rotation
+                    self.cube_rotating = False
+                    self.cube_rotation_to_execute = False
+                    self.current_cube_rotation_angle = self.cube_target_angle
+                    rotation_matrix = Transformer.create_rotation_matrix(self.cube_target_angle)
+            else:
+                rotation_matrix = Transformer.create_rotation_matrix(self.current_cube_rotation_angle)
         else:
-            if self.current_frame < self.frames_per_rotation:
-                self.current_frame += 1 
-                angle = (np.sin(np.pi * self.current_frame/(2*self.frames_per_rotation))) ** 0.8 * self.target_angle 
-                
-                rotation_matrix = Transformer.create_rotation_matrix(angle - self.last_angle)  # Adjust for specific axis
-                self.last_angle = angle
+            rotation_matrix = Transformer.create_rotation_matrix(self.current_cube_rotation_angle)
+        
+        return rotation_matrix
+        
+    def set_face_turn(self, move):
+        if  self.face_turning:
+            return False
+    
+        move_type = move % 6 
+        turn_count = 1 + (move // 6)
+
+        face = self.faces[move_type]
+        clockwise = [1, 2, -1][turn_count-1]
+        if move_type in [Move.R, Move.D, Move.F]:
+            clockwise *= -1 
+
+        if move_type in [Move.U, Move.D]:
+            angle = [0,clockwise,0]
+        if move_type in [Move.L, Move.R]:
+            angle = [clockwise,0,0]
+        if move_type in [Move.F, Move.B]:
+            angle = [0,0,clockwise]
+        angle = np.multiply(angle, np.pi/2)
+
+        self.move, self.face_target_angle, self.face_turn_to_execute = move, angle, True
+        return move, face, np.multiply(angle, np.pi/2)
+
+    def update_face_turns(self):
+        # add varying rotation speed according to curve in animation 
+        if not self.face_turning:
+            if self.face_turn_to_execute:
+                self.face_turning = True
+            self.current_face_turn_frame = 0
+            self.current_face_turn_angle = 0
+        else:
+            if self.current_face_turn_frame < self.frames_per_face_turn:
+                self.current_face_turn_frame += 1 
+                angle = (np.sin(np.pi * self.current_face_turn_frame/(2*self.frames_per_face_turn))) * self.face_target_angle 
+                rotation_matrix = Transformer.create_rotation_matrix(angle - self.current_face_turn_angle)
+                self.current_face_turn_angle = angle
             else: 
                 #Reset rotation and apply new colours
-                rotation_matrix = Transformer.create_rotation_matrix(-self.target_angle)
+                rotation_matrix = Transformer.create_rotation_matrix(-self.face_target_angle)
 
-                self.cube.rotate_clockwise(self.move)
+                self.cube.move(self.move)
                 self.set_colours()
-                self.rotating = False 
-                self.rotation_to_execute = False
+                self.face_turning = False 
+                self.face_turn_to_execute = False
 
             face = self.move % 6 
-            for i, cube in enumerate(self.rotating_face):
+            for i, cube in enumerate(self.faces[face]):
                 for j, rectangle in enumerate(cube.rectangles):
 
                     for k, corner in enumerate(rectangle.corners):
@@ -292,16 +339,18 @@ class CubeManager:
 
     def main(self):
 
-        self.rotate_face()    
+        self.update_face_turns()    
         self.renderer.clear_screen() # Clear the screen
 
-        self.rotation_matrix = Transformer.create_rotation_matrix([self.angle_x, self.angle_y, self.angle_z])
+        
+        
+        self.rotation_matrix = self.get_cube_rotation_matrix()
 
         rectangles_to_draw = []
         index = 0
         for cube in self.cubes:
             for rectangle in cube.rectangles:
-                rotating = self.rotating
+                rotating = self.face_turning
                 if not rotating and not rectangle.piece_colour:
                     continue
                 if rectangle.piece_colour:
@@ -341,19 +390,25 @@ def main(cube_string ='WWWWWWWWWGGGGGGGGGOOOOOOOOORRRRRRRRRBBBBBBBBBYYYYYYYYY'):
         cube_manager.main()
         # Handle key presses for rotation
         keys = pygame.key.get_pressed()
-        if keys[K_LEFT]:
-            cube_manager.angle_y -= cube_manager.rotation_speed  # Rotate left around Y-axis
-        if keys[K_RIGHT]:
-            cube_manager.angle_y += cube_manager.rotation_speed  # Rotate right around Y-axis
+        angle = [0,0,0]
         if keys[K_UP]:
-            cube_manager.angle_x -= cube_manager.rotation_speed  # Rotate up around X-axis
+            angle[0] = -cube_manager.rotation_speed  # Rotate up around X-axis
         if keys[K_DOWN]:
-            cube_manager.angle_x += cube_manager.rotation_speed  # Rotate down around X-axis
+            angle[0] = cube_manager.rotation_speed  # Rotate down around X-axis
+        if keys[K_LEFT]:
+            angle[1] = -cube_manager.rotation_speed  # Rotate left around Y-axis
+        if keys[K_RIGHT]:
+            angle[1] = cube_manager.rotation_speed  # Rotate right around Y-axis
         if keys[K_z]:
-            cube_manager.angle_z -= cube_manager.rotation_speed  # Rotate counterclockwise around Z-axis
+            angle[2] = -cube_manager.rotation_speed  # Rotate counterclockwise around Z-axis
         if keys[K_x]:
-            cube_manager.angle_z += cube_manager.rotation_speed  # Rotate clockwise around Z-axis
+            angle[2] = cube_manager.rotation_speed  # Rotate clockwise around Z-axis
 
+        cube_manager.change_cube_rotation(angle)
+
+        if keys[K_g]:
+            angle = np.array([0,np.pi/4,np.pi/4])
+            cube_manager.set_cube_rotation(angle, 60)
         face_key_list = [K_u, K_f, K_l, K_r, K_b, K_d]
         move_number = next((i for i, val in enumerate(face_key_list) if keys[val]), None)
         if move_number != None:
@@ -362,7 +417,7 @@ def main(cube_string ='WWWWWWWWWGGGGGGGGGOOOOOOOOORRRRRRRRRBBBBBBBBBYYYYYYYYY'):
                 move += 12 # Turns into counter-clockwise
             if keys[K_LCTRL]:
                 move += 6 # Turns into double move
-            cube_manager.set_rotation(move)
+            cube_manager.set_face_turn(move)
 
         cube_manager.main()
         fps = clock.get_fps()

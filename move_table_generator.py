@@ -63,7 +63,7 @@ class MoveTableGenerator:
                 temp_cube = cube.CubieCube()
                 setattr(temp_cube, configuration_type, configuration_component)
                 for turns in range(3):
-                    temp_cube.rotate_clockwise(move_type)
+                    temp_cube.move(move_type)
                     child_coordinate = getattr(cube.CoordCube(temp_cube), coordinate_type)
                     child_general_coordinates[move_type + 6*turns] = child_coordinate
                     
