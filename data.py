@@ -25,6 +25,14 @@ class Edge(IntEnum):
     BL = 10 # Back Left
     BR = 11 # Back Right
 
+class Face(IntEnum):
+    U = 0
+    F = 1 
+    L = 2
+    R = 3
+    B = 4
+    D = 5
+
 class Move(IntEnum):
     U = 0 # U
     F = 1 # F
@@ -258,7 +266,7 @@ class Data:
     Define RGB colours for the the cube. 
     And the displayed facelet indices. 
     '''
-    
+
     colour_map = {
             'R': (255, 0, 0),       # Red
             'O': (255, 100, 0),     # Orange

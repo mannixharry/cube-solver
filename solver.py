@@ -200,9 +200,7 @@ class Solver:
 if __name__ == "__main__":
     solver = Solver()
 
-    test_cube = cube.CubieCube()
-    test_cube.move(Move.U2)
-
-
-
+    test_cube = cube.CubieCube('WRGGWBRGGYOOGGBBWRWGYOORGWORROORYYRWOWBYBWWYRBYGOYBBBY')
     contracted_solution, full_solution = solver.solve_cube(test_cube)
+
+    

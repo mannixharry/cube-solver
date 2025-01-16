@@ -103,6 +103,8 @@ class CubieCube:
                 new_edge_orientations[i] = (self.edge_orientations[i] + edge_orientation_table[i]) % 2 
 
             self.edge_orientations = new_edge_orientations
+
+            
             
         # Procedure to display the configuration of the cube in the console. 
         def __repr__(self):
@@ -137,7 +139,7 @@ class FaceletCube:
     def from_cubie_cube(self, cubie_cube):
         
         facelets = [''] * 54
-        
+       
         # Iteratively load the colour data for each corner into the facelet array.  
         for i in range(8):
             # Retrieve the piece code and orientation of the corner in position i. 
@@ -161,6 +163,7 @@ class FaceletCube:
             facelets[centre_indices[i]] = centre_colours[i]
         
         # Create a facelet_cube with the calculated facelets to return.
+        
         facelet_string = str(''.join(facelets))
         facelet_cube = FaceletCube(facelet_string)
         return facelet_cube
@@ -212,7 +215,7 @@ class FaceletCube:
         cubie_cube.corner_orientations = new_corner_orientations
         cubie_cube.edge_permutations = new_edge_permutations
         cubie_cube.edge_orientations = new_edge_orientations
-        
+
         return cubie_cube
     
     # This cycles the colours on a single face (applies a move but only the colours on a face).
