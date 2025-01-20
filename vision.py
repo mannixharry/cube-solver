@@ -1,14 +1,11 @@
 import cv2
-import cv2
 import numpy as np
 import matplotlib.pyplot as plt
-import numpy as np
-from sklearn.metrics.pairwise import euclidean_distances
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
 from sklearn.cluster import KMeans
-import numpy as np
 from sklearn.metrics import pairwise_distances_argmin_min
+import cube 
+from data import *
+import main 
 
 class CubeCapture():
     def __init__(self):
@@ -209,13 +206,24 @@ class CubeCapture():
         # Concatenate the facelets into a single string (row-wise for each face)
         facelet_string = ''.join(facelet_array.flatten())
 
-        # Print the single-string representation
-        print("Facelet String Representation:")
+        
         print(facelet_string)
+
+        ret_cube = cube.FaceletCube(facelet_string)
+        ret_cube.rotate_colours_on_face(Move.F2)
+        ret_cube.rotate_colours_on_face(Move.B2)
+        ret_cube.rotate_colours_on_face(Move.U3)
+        ret_cube.rotate_colours_on_face(Move.L2)
+        ret_cube.rotate_colours_on_face(Move.R2)
+        return ret_cube
 
 if __name__ == '__main__':
     cube_capture = CubeCapture()
-    cube_capture.capture_cube()
+    facelet_string = str(cube.FaceletCube(cube_capture.capture_cube()))
+    main.main(facelet_string)
+ 
+
+ 
 
 
 

@@ -185,7 +185,7 @@ class CubeManager:
         self.outer_rectangles = []
         self.faces = []
 
-        self.frames_per_face_turn = 60
+        self.frames_per_face_turn = 120
         self.face_turning = self.face_turn_to_execute = False
         self.cube_rotating = self.cube_rotation_to_execute = False
 
@@ -302,6 +302,7 @@ class CubeManager:
         qtr_pi = np.pi/4
         hlf_pi = np.pi/2
         eleven_sixteenths_pi = 11/16 * np.pi
+        seven_sixteenths_pi = 7/32 * np.pi
         pi = np.pi
 
         corner_view_angles = [
@@ -342,10 +343,10 @@ class CubeManager:
         move_view_angles = [
             [-qtr_pi,0,0],
             [-qtr_pi,0,0],
-            [-qtr_pi,qtr_pi,0],
-            [-qtr_pi,-qtr_pi, 0],
+            [-qtr_pi,seven_sixteenths_pi,0],
+            [-qtr_pi,-seven_sixteenths_pi, 0],
             [-eleven_sixteenths_pi,0,0],
-            [qtr_pi,0,0]
+            [3/16 * pi,0,0]
         ]
 
         if isinstance(viewpoint, Face):
@@ -394,9 +395,14 @@ class CubeManager:
         if not self.face_turning:
             return
         
-        if self.current_face_turn_frame < self.frames_per_face_turn:
+        if self.move // 6 == 1:
+            frames = self.frames_per_face_turn * 2 
+        else: 
+            frames = self.frames_per_face_turn
+
+        if self.current_face_turn_frame < frames:
             self.current_face_turn_frame += 1 
-            angle = (np.sin(np.pi * self.current_face_turn_frame/(2*self.frames_per_face_turn))) * self.face_target_angle 
+            angle = (np.sin(np.pi * self.current_face_turn_frame/(2*frames))) * self.face_target_angle 
             rotation_matrix = Transformer.create_rotation_matrix(angle - self.current_face_turn_angle)
             self.current_face_turn_angle = angle
         else: 
