@@ -18,7 +18,7 @@ def main(cube_string='WWWWWWWWWGGGGGGGGGOOOOOOOOORRRRRRRRRBBBBBBBBBYYYYYYYYY'):
 
     # Timer for move demonstration
     last_move_time = pygame.time.get_ticks()
-    move_interval_ms = 5000  # 1000 ms = 1 second
+    move_interval_ms = 1000  # 1000 ms = 1 second
     solve_stage = 0
     move = next(move_generator) # might break
     last_move = None
