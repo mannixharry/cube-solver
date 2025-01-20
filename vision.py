@@ -10,8 +10,6 @@ from sklearn.cluster import KMeans
 import numpy as np
 from sklearn.metrics import pairwise_distances_argmin_min
 
-
-
 class CubeCapture():
     def __init__(self):
         pass

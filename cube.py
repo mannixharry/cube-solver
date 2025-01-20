@@ -304,7 +304,6 @@ class CoordCube:
         coord_cube.four_edge_permutation_coordinate = coord_cube.calculate_four_edge_permutation_coordinate()
         coord_cube.corner_permutation_coordinate = coord_cube.calculate_corner_permutation_coordinate()
 
-
         coord_cube.g1_coordinates = [coord_cube.corner_orientation_coordinate, coord_cube.edge_orientation_coordinate, coord_cube.UD_slice_coordinate]
         coord_cube.g2_coordinates = [coord_cube.eight_edge_permutation_coordinate, coord_cube.four_edge_permutation_coordinate, coord_cube.corner_permutation_coordinate]
 

@@ -46,11 +46,6 @@ def main(cube_string='WWWWWWWWWGGGGGGGGGOOOOOOOOORRRRRRRRRBBBBBBBBBYYYYYYYYY'):
         if keys[K_x]:
             cube_manager.set_cube_view(Move.F)
 
-
-
-
-
-
         if keys[K_SPACE]:
             print(cube_manager.current_cube_rotation_angle)
             start_solve_demonstration = True
@@ -110,3 +105,5 @@ def main(cube_string='WWWWWWWWWGGGGGGGGGOOOOOOOOORRRRRRRRRBBBBBBBBBYYYYYYYYY'):
     pygame.event.clear()
     pygame.quit()
 
+if __name__ == '__main__':
+    main()

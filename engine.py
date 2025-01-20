@@ -36,7 +36,7 @@ class Renderer:
                 self.faces_clicked.append(self.displayed_quadrilaterals_indices[i])
                 print(self.faces_clicked)
                 break
-                
+            
     def create_window(self):
         screen = pygame.display.set_mode((self.width, self.height))
         pygame.display.set_caption('Basic 3D Engine')
@@ -180,7 +180,8 @@ class CubeManager:
     def __init__(self, cube_string):
 
         self.cube = cube.CubieCube(cube_string)
-    
+
+        self.highlighted_facelets = []
         self.outer_rectangles = []
         self.faces = []
 
@@ -213,7 +214,7 @@ class CubeManager:
         rectangles_to_sort.sort(key=lambda x: x[1], reverse=True)
         self.outer_rectangles = rectangles_to_sort[:54]
         self.set_colours()
-
+        
     @staticmethod
     def find_centre_rectangle(rectangle):
         a, b, c, d = rectangle.corners
@@ -222,25 +223,37 @@ class CubeManager:
     def set_colours(self):
     
         cube_string = str(cube.FaceletCube(self.cube))
+        colour_map = {
+            'R': (255, 0, 0),       # Red
+            'O': (255, 100, 0),     # Orange
+            'Y': (255, 255, 0),     # Yellow
+            'W': (255, 255, 255),   # White
+            'G': (0, 187, 0),       # Green
+            'B': (0, 0, 187),       # Blue
+        }
+        
 
-        colour_map = Data.colour_map
-        faces_dict = Data.faces_dict
+        faces_array = [52, 32, 19, 49, 30, 16, 47, 29, 14,
+                       46, 28, 13, 41, 26, 8, 33, 21, 0,
+                       53, 50, 48, 45, 43, 42, 40, 37, 35,
+                       15, 17, 20, 9, 10, 12, 2, 4, 7,
+                       18, 31, 51, 11, 27, 44, 5, 24, 38,
+                       34, 22, 1, 36, 23, 3, 39, 25, 6]
 
-        face_symbols  = ['U', 'F', 'L', 'R', 'B', 'D']
-        for i, symbol in enumerate(face_symbols):
-            face = []
-            indices = faces_dict[symbol]
-            for j, colour in enumerate(cube_string[i*9:(i+1)*9]):
-                index = indices[j] - 1 
-                rect_info = self.outer_rectangles[index][2]
-                cube_index, rect_index = divmod(rect_info, 6)
-                self.cubes[cube_index].rectangles[rect_index].piece_colour = colour_map[colour]
-                
-                face.append(self.cubes[cube_index])
-            self.faces.append(face)
+        for face in range(6):
+            face_cubes = []
+            for face_facelet in range(9):
+                index = face * 9 + face_facelet
+                facelet_index_in_rectangles = faces_array[index]
+                facelet_colour = cube_string[index]
 
+                idx = self.outer_rectangles[facelet_index_in_rectangles][2]
+                cube_index = idx // 6 
+                rect_index = idx % 6             
+                self.cubes[cube_index].rectangles[rect_index].piece_colour = colour_map[facelet_colour]
+                face_cubes.append(self.cubes[cube_index])
+            self.faces.append(face_cubes)
 
-    # This is all wrong 
     def change_cube_rotation(self, angle_delta):
         if self.cube_rotating:
             return False
@@ -345,7 +358,6 @@ class CubeManager:
             viewing_angle = move_view_angles[viewpoint%6]
         else:
             raise    
-        print(self.current_cube_rotation_angle)
         viewing_angle = [np.float64(i) for i in viewing_angle]
         if viewing_angle == self.current_cube_rotation_angle:
             return False
@@ -417,8 +429,6 @@ class CubeManager:
                 rotating = self.face_turning
                 if not rotating and not rectangle.piece_colour:
                     continue
-                if rectangle.piece_colour:
-                    index += 1
                     
                 transformed_vertices = []
                 projected_vertices = []
@@ -435,6 +445,9 @@ class CubeManager:
 
                     centroid_depth = np.linalg.norm(centre)
                     rectangles_to_draw.append((projected_vertices, rectangle.piece_colour, centroid_depth, index))
+
+                if rectangle.piece_colour:
+                    index += 1
                 
         # Sort rectangles by piece_colour and depth
         rectangles_to_draw.sort(key=lambda x: (isinstance(x[1], tuple), -x[2]))
