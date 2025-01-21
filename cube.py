@@ -120,7 +120,7 @@ class FaceletCube:
         self.corner_facelet_indices, self.edge_facelet_indices = Data.corner_facelet_indices, Data.edge_facelet_indices # These map pieces to their facelets. ie: UFL to U6, L2, F0.
 
         self.colours_on_face_map = Data.colours_on_face_map # Used to cycle the colours on a face.
-        
+
         # Initialize the facelet representation of a solved cube. 
         self.facelets = list('WWWWWWWWWGGGGGGGGGOOOOOOOOORRRRRRRRRBBBBBBBBBYYYYYYYYY')
 
@@ -170,7 +170,7 @@ class FaceletCube:
     
     # Converts a facelet representation of a cube to a cubie representation. 
     def to_cubie_cube(self):
-        
+
         # Initialize a new cubie_cube and temporary variables. 
         cubie_cube = CubieCube()
 
@@ -235,11 +235,21 @@ class FaceletCube:
         # Update the configuration.
         for i in range(9):
             self.facelets[i+start_pointer] = face_indices[i]
-        
+
+
     def __repr__(self):
         return ''.join(self.facelets)
-
-  
+    
+    def verify_string_validity(self):
+        return all(self.facelets.count(colour) == 9 for colour in 'WGORBY')
+    def verify_validity(self):
+        self.is_valid = self.verify_string_validity
+        try:
+            try_cubie_conversion = self.to_cubie_cube(self.facelets)
+        except: 
+            self.if_valid = False
+        return self.is_valid
+        
 class CoordCube:
     def __init__(self, cube_input=None):
         # Import move tables for rotations and transitions

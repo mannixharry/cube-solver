@@ -1,14 +1,9 @@
-# %%
-import cv2
-import cv2
-import numpy as np
-import matplotlib.pyplot as plt
-import numpy as np
-from sklearn.metrics.pairwise import euclidean_distances
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
 
-# %%
+import cv2
+import main
+import cube
+from data import *
+import numpy as np
 
 # Function to draw a smaller, centered 3x3 grid on an image
 def draw_centered_grid(image, grid_size=200):
@@ -105,48 +100,6 @@ while True:
 cap.release()
 cv2.destroyAllWindows()
 
-print(color_data)
-# Display the final color palette
-if len(color_data) == capture_limit:
-    # Create a blank canvas for the color palette
-    palette_height = 300
-    palette_width = 600
-    palette = np.zeros((palette_height, palette_width, 3), dtype=np.uint8)
-
-    face_width = palette_width // 6  # Width of each face in the palette
-    cell_size = face_width // 3     # Size of each cell within a face
-
-    for face_idx, face_colors in enumerate(color_data):
-        for i in range(3):
-            for j in range(3):
-                color = face_colors[i * 3 + j]
-                top_left_x = face_idx * face_width + j * cell_size
-                top_left_y = i * cell_size
-                bottom_right_x = top_left_x + cell_size
-                bottom_right_y = top_left_y + cell_size
-                cv2.rectangle(
-                    palette,
-                    (top_left_x, top_left_y),
-                    (bottom_right_x, bottom_right_y),
-                    color,  # Convert BGR to RGB for OpenCV
-                    -1  # Filled rectangle
-                )
-
-    # Show the color palette
-    cv2.imshow('Cube Color Palette', palette)
-
-    # Wait for user input to close the window
-    print("Press any key in the 'Cube Color Palette' window to close.")
-    while True:
-        if cv2.waitKey(1) & 0xFF in {ord('q'), 27}:  # Quit on 'q' or 'Esc'
-            break
-
-    # Destroy the palette window
-    cv2.destroyAllWindows()
-
-# %%
-import numpy as np
-
 # Assuming lab_data_flat is defined elsewhere in your code
 data = np.array(color_data, dtype=np.uint8).reshape(-1, 3)
 # Initialize adjacency matrix
@@ -199,70 +152,6 @@ for i, cluster, in enumerate(clusters):
     print(f'Cluster {i+1}: {cluster}')
 
 
-# %%
-
-import numpy as np
-import cv2
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
-
-# Assuming lab_data_bgr is in BGR format (values in range [0, 255])
-# Convert BGR to LAB using OpenCV
-data_reshaped = data[np.newaxis, :, :]  # Shape becomes (1, N, 3)
-rgb_array = cv2.cvtColor(data_reshaped, cv2.COLOR_BGR2RGB)[0]
-rgb_colors = rgb_array / 255.0  # Normalize to [0, 1] for plotting
-
-# Create a 3D scatter plot
-fig = plt.figure(figsize=(10, 8))
-ax = fig.add_subplot(111, projection='3d')
-
-# Scatter plot of all points in LAB space with original colors
-for i in range(54):
-    ax.scatter(data[i][2], data[i][1], data[i][0], color=rgb_colors[i], s=50)
-
-# Highlight specific points
-highlights = []  # Specify indices of points to highlight
-for h in highlights:
-    ax.scatter(
-        data[h][2], data[h][1], data[h][0], color='red', s=100, edgecolors='black', label="Highlighted Point"
-    )
-
-# Add labels and title
-ax.set_xlabel('R (Red Axis)')
-ax.set_ylabel('G (Green Axis)')
-ax.set_zlabel('B (Blue Axis)')
-# Show the plot
-plt.show()
-
-# %%
-import numpy as np
-import cv2
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
-
-# Assuming lab_data_bgr is in BGR format (values in range [0, 255])
-# Convert BGR to LAB using OpenCV
-data_reshaped = data[np.newaxis, :, :]  # Shape becomes (1, N, 3)
-rgb_array = cv2.cvtColor(data_reshaped, cv2.COLOR_BGR2RGB)[0]
-rgb_colors = rgb_array / 255.0  # Normalize to [0, 1] for plotting
-
-# Create a 3D scatter plot
-fig = plt.figure(figsize=(10, 8))
-ax = fig.add_subplot(111, projection='3d')
-
-colours = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b']
-for i,cluster in enumerate(clusters):
-    colour = colours[i]
-    for point in cluster:
-        ax.scatter(data[point][2], data[point][1], data[point][0], color=colour, s=50)
-
-ax.set_xlabel('R (Red Axis)')
-ax.set_ylabel('G (Green Axis)')
-ax.set_zlabel('B (Blue Axis)')
-# Show the plot
-plt.show()
-
-# %%
 # Define cluster-to-color mapping
 centre_indices = [4, 22, 13, 31, 40, 49]
 picture_order = [0, 1, 2, 3, 4, 5]
@@ -291,18 +180,19 @@ facelet_string = facelet_string[:9] + facelet_string[18:27] + facelet_string[9:1
 print("Facelet String Representation:")
 print(facelet_string)
 
-# %%
-import main
-import cube 
-from data import *
-import engine
 cube = cube.FaceletCube(facelet_string)
-cube.rotate_colours_on_face(Move.U3)
-cube.rotate_colours_on_face(Move.F2)
-cube.rotate_colours_on_face(Move.R2)
-cube.rotate_colours_on_face(Move.B2)
-cube.rotate_colours_on_face(Move.L2)
-main.main(str(cube))
-print(str(cube))
+valid = cube.verify_string_validity()
+if valid:
+    cube.rotate_colours_on_face(Move.U3)
+    cube.rotate_colours_on_face(Move.F2)
+    cube.rotate_colours_on_face(Move.R2)
+    cube.rotate_colours_on_face(Move.B2)
+    cube.rotate_colours_on_face(Move.L2)
 
-
+    valid = cube.verify_validity()
+    if valid:
+        main.main(str(cube))
+        print(str(cube))
+if not valid:
+    print('Invalid input detected')
+    exit()

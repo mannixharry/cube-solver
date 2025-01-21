@@ -18,7 +18,7 @@ def main(cube_string='WWWWWWWWWGGGGGGGGGOOOOOOOOORRRRRRRRRBBBBBBBBBYYYYYYYYY'):
 
     # Timer for move demonstration
     last_move_time = pygame.time.get_ticks()
-    move_interval_ms = 2000  # 1000 ms = 1 second
+    move_interval_ms = 3000  # 1000 ms = 1 second
     solve_stage = 0
     
     # this is inelegant
@@ -56,7 +56,6 @@ def main(cube_string='WWWWWWWWWGGGGGGGGGOOOOOOOOORRRRRRRRRBBBBBBBBBYYYYYYYYY'):
             cube_manager.set_cube_view(Move.F)
 
         if keys[K_SPACE]:
-            print(cube_manager.current_cube_rotation_angle)
             start_solve_demonstration = True
         
         if keys[K_TAB]:
