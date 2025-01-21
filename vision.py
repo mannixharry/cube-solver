@@ -151,7 +151,6 @@ for c in range(6):
 for i, cluster, in enumerate(clusters):
     print(f'Cluster {i+1}: {cluster}')
 
-
 # Define cluster-to-color mapping
 centre_indices = [4, 22, 13, 31, 40, 49]
 picture_order = [0, 1, 2, 3, 4, 5]
@@ -165,34 +164,40 @@ for i, c in enumerate(centre_indices):
     for j in clusters[index]:
         facelet_colors[j] = colour
 
-print(cluster_to_color)
-print(facelet_colors)
 # Example: Assuming `labels` contains the cluster labels for all 54 facelets
 # Convert cluster labels to their respective colors
 
 # Concatenate the facelets into a single string (row-wise for each face)
 facelet_string = ''.join(facelet_colors)
-print(facelet_string)
 facelet_string = facelet_string[:9] + facelet_string[18:27] + facelet_string[9:18] + facelet_string[27:]
 
 
 # Print the single-string representation
 print("Facelet String Representation:")
-print(facelet_string)
 
-cube = cube.FaceletCube(facelet_string)
-valid = cube.verify_string_validity()
+test_cube = cube.FaceletCube(facelet_string)
+valid = test_cube.verify_string_validity()
 if valid:
-    cube.rotate_colours_on_face(Move.U3)
-    cube.rotate_colours_on_face(Move.F2)
-    cube.rotate_colours_on_face(Move.R2)
-    cube.rotate_colours_on_face(Move.B2)
-    cube.rotate_colours_on_face(Move.L2)
+    test_cube.rotate_colours_on_face(Move.U3)
+    test_cube.rotate_colours_on_face(Move.F2)
+    test_cube.rotate_colours_on_face(Move.R2)
+    test_cube.rotate_colours_on_face(Move.B2)
+    test_cube.rotate_colours_on_face(Move.L2)
+    print(''.join(test_cube.facelets))
 
-    valid = cube.verify_validity()
+    valid = test_cube.verify_validity()
     if valid:
-        main.main(str(cube))
-        print(str(cube))
+        test_cubie_cube = cube.CubieCube(test_cube)
+        solvable = test_cubie_cube.verify_solvability()
+        if solvable:
+            main.main(str(test_cube))
+            print(str(test_cube))
+        else:
+            print('Captured cube is not solvable. Please retry')
 if not valid:
-    print('Invalid input detected')
+    print('Cube capture failed. Please retry.')
     exit()
+
+#YGBOWGWWWRYGWGGBYBWWGROBOWYRBWYROGBOOYYOBRROROBBRYRYGG
+#YGBOWGWWWRYGWGGBYBWWGROBOWYRBWYROGBOOYYOBRROROBBRYRYGG
+#YGBOWGWWWRYGWGGBYBWWGROBOWYRBWYROGBOOYYOBRROROBBRYRYGG

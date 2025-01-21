@@ -35,7 +35,7 @@ class Solver:
             max_depth=18,
             allowed_moves=Data.g2_allowed_moves  # Restricted moves for G2
         )
-
+        
     class StageSolver:
         def __init__(self, pruning_data, goal_state, max_depth, allowed_moves):
             """
@@ -86,6 +86,7 @@ class Solver:
                 return f
 
             if all(getattr(state, attr) == value for attr, value in self.goal_state.items()):
+                print(cube.CoordCube(state).g1_coordinates)
                 return path[:]
 
             min_cost = float('inf')
@@ -163,10 +164,12 @@ class Solver:
             cubie_input = cube_input.to_cubie_cube()
         else:
             raise ("Error: cube_input does not match expected type")
+        
         initial_state = cube.CoordCube(cubie_input)
 
         # Solve G1
         g1_solution = self.g1_solver.ida_star(initial_state)
+        print(g1_solution)
         #if not g1_solution:
         #   raise ValueError("Error: No G1 solution found.")
         print("G1 Solution:", [Data.move_notation[i] for i in g1_solution])
@@ -196,11 +199,12 @@ class Solver:
         #print("\nSolution Move Code:", full_solution)
 
         return contracted_solution, full_solution
-
+    
 if __name__ == "__main__":
     solver = Solver()
 
-    test_cube = cube.CubieCube('WRGGWBRGGYOOGGBBWRWGYOORGWORROORYYRWOWBYBWWYRBYGOYBBBY')
+    test_cube = cube.CubieCube('YYYYWWYYYGGGGGGGGGRRRRORROROROORBOOOBBBOBBBWBWWWWYYWBW')
     contracted_solution, full_solution = solver.solve_cube(test_cube)
+
 
     

@@ -185,7 +185,7 @@ class CubeManager:
         self.outer_rectangles = []
         self.faces = []
 
-        self.frames_per_face_turn = 120
+        self.frames_per_face_turn = 60
         self.face_turning = self.face_turn_to_execute = False
         self.cube_rotating = self.cube_rotation_to_execute = False
 

@@ -2,7 +2,7 @@ import os
 import json
 import itertools
 import cube 
-
+from data import * 
 class MoveTableGenerator:
      
     def __init__(self, regenerate_tables=False):
@@ -30,23 +30,25 @@ class MoveTableGenerator:
                 with open(filepath, 'w') as file:
                     json.dump(sorted_data, file, indent=4)
 
-    def decimal_to_ternary(self, n):
+    def decimal_to_ternary(self, n, bits=8):
         if n == 0:
-            return [0] * 7
+            return [0] * bits
         ternary = []
-        while n > 0: 
-            ternary.insert(0,n%3)
+        while n > 0:
+            ternary.insert(0, n % 3)
             n //= 3
-        return [0] * (7-len(ternary)) + ternary # Pad with 0's
+        return [0] * (bits - len(ternary)) + ternary  # Pad with 0's to the required bit length
+
     
-    def decimal_to_binary(self, n):
+    def decimal_to_binary(self, n, bits=12):
         if n == 0:
-            return [0] * 11
+            return [0] * bits
         binary = []
         while n > 0:
-            binary.insert(0, n%2)
+            binary.insert(0, n % 2)
             n //= 2
-        return [0] * (11-len(binary)) + binary
+        return [0] * (bits - len(binary)) + binary  # Pad with 0's to the required bit length
+
     
     def generate_general_table(self, iterator, coordinate_type, configuration_type):
         general_table = {}
@@ -72,20 +74,23 @@ class MoveTableGenerator:
     
     def generate_corner_orientation_table(self):
         def iterator():
-            for generating_orientation_coordinate in range(3**7):
-                ternary_form = self.decimal_to_ternary(generating_orientation_coordinate)
-                yield ternary_form + [-sum(ternary_form)%3] # Add a number to make the sum divisible by three (to have a valid orientation).
+            for generating_orientation_coordinate in range(3**7):  # Iterate over the first 7 corners
+                ternary_form = self.decimal_to_ternary(generating_orientation_coordinate, bits=7)
+                # Compute the 8th corner orientation to make the total sum divisible by 3
+                yield ternary_form + [(-sum(ternary_form)) % 3]  # Ensure valid corner orientation
         itr = iterator()
         return self.generate_general_table(itr, 'corner_orientation_coordinate', 'corner_orientations')
-    
-    
+
     def generate_edge_orientation_table(self):
         def iterator():
-            for generating_orientation_coordinate in range(3**7):
-                binary_form = self.decimal_to_binary(generating_orientation_coordinate)
-                yield binary_form + [-sum(binary_form)%2] # Add a number to make the sum divisible by two (to have a valid orientation).
+            for generating_orientation_coordinate in range(2**11):  # Iterate over the first 11 edges
+                binary_form = self.decimal_to_binary(generating_orientation_coordinate, bits=11)
+                # Compute the 12th edge flip to make the total sum even
+                yield binary_form + [(sum(binary_form) % 2)]  # Add the parity bit to enforce valid edge orientation
         itr = iterator()
         return self.generate_general_table(itr, 'edge_orientation_coordinate', 'edge_orientations')
+
+
     
     def generate_UD_slice_permutation_table(self):
         def iterator():

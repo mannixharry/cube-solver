@@ -9,23 +9,15 @@ def generate_solve_moves(full_solution):
     return (i for i in full_solution)
 
 def main(cube_string='WWWWWWWWWGGGGGGGGGOOOOOOOOORRRRRRRRRBBBBBBBBBYYYYYYYYY'):
-    cube_solver = solver.Solver()
-    contracted_solution, _ = cube_solver.solve_cube(cube.CubieCube(cube_string))
-    cube_manager = CubeManager(cube_string)
 
-    move_generator = generate_solve_moves(contracted_solution)
+    cube_manager = CubeManager(cube_string)
     start_solve_demonstration = False
 
     # Timer for move demonstration
     last_move_time = pygame.time.get_ticks()
-    move_interval_ms = 3000  # 1000 ms = 1 second
+    move_interval_ms = 2000  # 1000 ms = 1 second
     solve_stage = 0
     
-    # this is inelegant
-    try:
-        move = next(move_generator) # might break
-    except StopIteration:
-        pass
     last_move = None
     setting_view = False
 
@@ -56,8 +48,23 @@ def main(cube_string='WWWWWWWWWGGGGGGGGGOOOOOOOOORRRRRRRRRBBBBBBBBBYYYYYYYYY'):
             cube_manager.set_cube_view(Move.F)
 
         if keys[K_SPACE]:
-            start_solve_demonstration = True
-        
+            if not start_solve_demonstration:
+                start_solve_demonstration = True
+                cube_solver = solver.Solver()
+                print(cube_manager.cube)  # Current cube state
+                cube_to_solve = cube.CubieCube(cube_manager.cube)
+
+                contracted_solution, _ = cube_solver.solve_cube(cube_to_solve)
+                move_generator = generate_solve_moves(contracted_solution)
+                if contracted_solution:
+                    move = next(move_generator)
+                    last_move_time = pygame.time.get_ticks()
+                    solve_stage = 0
+                    last_move = None
+                    setting_view = False
+                else: 
+                    start_solve_demonstration = False
+
         if keys[K_TAB]:
             new_cube = cube_manager.cube
             main(str(cube.FaceletCube(new_cube)))
@@ -65,7 +72,6 @@ def main(cube_string='WWWWWWWWWGGGGGGGGGOOOOOOOOORRRRRRRRRBBBBBBBBBYYYYYYYYY'):
 # Demonstration with alternating actions
         if start_solve_demonstration:
         
-            
             current_time = pygame.time.get_ticks()
             if current_time - last_move_time >= move_interval_ms:
                 try:
@@ -98,7 +104,9 @@ def main(cube_string='WWWWWWWWWGGGGGGGGGOOOOOOOOORRRRRRRRRBBBBBBBBBYYYYYYYYY'):
                 except StopIteration:
                     start_solve_demonstration = False
                     print("Solve demonstration complete.")
+                    
                     cube_manager.set_cube_view(Corner.UFR)
+                    
 
         cube_manager.change_cube_rotation(angle)
 

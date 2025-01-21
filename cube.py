@@ -112,7 +112,35 @@ class CubieCube:
                     f"Corner Orientations: {self.corner_orientations}\n"
                     f"Edge Permutations: {self.edge_permutations}\n"
                     f"Edge Orientations: {self.edge_orientations}\n")
-        
+    
+    def verify_solvability(self):
+        # Check corner orientation validity
+        corner_twist_valid = sum(self.corner_orientations) % 3 == 0
+        # Check edge orientation validity
+        edge_flip_valid = sum(self.edge_orientations) % 2 == 0
+        # Check corner permutation parity
+        corner_permutation_parity = sum(
+            a > b for i, a in enumerate(self.corner_permutations) for b in self.corner_permutations[i + 1:]
+        ) % 2
+        # Check edge permutation parity
+        edge_permutation_parity = sum(
+            a > b for i, a in enumerate(self.edge_permutations) for b in self.edge_permutations[i + 1:]
+        ) % 2
+        # Parity consistency check
+        parity_consistent = corner_permutation_parity == edge_permutation_parity
+
+        # Verify all conditions
+        if corner_twist_valid and edge_flip_valid and parity_consistent:
+            return True
+        else:
+            # Print details of the error
+            print(f"Error: The input cube is unsolvable."
+                f"\nCorner Twisted: {not corner_twist_valid}"
+                f"\nEdge Flipped: {not edge_flip_valid}"
+                f"\nParity Consistent: {parity_consistent}")
+            return False
+
+            
 class FaceletCube:
     def __init__(self, cube_input=None):
         
@@ -242,12 +270,13 @@ class FaceletCube:
     
     def verify_string_validity(self):
         return all(self.facelets.count(colour) == 9 for colour in 'WGORBY')
+    
     def verify_validity(self):
-        self.is_valid = self.verify_string_validity
+        self.is_valid = self.verify_string_validity()
         try:
-            try_cubie_conversion = self.to_cubie_cube(self.facelets)
-        except: 
-            self.if_valid = False
+            try_cubie_conversion = self.to_cubie_cube()
+        except:
+            self.is_valid = False
         return self.is_valid
         
 class CoordCube:
@@ -316,7 +345,7 @@ class CoordCube:
 
         coord_cube.g1_coordinates = [coord_cube.corner_orientation_coordinate, coord_cube.edge_orientation_coordinate, coord_cube.UD_slice_coordinate]
         coord_cube.g2_coordinates = [coord_cube.eight_edge_permutation_coordinate, coord_cube.four_edge_permutation_coordinate, coord_cube.corner_permutation_coordinate]
-
+    
         return coord_cube
 
     def update_coordinates(self):
