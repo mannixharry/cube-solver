@@ -119,7 +119,9 @@ def main(cube_string='WWWWWWWWWGGGGGGGGGOOOOOOOOORRRRRRRRRBBBBBBBBBYYYYYYYYY'):
                 move += 12  # Counter-clockwise
             if keys[K_LCTRL]:
                 move += 6  # Double move
-            cube_manager.set_face_turn(move)
+                
+            if not start_solve_demonstration:
+                cube_manager.set_face_turn(move)
 
         cube_manager.main()
         fps = clock.get_fps()

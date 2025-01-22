@@ -56,6 +56,17 @@ captured_faces = []  # List to store captured face images
 color_data = []  # List to store color data for each face
 capture_limit = 6  # Number of faces to capture
 
+overlay_colors = [
+    (255, 255, 255),  # White
+    (0, 165, 255),    # Orange
+    (0, 255, 0),      # Green
+    (0, 0, 255),      # Red
+    (255, 0, 0),      # Blue
+    (0, 255, 255)     # Yellow
+]
+
+overlay_index = 0  # Start with the first color
+
 while True:
     ret, frame = cap.read()
     if not ret:
@@ -64,6 +75,27 @@ while True:
 
     # Draw the smaller, centered 3x3 grid on the frame
     grid_frame, grid_info = draw_centered_grid(frame.copy(), grid_size=200)
+    
+    # Extract middle grid cell dimensions
+    top_left_x, top_left_y, cell_size = grid_info
+    mid_x1 = top_left_x + cell_size
+    mid_y1 = top_left_y + cell_size
+    mid_x2 = mid_x1 + cell_size
+    mid_y2 = mid_y1 + cell_size
+
+    # Add the transparent overlay to the middle grid square
+    overlay_color = overlay_colors[overlay_index]
+    overlay_image = np.full((mid_y2 - mid_y1, mid_x2 - mid_x1, 3), overlay_color, dtype=np.uint8)
+
+    # Create a transparent background for the overlay
+    alpha = 0.5  # Transparency factor (0: fully transparent, 1: fully opaque)
+
+    # Get the region of interest (ROI) where the overlay will be placed
+    roi = grid_frame[mid_y1:mid_y2, mid_x1:mid_x2]
+
+    # Blend the overlay with the original frame using transparency
+    blended = cv2.addWeighted(roi, 1 - alpha, overlay_image, alpha, 0)
+    grid_frame[mid_y1:mid_y2, mid_x1:mid_x2] = blended
 
     # Display the live webcam feed with the smaller grid overlay
     cv2.imshow('Align Your Cube and Press Space', grid_frame)
@@ -74,6 +106,7 @@ while True:
         break
     elif key == ord(' '):  # Capture on spacebar
         if len(captured_faces) < capture_limit:
+            overlay_index += 1
             captured_faces.append(frame.copy())
             print(f"Captured face {len(captured_faces)}")
 

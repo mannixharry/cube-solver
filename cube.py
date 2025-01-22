@@ -137,7 +137,9 @@ class CubieCube:
             print(f"Error: The input cube is unsolvable."
                 f"\nCorner Twisted: {not corner_twist_valid}"
                 f"\nEdge Flipped: {not edge_flip_valid}"
-                f"\nParity Consistent: {parity_consistent}")
+                f"\nCorner Parity Consistent: {not corner_permutation_parity}"
+                f"\nEdge Parity Consistent: {not edge_permutation_parity}"
+            )
             return False
 
             
