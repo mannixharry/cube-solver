@@ -34,10 +34,8 @@ class Renderer:
         for i, quad in enumerate(self.displayed_quadrilaterals): 
             if is_point_inside_quadrilateral(quad, mouse_pos):
                 faces_array = list(np.array([Data.faces_dict[face] for face in 'UFLRBD']).flatten())
-                print(self.displayed_quadrilaterals_indices[i])
-
                 self.clicked_facelet = faces_array.index(self.displayed_quadrilaterals_indices[i]+1)
-                print(f'{self.clicked_facelet} is clicked facelet')
+                    
     def get_clicked_facelet(self):
         return_facelet = self.clicked_facelet
         self.clicked_facelet = None
@@ -47,6 +45,28 @@ class Renderer:
         screen = pygame.display.set_mode((self.width, self.height))
         pygame.display.set_caption('Basic 3D Engine')
         return screen
+    
+    def display_move_text(self, move_count, move):
+        font = pygame.font.Font(None, 80)  # Smaller font size for a pixelated effect
+
+        # Render the text for the move and move count
+        move_text = font.render(f"{Data.move_notation[move]}", True, (0, 0, 0))  # Black text
+        move_count_text = font.render(f"{move_count}", True, (0, 0, 0))  # Black text
+
+        # Scale up the rendered text to create a pixelated effect
+        move_text = pygame.transform.scale(move_text, (move_text.get_width() , move_text.get_height()))  # Scale by 4
+        move_count_text = pygame.transform.scale(move_count_text, (move_count_text.get_width(), move_count_text.get_height()))  # Scale by 4
+
+        # Calculate the center position for the move text
+        move_text_rect = move_text.get_rect(center=(0.5 * self.width, 0.8 * self.height))
+
+        # Calculate the position for the move count text
+        move_count_text_rect = move_count_text.get_rect(center=(0.85 * self.width, 0.15 * self.height))
+
+        # Blit the text at the calculated positions
+        self.screen.blit(move_text, move_text_rect)
+        self.screen.blit(move_count_text, move_count_text_rect)
+
 
     def update(self):
         for event in pygame.event.get():

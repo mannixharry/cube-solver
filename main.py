@@ -5,23 +5,17 @@ import pygame
 from pygame.locals import * 
 import cube 
 import vision
-def generate_solve_moves(full_solution):
-    return (i for i in full_solution)
 
 def main(cube_string='WWWWWWWWWGGGGGGGGGOOOOOOOOORRRRRRRRRBBBBBBBBBYYYYYYYYY'):
 
     cube_capturer = vision.Capturer()
     cube_manager = CubeManager(cube_string)
-    start_solve_demonstration = False
+    is_demonstrating_solve = False
+    is_paused = False
 
     # Timer for move demonstration
-    last_move_time = pygame.time.get_ticks()
     move_interval_ms = 2000  # 1000 ms = 1 second
-    solve_stage = 0
     
-    last_move = None
-    setting_view = False
-
     clock = pygame.time.Clock()
     running = True
     while running:
@@ -44,85 +38,84 @@ def main(cube_string='WWWWWWWWWGGGGGGGGGOOOOOOOOORRRRRRRRRBBBBBBBBBYYYYYYYYY'):
         if keys[K_x]:
             angle[2] = rotation_speed
 
-        # Start demonstration if space is pressed
-        if keys[K_x]:
-            cube_manager.set_cube_view(Move.F)
-
         if keys[K_SPACE]:
-            if not start_solve_demonstration and not cube_manager.face_turning:
-                start_solve_demonstration = True
+            if not is_demonstrating_solve and not cube_manager.face_turning:
                 cube_solver = solver.Solver()
-                print(cube_manager.cube)  # Current cube state
                 cube_to_solve = cube.CubieCube(cube_manager.cube)
 
-                contracted_solution, _ = cube_solver.solve_cube(cube_to_solve)
-                move_generator = generate_solve_moves(contracted_solution)
-                if contracted_solution:
-                    move = next(move_generator)
+                solution, _ = cube_solver.solve_cube(cube_to_solve)
+                solution_length = len(solution)
+                
+                if solution:
                     last_move_time = pygame.time.get_ticks()
                     solve_stage = 0
-                    last_move = None
-                    setting_view = False
-                else: 
-                    start_solve_demonstration = False
-
+                    solution_index = 0
+                    is_demonstrating_solve = True
+                    solve_move = None
+                    cube_manager.set_cube_view(Edge.UF)
+                    
         if keys[K_TAB]:
             captured_cube =  cube_capturer.capture_cube()
-            start_solve_demonstration = False 
+            is_demonstrating_solve = False 
 
             if captured_cube: 
                 cube_manager = CubeManager(captured_cube)
 
         if keys[K_RETURN]:
             cube_manager = CubeManager(cube.CubieCube())
-# Demonstration with alternating actions
-        if start_solve_demonstration:
+            
+        # Demonstration with alternating actions
+        if is_demonstrating_solve:
             current_time = pygame.time.get_ticks()
             if current_time - last_move_time >= move_interval_ms:
-                try:
-                    if solve_stage % 3 == 0:
-                        if last_move != None:
-                            move = Move(next(move_generator))
-                            if last_move%6 in [Face.B, Face.D] and move%6 in [Face.L, Face.R] or last_move%6 in [Face.L, Face.R] and move%6 in [Face.D, Face.B] or last_move%6 in [Face.B, Face.D] and move%6 in [Face.B, Face.D]:
-                                setting_view = cube_manager.set_cube_view(Edge.UF, 60)
-                            else:
-                                setting_view = False
-                        last_move = Move(move)
-                        
-                        if not setting_view:
-                            solve_stage += 1
-                        
-                    if solve_stage % 3 == 1:
-
-                        view = Move(move)
-                        setting_view = cube_manager.set_cube_view(view, 60)
-                        if not setting_view:
-                            solve_stage += 1
-
-                    if solve_stage % 3 == 2:
-                        # Perform face turn
-                        cube_manager.set_face_turn(move)
-
-                    solve_stage += 1
-                    last_move_time = current_time  # Update last move time
-
-                except StopIteration:
-                    start_solve_demonstration = False
+                
+                if solution_index == solution_length:
+                    is_demonstrating_solve = False
                     print("Solve demonstration complete.")
-                    
                     cube_manager.set_cube_view(Corner.UFR)
+                    continue
+                
+                if solve_stage % 3 == 0:
                     
+                    if solution_index == 0:
+                        solve_move = solution[solution_index]
+                        setting_view = False
+                    else: 
+                        last_move = move
+                        solve_move = solution[solution_index]
+                        last_face = last_move % 6 
+                        if last_face in [Face.L, Face.R, Face.D, Face.B]:
+                            setting_view = cube_manager.set_cube_view(Edge.UF, 60)
+                        else:
+                            setting_view = False
+
+                    if not setting_view:
+                        solve_stage += 1
+                    
+                if solve_stage % 3 == 1:
+
+                    view = Move(solve_move)
+                    setting_view = cube_manager.set_cube_view(view, 60)
+                    if not setting_view:
+                        solve_stage += 1
+
+                if solve_stage % 3 == 2:
+                    # Perform face turn
+                    cube_manager.set_face_turn(solve_move)
+                    solution_index += 1
+
+                solve_stage += 1
+                last_move_time = current_time  # Update last move time
 
         cube_manager.change_cube_rotation(angle)
 
         # Handle manual face turns
         face_key_list = [K_u, K_f, K_l, K_r, K_b, K_d]
         
-        if not start_solve_demonstration:
+        if not is_demonstrating_solve:
             
             clicked_facelet = cube_manager.get_clicked_facelet()
             if clicked_facelet != None:
-                print(clicked_facelet//9)
                 move = Move(clicked_facelet // 9)
                 counter_clockwise = (clicked_facelet % 9) in [0,3,6]
                 double = (clicked_facelet%9) in [1,4,7]
@@ -149,7 +142,8 @@ def main(cube_string='WWWWWWWWWGGGGGGGGGOOOOOOOOORRRRRRRRRBBBBBBBBBYYYYYYYYY'):
         cube_manager.main()
         fps = clock.get_fps()
         cube_manager.renderer.display_fps(fps)
-
+        if is_demonstrating_solve and solve_move is not None:
+            cube_manager.renderer.display_move_text(solution_length-solution_index, solve_move)
         pygame.display.flip()
         clock.tick(60)
         running = cube_manager.renderer.update()
