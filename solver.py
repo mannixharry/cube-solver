@@ -86,7 +86,6 @@ class Solver:
                 return f
 
             if all(getattr(state, attr) == value for attr, value in self.goal_state.items()):
-                print(cube.CoordCube(state).g1_coordinates)
                 return path[:]
 
             min_cost = float('inf')
@@ -169,7 +168,7 @@ class Solver:
 
         # Solve G1
         g1_solution = self.g1_solver.ida_star(initial_state)
-        print(g1_solution)
+        
         #if not g1_solution:
         #   raise ValueError("Error: No G1 solution found.")
         print("G1 Solution:", [Data.move_notation[i] for i in g1_solution])

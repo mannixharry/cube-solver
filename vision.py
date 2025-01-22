@@ -186,8 +186,6 @@ class Capturer():
             clusters.append(sorted(neighbors))
 
         return clusters
-        '''for i, cluster, in enumerate(clusters):
-            print(f'Cluster {i+1}: {cluster}')'''
 
     def convert_clusters_to_cube(self, clusters):
 
@@ -195,8 +193,6 @@ class Capturer():
         centre_indices = [4, 22, 13, 31, 40, 49]
         picture_order = [0, 1, 2, 3, 4, 5]
         colour_order = ['W', 'G', 'O', 'R', 'B', 'Y']
-        cluster_to_colour = {}
-
         facelet_colours = [''] * 54
         for i, c in enumerate(centre_indices):
             index = next((i for i, sublist in enumerate(clusters) if c in sublist), None)
@@ -204,16 +200,8 @@ class Capturer():
             for j in clusters[index]:
                 facelet_colours[j] = colour
 
-        # Example: Assuming `labels` contains the cluster labels for all 54 facelets
-        # Convert cluster labels to their respective colours
-
-        # Concatenate the facelets into a single string (row-wise for each face)
         facelet_string = ''.join(facelet_colours)
         facelet_string = facelet_string[:9] + facelet_string[18:27] + facelet_string[9:18] + facelet_string[27:]
-
-
-        # Print the single-string representation
-        print("Facelet String Representation:")
 
         captured_cube = cube.FaceletCube(facelet_string)
         valid = captured_cube.verify_string_validity()
@@ -239,9 +227,11 @@ class Capturer():
             return False
 
     def capture_cube(self):
-
+        
         colour_data = self.capture_colour_data()
-        clusters = self.cluster_colour_data(colour_data)
-        cube = self.convert_clusters_to_cube(clusters)
-
+        if len(colour_data) == 6:
+            clusters = self.cluster_colour_data(colour_data)
+            cube = self.convert_clusters_to_cube(clusters)
+        else:
+            return False
         return cube # Either returns the cube or False. 

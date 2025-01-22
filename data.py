@@ -255,7 +255,7 @@ class Data:
     Used by the solver. 
     '''
     move_notation = ['U', 'F', 'L', 'R', 'B', 'D', 'U2', 'F2', 'L2', 'R2', 'B2', 'D2', 'U3', 'F3', 'L3', 'R3', 'B3', 'D3']
-
+    move_notation_for_display = ['U', 'F', 'L', 'R', 'B', 'D', 'U2', 'F2', 'L2', 'R2', 'B2', 'D2', 'U\'', 'F\'', 'L\'', 'R\'', 'B\'', 'D\'']
     '''
     Define allowed moves in g1 and g2 subsets. 
     '''

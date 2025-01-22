@@ -43,30 +43,47 @@ class Renderer:
             
     def create_window(self):
         screen = pygame.display.set_mode((self.width, self.height))
-        pygame.display.set_caption('Basic 3D Engine')
+        pygame.display.set_caption('Cube Solver')
+        icon = pygame.image.load('resources/rubiks_icon.png')
+        pygame.display.set_icon(icon)
         return screen
     
     def display_move_text(self, move_count, move):
-        font = pygame.font.Font(None, 80)  # Smaller font size for a pixelated effect
+        font = pygame.font.Font('resources/pixel_font.ttf', 80)  
 
-        # Render the text for the move and move count
-        move_text = font.render(f"{Data.move_notation[move]}", True, (0, 0, 0))  # Black text
-        move_count_text = font.render(f"{move_count}", True, (0, 0, 0))  # Black text
+        move_text = font.render(f"{Data.move_notation_for_display[move]}", True, (0, 0, 51))  
+        move_count_text = font.render(f"{move_count}", True, (0, 0, 51))
 
-        # Scale up the rendered text to create a pixelated effect
-        move_text = pygame.transform.scale(move_text, (move_text.get_width() , move_text.get_height()))  # Scale by 4
-        move_count_text = pygame.transform.scale(move_count_text, (move_count_text.get_width(), move_count_text.get_height()))  # Scale by 4
+        move_text = pygame.transform.scale(move_text, (move_text.get_width() , move_text.get_height()))  
+        move_count_text = pygame.transform.scale(move_count_text, (move_count_text.get_width(), move_count_text.get_height()))  
 
-        # Calculate the center position for the move text
         move_text_rect = move_text.get_rect(center=(0.5 * self.width, 0.8 * self.height))
-
-        # Calculate the position for the move count text
         move_count_text_rect = move_count_text.get_rect(center=(0.85 * self.width, 0.15 * self.height))
 
         # Blit the text at the calculated positions
         self.screen.blit(move_text, move_text_rect)
         self.screen.blit(move_count_text, move_count_text_rect)
+        
+    def display_info(self,instructions):
+        
+        # Clear the screen
+        self.screen.fill((255, 255, 255))  # Fill screen with white
 
+        # Load the font for instructions
+        font = pygame.font.Font('resources/pixel_font.ttf', 18)  
+
+        total_text_height = len(instructions) * 30  # 30px per line
+
+        # Calculate the starting y_offset to center the text vertically
+        y_offset = (self.height - total_text_height) // 2
+
+        for line in instructions:
+            text_surface = font.render(line, True, (0, 0, 0)) 
+            text_rect = text_surface.get_rect(center=(self.width // 2, y_offset))
+            self.screen.blit(text_surface, text_rect)
+            y_offset += 30  # Space between lines
+
+            
 
     def update(self):
         for event in pygame.event.get():
@@ -211,7 +228,7 @@ class CubeManager:
         self.outer_rectangles = []
         self.faces = []
 
-        self.frames_per_face_turn = 60
+        self.frames_per_face_turn = 30
         self.face_turning = self.face_turn_to_execute = False
         self.cube_rotating = self.cube_rotation_to_execute = False
 
@@ -223,7 +240,7 @@ class CubeManager:
         self.process_cube_faces()
 
         self.angle_x = self.angle_y = self.angle_z = 0
-        self.current_cube_rotation_angle = [0,0,0]
+        self.current_cube_rotation_angle = np.array([0,0,0])
 
         self.rotation_speed = 0.05
 
@@ -323,7 +340,7 @@ class CubeManager:
             rotation_matrix = Transformer.create_rotation_matrix(self.cube_target_angle)
 
         return rotation_matrix
-    def set_cube_view(self, viewpoint, frames_per_cube_rotation = 120):
+    def set_cube_view(self, viewpoint, frames_per_cube_rotation = 60):
 
         qtr_pi = np.pi/4
         hlf_pi = np.pi/2
@@ -386,12 +403,14 @@ class CubeManager:
         else:
             raise    
         viewing_angle = [np.float64(i) for i in viewing_angle]
-        if viewing_angle == self.current_cube_rotation_angle:
+
+        if all([viewing_angle[i] == self.current_cube_rotation_angle[i] for i in range(3)]):
             return False
         self.set_cube_rotation(viewing_angle, frames_per_cube_rotation)
         return True 
     
-    def set_face_turn(self, move):
+    def set_face_turn(self, move, frames_per_face_turn = 30):
+        self.frames_per_face_turn = frames_per_face_turn
         if self.face_turning:
             return False
     
