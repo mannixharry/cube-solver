@@ -112,15 +112,17 @@ def main(cube_string='WWWWWWWWWGGGGGGGGGOOOOOOOOORRRRRRRRRBBBBBBBBBYYYYYYYYY'):
 
         # Handle manual face turns
         face_key_list = [K_u, K_f, K_l, K_r, K_b, K_d]
-        move_number = next((i for i, val in enumerate(face_key_list) if keys[val]), None)
-        if move_number is not None:
-            move = Move(move_number)
-            if keys[K_LSHIFT]:
-                move += 12  # Counter-clockwise
-            if keys[K_LCTRL]:
-                move += 6  # Double move
-                
-            if not start_solve_demonstration:
+        
+        if not start_solve_demonstration:
+            move_number = next((i for i, val in enumerate(face_key_list) if keys[val]), None)
+            if move_number is not None:
+                move = Move(move_number)
+                if keys[K_LSHIFT]:
+                    move += 12  # Counter-clockwise
+                if keys[K_LCTRL]:
+                    move += 6  # Double move
+                    
+            
                 cube_manager.set_face_turn(move)
 
         cube_manager.main()
