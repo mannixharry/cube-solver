@@ -15,7 +15,7 @@ class Renderer:
         self.font = pygame.font.SysFont('Arial', 20)
         self.colour = (0, 0, 0)
         
-        self.faces_clicked = []
+        self.clicked_facelet = None
 
     def detect_facelet_click(self, mouse_pos):
         
@@ -33,9 +33,15 @@ class Renderer:
         
         for i, quad in enumerate(self.displayed_quadrilaterals): 
             if is_point_inside_quadrilateral(quad, mouse_pos):
-                self.faces_clicked.append(self.displayed_quadrilaterals_indices[i])
-                print(self.faces_clicked)
-                break
+                faces_array = list(np.array([Data.faces_dict[face] for face in 'UFLRBD']).flatten())
+                print(self.displayed_quadrilaterals_indices[i])
+
+                self.clicked_facelet = faces_array.index(self.displayed_quadrilaterals_indices[i]+1)
+                print(f'{self.clicked_facelet} is clicked facelet')
+    def get_clicked_facelet(self):
+        return_facelet = self.clicked_facelet
+        self.clicked_facelet = None
+        return return_facelet
             
     def create_window(self):
         screen = pygame.display.set_mode((self.width, self.height))
@@ -420,6 +426,9 @@ class CubeManager:
                 for k, corner in enumerate(rectangle.corners):
                     rotated_corner = corner @ rotation_matrix
                     self.faces[face][i].rectangles[j].corners[k] = rotated_corner
+
+    def get_clicked_facelet(self):
+        return self.renderer.get_clicked_facelet()
 
     def main(self):
 
