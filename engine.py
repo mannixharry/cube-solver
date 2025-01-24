@@ -54,16 +54,22 @@ class Renderer:
         move_text = font.render(f"{Data.move_notation_for_display[move]}", True, (0, 0, 51))  
         move_count_text = font.render(f"{move_count}", True, (0, 0, 51))
 
-        move_text = pygame.transform.scale(move_text, (move_text.get_width() , move_text.get_height()))  
-        move_count_text = pygame.transform.scale(move_count_text, (move_count_text.get_width(), move_count_text.get_height()))  
-
         move_text_rect = move_text.get_rect(center=(0.5 * self.width, 0.8 * self.height))
         move_count_text_rect = move_count_text.get_rect(center=(0.85 * self.width, 0.15 * self.height))
 
         # Blit the text at the calculated positions
         self.screen.blit(move_text, move_text_rect)
         self.screen.blit(move_count_text, move_count_text_rect)
-        
+
+    def display_text(self, text):
+
+        font = pygame.font.Font('resources/pixel_font.ttf', 80)  
+        text = font.render(text, True, (0, 0, 51))
+        text_rect = text.get_rect(center=(0.5 * self.width, 0.2 * self.height))
+        # Blit the text at the calculated positions
+        self.screen.blit(text, text_rect)
+
+    
     def display_info(self,instructions):
         
         # Clear the screen
@@ -242,8 +248,7 @@ class CubeManager:
         self.angle_x = self.angle_y = self.angle_z = 0
         self.current_cube_rotation_angle = np.array([0,0,0])
 
-        self.rotation_speed = 0.05
-
+        
     def process_cube_faces(self):
         rectangles_to_sort = []
 

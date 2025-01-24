@@ -141,6 +141,10 @@ class CubieCube:
                 f"\nEdge Parity Consistent: {not edge_permutation_parity}"
             )
             return False
+        
+    def scramble(self):
+        # do this. generate data in the same way it is done for move_tables
+        pass
 
             
 class FaceletCube:

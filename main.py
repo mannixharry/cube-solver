@@ -68,19 +68,27 @@ def main(cube_string='WWWWWWWWWGGGGGGGGGOOOOOOOOORRRRRRRRRBBBBBBBBBYYYYYYYYY'):
     cube_capturer = vision.Capturer()
     cube_manager = CubeManager(cube_string)
     is_demonstrating_solve = False
+    is_paused = False
+    pause_debounce_ms = 2000
+    last_pause_time = 0
 
      # Display program info at the start
     display_program_info(cube_manager.renderer, main_instructions)
     wait()
+    cube_manager.set_cube_view(Edge.UF)
     
     # Timer for move demonstration
-    move_interval_ms = 1000  # 1000 ms = 1 second
+    move_interval_ms = 3000  # 1000 ms = 1 second
     
     clock = pygame.time.Clock()
     running = True
+
     while running:
+
+        current_time = pygame.time.get_ticks()
+
         cube_manager.main()
-        rotation_speed = cube_manager.rotation_speed
+        rotation_speed = 0.025
         keys = pygame.key.get_pressed()
         angle = [0, 0, 0]
 
@@ -125,15 +133,41 @@ def main(cube_string='WWWWWWWWWGGGGGGGGGOOOOOOOOORRRRRRRRRBBBBBBBBBYYYYYYYYY'):
         if keys[K_i]:
             display_program_info(cube_manager.renderer, main_instructions)
             wait()
-            
+
+        if is_demonstrating_solve and (current_time - last_pause_time) > pause_debounce_ms and (keys[K_p] or keys[K_BACKSPACE]):
+            if keys[K_p]:  # Corrected condition
+                last_pause_time = pygame.time.get_ticks()
+                is_paused = not is_paused  # Toggle the pause state
+                if not is_paused:
+                    solve_stage = 0
+            elif keys[K_BACKSPACE] and solution_index != 0:  # Corrected condition
+                last_pause_time = pygame.time.get_ticks()
+                solution_index -= 1
+                move_to_invert = solution[solution_index]
+
+                if move_to_invert < 6:
+                    inverse_move = move_to_invert + 12
+                elif move_to_invert < 12:
+                    inverse_move = move_to_invert
+                else:
+                    inverse_move = move_to_invert - 12
+
+                cube_manager.set_face_turn(inverse_move)
+                lsat_move_time = pygame.time.get_ticks()
+
+
+                
+                
+        '''            
         if keys[K_BACKSPACE]:
-            cube_manager = CubeManager(cube.CubieCube()) 
+            cube_manager = CubeManager(cube.CubieCube()) '''
             
         # Demonstration with alternating actions
-        if is_demonstrating_solve:
-            if solve_move is not None:
+        if is_demonstrating_solve and not is_paused and solve_move is not None:
                 cube_manager.renderer.display_move_text(solution_length-solution_index, solve_move)
-                
+        if is_paused:
+            cube_manager.renderer.display_text('paused...')
+        if is_demonstrating_solve and not is_paused:        
             current_time = pygame.time.get_ticks()
             if current_time - last_move_time >= move_interval_ms:
                 
@@ -149,12 +183,12 @@ def main(cube_string='WWWWWWWWWGGGGGGGGGOOOOOOOOORRRRRRRRRBBBBBBBBBYYYYYYYYY'):
                         solve_move = solution[solution_index]
                         setting_view = False
                     else: 
-                        last_move = solve_move
+                        last_move = solution[solution_index-1]
                         solve_move = solution[solution_index]
                         last_face = last_move % 6 
                         face = solve_move % 6
                         if last_face in [Face.L, Face.R] and face in [Face.D, Face.B] or last_face in [Face.D, Face.B] and face in [Face.L, Face.R]:
-                            setting_view = cube_manager.set_cube_view(Edge.UF, 30)
+                            setting_view = cube_manager.set_cube_view(Edge.UF, 60)
                         else:
                             setting_view = False
 
@@ -164,7 +198,7 @@ def main(cube_string='WWWWWWWWWGGGGGGGGGOOOOOOOOORRRRRRRRRBBBBBBBBBYYYYYYYYY'):
                 if solve_stage % 3 == 1:
 
                     view = Move(solve_move)
-                    setting_view = cube_manager.set_cube_view(view, 30)
+                    setting_view = cube_manager.set_cube_view(view, 60)
                     if not setting_view:
                         solve_stage += 1
 
@@ -211,7 +245,7 @@ def main(cube_string='WWWWWWWWWGGGGGGGGGOOOOOOOOORRRRRRRRRBBBBBBBBBYYYYYYYYY'):
         fps = clock.get_fps()
         cube_manager.renderer.display_fps(fps)
         pygame.display.flip()
-        clock.tick(60)
+        clock.tick(120)
         running = cube_manager.renderer.update()
 
     pygame.event.clear()
@@ -220,9 +254,3 @@ def main(cube_string='WWWWWWWWWGGGGGGGGGOOOOOOOOORRRRRRRRRBBBBBBBBBYYYYYYYYY'):
 if __name__ == '__main__':
     main()
     
-# Next step is to add button to import cube. 
-# + Instant scramble. 
-# + Generate random scramble
-# + solve 
-# + display notation on screen when solving, and number of moves left. 
-# then think about making solving more efficient (considering sub-optimal g1 paths.)
