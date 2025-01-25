@@ -69,7 +69,7 @@ def main(cube_string='WWWWWWWWWGGGGGGGGGOOOOOOOOORRRRRRRRRBBBBBBBBBYYYYYYYYY'):
     cube_manager = CubeManager(cube_string)
     is_demonstrating_solve = False
     is_paused = False
-    pause_debounce_ms = 2000
+    pause_debounce_ms = 500
     last_pause_time = 0
 
      # Display program info at the start
@@ -144,7 +144,8 @@ def main(cube_string='WWWWWWWWWGGGGGGGGGOOOOOOOOORRRRRRRRRBBBBBBBBBYYYYYYYYY'):
                 last_pause_time = pygame.time.get_ticks()
                 solution_index -= 1
                 move_to_invert = solution[solution_index]
-
+                solve_stage = 0
+          
                 if move_to_invert < 6:
                     inverse_move = move_to_invert + 12
                 elif move_to_invert < 12:
@@ -153,7 +154,10 @@ def main(cube_string='WWWWWWWWWGGGGGGGGGOOOOOOOOORRRRRRRRRBBBBBBBBBYYYYYYYYY'):
                     inverse_move = move_to_invert - 12
 
                 cube_manager.set_face_turn(inverse_move)
-                lsat_move_time = pygame.time.get_ticks()
+                last_move_time = pygame.time.get_ticks()
+                
+                
+                cube_manager.renderer.display_move_text(solution_length-solution_index, solution[solution_index])
 
 
                 
@@ -164,7 +168,7 @@ def main(cube_string='WWWWWWWWWGGGGGGGGGOOOOOOOOORRRRRRRRRBBBBBBBBBYYYYYYYYY'):
             
         # Demonstration with alternating actions
         if is_demonstrating_solve and not is_paused and solve_move is not None:
-                cube_manager.renderer.display_move_text(solution_length-solution_index, solve_move)
+                cube_manager.renderer.display_move_text(solution_length-solution_index, solution[solution_index])
         if is_paused:
             cube_manager.renderer.display_text('paused...')
         if is_demonstrating_solve and not is_paused:        
@@ -204,8 +208,9 @@ def main(cube_string='WWWWWWWWWGGGGGGGGGOOOOOOOOORRRRRRRRRBBBBBBBBBYYYYYYYYY'):
 
                 if solve_stage % 3 == 2:
                     # Perform face turn
-                    cube_manager.set_face_turn(solve_move)
                     solution_index += 1
+                    cube_manager.set_face_turn(solve_move)
+                    
 
                 solve_stage += 1
                 last_move_time = current_time  # Update last move time
