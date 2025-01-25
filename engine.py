@@ -44,7 +44,7 @@ class Renderer:
     def create_window(self):
         screen = pygame.display.set_mode((self.width, self.height))
         pygame.display.set_caption('Cube Solver')
-        icon = pygame.image.load('resources/rubiks_icon.png')
+        icon = pygame.image.load('resources/rubick.png')
         pygame.display.set_icon(icon)
         return screen
     

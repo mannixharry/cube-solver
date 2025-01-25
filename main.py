@@ -159,19 +159,12 @@ def main(cube_string='WWWWWWWWWGGGGGGGGGOOOOOOOOORRRRRRRRRBBBBBBBBBYYYYYYYYY'):
                 
                 cube_manager.renderer.display_move_text(solution_length-solution_index, solution[solution_index])
 
-
-                
-                
-        '''            
-        if keys[K_BACKSPACE]:
-            cube_manager = CubeManager(cube.CubieCube()) '''
-            
-        # Demonstration with alternating actions
-        if is_demonstrating_solve and not is_paused and solve_move is not None:
-                cube_manager.renderer.display_move_text(solution_length-solution_index, solution[solution_index])
         if is_paused:
             cube_manager.renderer.display_text('paused...')
-        if is_demonstrating_solve and not is_paused:        
+
+        if is_demonstrating_solve and not is_paused:    
+            if solution_index < solution_length:
+                    cube_manager.renderer.display_move_text(solution_length-solution_index, solution[solution_index])
             current_time = pygame.time.get_ticks()
             if current_time - last_move_time >= move_interval_ms:
                 
