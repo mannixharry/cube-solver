@@ -1,5 +1,6 @@
 from data import *
 import math 
+import random 
 
 class CubieCube:
     def __init__(self, cube_input=None):
@@ -143,8 +144,44 @@ class CubieCube:
             return False
         
     def scramble(self):
-        # do this. generate data in the same way it is done for move_tables
-        pass
+         
+        corner_permutations = list(range(8))
+        corner_orientations = [0] * 8
+        edge_permutations = list(range(12))
+        edge_orientations = [0] * 12
+
+        random.shuffle(corner_permutations)
+        random.shuffle(edge_permutations)
+
+        # Check parity 
+        corner_permutation_parity = sum(
+            a > b for i, a in enumerate(corner_permutations) for b in corner_permutations[i + 1:]
+        ) % 2
+        # Check edge permutation parity
+        edge_permutation_parity = sum(
+            a > b for i, a in enumerate(edge_permutations) for b in edge_permutations[i + 1:]
+        ) % 2
+        # Parity consistency check
+        parity_consistent = corner_permutation_parity == edge_permutation_parity
+
+        if not parity_consistent:
+            edge_permutations[0], edge_permutations[1] = edge_permutations[1], edge_permutations[0]
+        
+        corner_orientations = [random.randint(0,2) for i in range(7)]
+        corner_orientations.append(- sum(corner_orientations)%3) # force divisiblity by 3
+
+        edge_orientations = [random.randint(0,1) for i in range(11)]
+        edge_orientations.append(sum(edge_permutations)%2)
+
+        self.corner_permutations = corner_permutations
+        self.corner_orientations = corner_orientations
+        self.edge_permutations = edge_permutations
+        self.edge_orientations = edge_orientations
+
+    
+
+
+
 
             
 class FaceletCube:

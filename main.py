@@ -5,6 +5,7 @@ import pygame
 from pygame.locals import * 
 import cube 
 import vision
+from screen import Button
 
 def display_program_info(renderer, informatation):
 
@@ -23,6 +24,26 @@ def wait():
                     pygame.event.clear()
                     pygame.quit()
                     exit()
+
+def initialize_buttons(cube_manager):
+    """Initialize and assign buttons to the cube manager's renderer."""
+    width, height = cube_manager.renderer.width, cube_manager.renderer.height
+
+    scramble_image = pygame.image.load('resources/scramble.png')
+    reset_image = pygame.image.load('resources/reset.png')
+    solve_image = pygame.image.load('resources/solve.png')
+    capture_image = pygame.image.load('resources/capture.png')
+    size = (175, 70)
+
+    scramble_button = Button('scramble', scramble_image, 0.05 * width, 0.4 * height, size)
+    reset_button = Button('reset', reset_image, 0.05 * width, 0.5 * height, size)
+    solve_button = Button('solve', solve_image, 0.95 * width - size[0], 0.4 * height, size)
+    capture_button = Button('capture', capture_image, 0.95 * width - size[0], 0.5 * height, size)
+
+    cube_manager.renderer.add_button(scramble_button)
+    cube_manager.renderer.add_button(reset_button)
+    cube_manager.renderer.add_button(solve_button)
+    cube_manager.renderer.add_button(capture_button)
 
 def main(cube_string='WWWWWWWWWGGGGGGGGGOOOOOOOOORRRRRRRRRBBBBBBBBBYYYYYYYYY'):
        
@@ -83,11 +104,25 @@ def main(cube_string='WWWWWWWWWGGGGGGGGGOOOOOOOOORRRRRRRRRBBBBBBBBBYYYYYYYYY'):
     clock = pygame.time.Clock()
     running = True
 
+    width, height = cube_manager.renderer.width, cube_manager.renderer.height
+
+    initialize_buttons(cube_manager)
+
     while running:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+            elif event.type == pygame.KEYDOWN:
+                if event.key == K_ESCAPE:
+                    running = False
 
         current_time = pygame.time.get_ticks()
 
         cube_manager.main()
+
+        for button in cube_manager.renderer.buttons:
+            button.display(cube_manager.renderer.screen)
+
         rotation_speed = 0.025
         keys = pygame.key.get_pressed()
         angle = [0, 0, 0]
@@ -106,11 +141,20 @@ def main(cube_string='WWWWWWWWWGGGGGGGGGOOOOOOOOORRRRRRRRRBBBBBBBBBYYYYYYYYY'):
         if keys[K_x]:
             angle[2] = rotation_speed
 
-        if keys[K_SPACE]:
+        clicked_button = cube_manager.renderer.get_clicked_button()
+        if clicked_button:
+            name = clicked_button.name
+            
+        else:
+            name = None
+
+        if keys[K_SPACE] or name == 'solve':
             if not is_demonstrating_solve and not cube_manager.face_turning:
                 cube_solver = solver.Solver()
                 cube_to_solve = cube.CubieCube(cube_manager.cube)
 
+                if not cube_to_solve.verify_solvability():
+                    print('Cube is not solvable')
                 solution, _ = cube_solver.solve_cube(cube_to_solve)
                 solution_length = len(solution)
                 
@@ -122,14 +166,28 @@ def main(cube_string='WWWWWWWWWGGGGGGGGGOOOOOOOOORRRRRRRRRBBBBBBBBBYYYYYYYYY'):
                     solve_move = None
                     cube_manager.set_cube_view(Edge.UF)
                     
-        if keys[K_TAB]:
+        if keys[K_TAB] or name == 'capture':
             display_program_info(cube_manager.renderer, capture_instructions)
             captured_cube =  cube_capturer.capture_cube()
             is_demonstrating_solve = False 
 
             if captured_cube: 
                 cube_manager = CubeManager(captured_cube)
+                initialize_buttons(cube_manager)
 
+        if keys[K_s] or name == 'scramble':
+            
+            new_cube = cube.CubieCube()
+            new_cube.scramble()
+
+            cube_manager = CubeManager(new_cube)
+            initialize_buttons(cube_manager)
+
+            is_demonstrating_solve = False
+        if keys[K_RETURN] or name == 'reset':
+            cube_manager = CubeManager(cube.CubieCube())
+            initialize_buttons(cube_manager)
+            
         if keys[K_i]:
             display_program_info(cube_manager.renderer, main_instructions)
             wait()
@@ -244,7 +302,7 @@ def main(cube_string='WWWWWWWWWGGGGGGGGGOOOOOOOOORRRRRRRRRBBBBBBBBBYYYYYYYYY'):
         cube_manager.renderer.display_fps(fps)
         pygame.display.flip()
         clock.tick(120)
-        running = cube_manager.renderer.update()
+        cube_manager.renderer.update_mouse()
 
     pygame.event.clear()
     pygame.quit()
