@@ -152,9 +152,12 @@ def main(cube_string='WWWWWWWWWGGGGGGGGGOOOOOOOOORRRRRRRRRBBBBBBBBBYYYYYYYYY'):
             if not is_demonstrating_solve and not cube_manager.face_turning:
                 cube_solver = solver.Solver()
                 cube_to_solve = cube.CubieCube(cube_manager.cube)
-
+                print(cube_to_solve)
                 if not cube_to_solve.verify_solvability():
-                    print('Cube is not solvable')
+                    raise('Cube is not solvable')
+
+                cube_manager.renderer.display_text('Generating Solve...', 60)
+                pygame.display.flip()
                 solution, _ = cube_solver.solve_cube(cube_to_solve)
                 solution_length = len(solution)
                 
@@ -187,7 +190,8 @@ def main(cube_string='WWWWWWWWWGGGGGGGGGOOOOOOOOORRRRRRRRRBBBBBBBBBYYYYYYYYY'):
         if keys[K_RETURN] or name == 'reset':
             cube_manager = CubeManager(cube.CubieCube())
             initialize_buttons(cube_manager)
-            
+            is_demonstrating_solve = False
+
         if keys[K_i]:
             display_program_info(cube_manager.renderer, main_instructions)
             wait()

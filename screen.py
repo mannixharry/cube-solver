@@ -66,9 +66,9 @@ class Renderer:
         self.screen.blit(move_text, move_text_rect)
         self.screen.blit(move_count_text, move_count_text_rect)
 
-    def display_text(self, text):
+    def display_text(self, text, size = 80):
 
-        font = pygame.font.Font('resources/pixel_font.ttf', 80)
+        font = pygame.font.Font('resources/pixel_font.ttf', size)
         text = font.render(text, True, (0, 0, 51))
         text_rect = text.get_rect(center=(0.5 * self.width, 0.2 * self.height))
         # Blit the text at the calculated positions

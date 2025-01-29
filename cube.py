@@ -106,13 +106,13 @@ class CubieCube:
             self.edge_orientations = new_edge_orientations
 
             
-            
-        # Procedure to display the configuration of the cube in the console. 
-        def __repr__(self):
-            return (f"Corner Permutations: {self.corner_permutations}\n"
-                    f"Corner Orientations: {self.corner_orientations}\n"
-                    f"Edge Permutations: {self.edge_permutations}\n"
-                    f"Edge Orientations: {self.edge_orientations}\n")
+        
+    # Procedure to display the configuration of the cube in the console. 
+    def __repr__(self):
+        return (f"Corner Permutations: {self.corner_permutations}\n"
+                f"Corner Orientations: {self.corner_orientations}\n"
+                f"Edge Permutations: {self.edge_permutations}\n"
+                f"Edge Orientations: {self.edge_orientations}\n")
     
     def verify_solvability(self):
         # Check corner orientation validity
@@ -171,8 +171,8 @@ class CubieCube:
         corner_orientations.append(- sum(corner_orientations)%3) # force divisiblity by 3
 
         edge_orientations = [random.randint(0,1) for i in range(11)]
-        edge_orientations.append(sum(edge_permutations)%2)
-
+        edge_orientations.append(sum(edge_orientations)%2)
+       
         self.corner_permutations = corner_permutations
         self.corner_orientations = corner_orientations
         self.edge_permutations = edge_permutations
