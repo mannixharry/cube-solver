@@ -103,6 +103,11 @@ class Renderer:
     def clear_screen(self):
         self.screen.fill((255, 255, 255))
         self.displayed_quadrilaterals, self.displayed_quadrilaterals_indices = [], []
+    
+
+    def clear_display_data(self):
+        self.displayed_quadrilaterals, self.displayed_quadrilaterals_indices = [], []
+
 
     def draw_line(self, a, b, colour):
         pygame.draw.line(self.screen, colour, a, b, self.thickness*3)

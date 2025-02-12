@@ -104,7 +104,7 @@ class Transformer:
         return translated_vertex
 
 class CubeManager:
-    def __init__(self, cube_string):
+    def __init__(self, cube_string, renderer):
 
         self.cube = cube.CubieCube(cube_string)
 
@@ -116,7 +116,9 @@ class CubeManager:
         self.face_turning = self.face_turn_to_execute = False
         self.cube_rotating = self.cube_rotation_to_execute = False
 
-        self.renderer = Renderer()
+        self.renderer = renderer
+        self.renderer.clear_display_data()
+
         self.projector = Projector(self.renderer.width, self.renderer.height)
         self.transformer = Transformer(self.projector)
         
@@ -126,7 +128,19 @@ class CubeManager:
         self.angle_x = self.angle_y = self.angle_z = 0
         self.current_cube_rotation_angle = np.array([0,0,0])
 
-        
+    def update_cube(self, cube_string):
+        #self.renderer.clear_display_data()
+
+        self.highlighted_facelets = []
+        self.outer_rectangles = []
+        self.faces = []
+        self.face_turning = self.face_turn_to_execute = False
+        self.cube_rotating = self.cube_rotation_to_execute = False
+
+        self.cube = cube.CubieCube(cube_string)
+        self.cubes = [Cube([i/2, j/2, k/2]) for i in range(-3, 3, 2) for j in range(-3, 3, 2) for k in range(-3, 3, 2)]
+        self.process_cube_faces()
+
     def process_cube_faces(self):
         rectangles_to_sort = []
 

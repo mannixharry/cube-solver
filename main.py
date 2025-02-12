@@ -25,9 +25,9 @@ def wait():
                     pygame.quit()
                     exit()
 
-def initialize_buttons(cube_manager):
+def initialize_buttons(renderer):
     """Initialize and assign buttons to the cube manager's renderer."""
-    width, height = cube_manager.renderer.width, cube_manager.renderer.height
+    width, height = renderer.width, renderer.height
 
     scramble_image = pygame.image.load('resources/scramble.png')
     reset_image = pygame.image.load('resources/reset.png')
@@ -40,10 +40,10 @@ def initialize_buttons(cube_manager):
     solve_button = Button('solve', solve_image, 0.95 * width - size[0], 0.4 * height, size)
     capture_button = Button('capture', capture_image, 0.95 * width - size[0], 0.5 * height, size)
 
-    cube_manager.renderer.add_button(scramble_button)
-    cube_manager.renderer.add_button(reset_button)
-    cube_manager.renderer.add_button(solve_button)
-    cube_manager.renderer.add_button(capture_button)
+    renderer.add_button(scramble_button)
+    renderer.add_button(reset_button)
+    renderer.add_button(solve_button)
+    renderer.add_button(capture_button)
 
 def main(cube_string='WWWWWWWWWGGGGGGGGGOOOOOOOOORRRRRRRRRBBBBBBBBBYYYYYYYYY'):
        
@@ -86,8 +86,10 @@ def main(cube_string='WWWWWWWWWGGGGGGGGGOOOOOOOOORRRRRRRRRBBBBBBBBBYYYYYYYYY'):
         "",
     ]
 
+    renderer = Renderer()
+
     cube_capturer = vision.Capturer()
-    cube_manager = CubeManager(cube_string)
+    cube_manager = CubeManager(cube_string, renderer)
     is_demonstrating_solve = False
     is_paused = False
     pause_debounce_ms = 500
@@ -104,9 +106,9 @@ def main(cube_string='WWWWWWWWWGGGGGGGGGOOOOOOOOORRRRRRRRRBBBBBBBBBYYYYYYYYY'):
     clock = pygame.time.Clock()
     running = True
 
-    width, height = cube_manager.renderer.width, cube_manager.renderer.height
+    width, height = renderer.width, renderer.height
 
-    initialize_buttons(cube_manager)
+    initialize_buttons(renderer)
 
     while running:
         for event in pygame.event.get():
@@ -170,30 +172,30 @@ def main(cube_string='WWWWWWWWWGGGGGGGGGOOOOOOOOORRRRRRRRRBBBBBBBBBYYYYYYYYY'):
                     cube_manager.set_cube_view(Edge.UF)
                     
         if keys[K_TAB] or name == 'capture':
-            display_program_info(cube_manager.renderer, capture_instructions)
+            display_program_info(renderer, capture_instructions)
             captured_cube =  cube_capturer.capture_cube()
             is_demonstrating_solve = False 
 
             if captured_cube: 
-                cube_manager = CubeManager(captured_cube)
-                initialize_buttons(cube_manager)
+                cube_manager.update_cube(captured_cube)
+               
 
         if keys[K_s] or name == 'scramble':
             
             new_cube = cube.CubieCube()
             new_cube.scramble()
 
-            cube_manager = CubeManager(new_cube)
-            initialize_buttons(cube_manager)
+            cube_manager.update_cube(new_cube)
+            
 
             is_demonstrating_solve = False
         if keys[K_RETURN] or name == 'reset':
-            cube_manager = CubeManager(cube.CubieCube())
-            initialize_buttons(cube_manager)
+            cube_manager.update_cube(cube.CubieCube())
+            
             is_demonstrating_solve = False
 
         if keys[K_i]:
-            display_program_info(cube_manager.renderer, main_instructions)
+            display_program_info(renderer, main_instructions)
             wait()
 
         if is_demonstrating_solve and (current_time - last_pause_time) > pause_debounce_ms and (keys[K_p] or keys[K_BACKSPACE]):
@@ -218,8 +220,8 @@ def main(cube_string='WWWWWWWWWGGGGGGGGGOOOOOOOOORRRRRRRRRBBBBBBBBBYYYYYYYYY'):
                 cube_manager.set_face_turn(inverse_move)
                 last_move_time = pygame.time.get_ticks()
                 
-                
-                cube_manager.renderer.display_move_text(solution_length-solution_index, solution[solution_index])
+                if not is_paused:
+                    renderer.display_move_text(solution_length-solution_index, solution[solution_index])
 
         if is_paused:
             cube_manager.renderer.display_text('paused...')
