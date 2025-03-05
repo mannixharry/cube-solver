@@ -18,10 +18,11 @@ class Renderer:
 
         self.clicked_facelet = None
         self.clicked_button = None
+        self.mouse_pressed = False
 
         self.displayed_quadrilaterals = []
         self.displayed_quadrilaterals_indices = []
-
+        
     def detect_facelet_click(self, mouse_pos):
 
         def is_point_inside_triangle(A, B, C, P):
@@ -96,10 +97,12 @@ class Renderer:
 
     def update_mouse(self):
         if any(pygame.mouse.get_pressed()): 
-                mouse_pos = pygame.mouse.get_pos()
-                self.detect_facelet_click(mouse_pos)
-                self.detect_button_click(mouse_pos)
-
+            self.mouse_pressed = True
+        elif self.mouse_pressed == True:
+            self.mouse_pressed = False # mouse released (falling edge)
+            mouse_pos = pygame.mouse.get_pos()
+            self.detect_facelet_click(mouse_pos)
+            self.detect_button_click(mouse_pos)
     def clear_screen(self):
         self.screen.fill((255, 255, 255))
         self.displayed_quadrilaterals, self.displayed_quadrilaterals_indices = [], []
@@ -129,10 +132,11 @@ class Renderer:
         self.screen.blit(fps_text, (10, 10))
 
     def detect_button_click(self, mouse_pos):
+        
         for button in self.buttons:
-            if button.rect.collidepoint(mouse_pos):
+            if button.detect_click(mouse_pos):
                 self.clicked_button = button
-
+                
     def get_clicked_button(self):
         return_button = self.clicked_button
         self.clicked_button = None 
@@ -143,9 +147,22 @@ class Renderer:
     
 class Button:
     def __init__(self, name, image, x, y, size):
+        
         self.image = pygame.transform.scale(image, size)  # Resize the image to 100x100
         self.rect = self.image.get_rect()
         self.rect.topleft = (x,y)
         self.name = name 
+        self.last_click_time = pygame.time.get_ticks()
+        
+        self.debounce = 100 # 100 ms button debounce 
+        
     def display(self, screen):
         screen.blit(self.image, (self.rect.x, self.rect.y))
+        
+    def detect_click(self, mouse_pos):
+        if self.rect.collidepoint(mouse_pos):
+            current_time = pygame.time.get_ticks()
+            if current_time - self.last_click_time > self.debounce:
+                self.last_click_time = current_time
+                return True 
+            

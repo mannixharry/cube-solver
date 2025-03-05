@@ -33,6 +33,8 @@ def initialize_buttons(renderer):
     reset_image = pygame.image.load('resources/reset.png')
     solve_image = pygame.image.load('resources/solve.png')
     capture_image = pygame.image.load('resources/capture.png')
+    
+    
     size = (175, 70)
 
     scramble_button = Button('scramble', scramble_image, 0.05 * width, 0.4 * height, size)
@@ -105,8 +107,6 @@ def main(cube_string='WWWWWWWWWGGGGGGGGGOOOOOOOOORRRRRRRRRBBBBBBBBBYYYYYYYYY'):
     
     clock = pygame.time.Clock()
     running = True
-
-    width, height = renderer.width, renderer.height
 
     initialize_buttons(renderer)
 
@@ -186,9 +186,8 @@ def main(cube_string='WWWWWWWWWGGGGGGGGGOOOOOOOOORRRRRRRRRBBBBBBBBBYYYYYYYYY'):
             new_cube.scramble()
 
             cube_manager.update_cube(new_cube)
-            
-
             is_demonstrating_solve = False
+            
         if keys[K_RETURN] or name == 'reset':
             cube_manager.update_cube(cube.CubieCube())
             
