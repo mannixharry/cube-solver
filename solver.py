@@ -206,4 +206,3 @@ if __name__ == "__main__":
     contracted_solution, full_solution = solver.solve_cube(test_cube)
 
 
-# i need to make this so that it can run for a specified amount of time and then return a solution

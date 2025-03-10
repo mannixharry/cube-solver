@@ -90,8 +90,6 @@ class MoveTableGenerator:
         itr = iterator()
         return self.generate_general_table(itr, 'edge_orientation_coordinate', 'edge_orientations')
 
-
-    
     def generate_UD_slice_permutation_table(self):
         def iterator():
             indices = itertools.combinations(range(12), 4)

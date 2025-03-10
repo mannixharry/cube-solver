@@ -33,19 +33,27 @@ def initialize_buttons(renderer):
     reset_image = pygame.image.load('resources/reset.png')
     solve_image = pygame.image.load('resources/solve.png')
     capture_image = pygame.image.load('resources/capture.png')
-    
+    pause_play_image = pygame.image.load('resources/pause-play.png')
+    replay_image = pygame.image.load('resources/replay.png')
+    skip_image = pygame.image.load('resources/skip.png')
     
     size = (175, 70)
 
-    scramble_button = Button('scramble', scramble_image, 0.05 * width, 0.4 * height, size)
-    reset_button = Button('reset', reset_image, 0.05 * width, 0.5 * height, size)
-    solve_button = Button('solve', solve_image, 0.95 * width - size[0], 0.4 * height, size)
-    capture_button = Button('capture', capture_image, 0.95 * width - size[0], 0.5 * height, size)
+    scramble_button = Button('scramble', scramble_image, 0.05 * width, 0.4 * height, size, key = K_m)
+    reset_button = Button('reset', reset_image, 0.05 * width, 0.5 * height, size, key = K_n)
+    solve_button = Button('solve', solve_image, 0.95 * width - size[0], 0.4 * height, size, key = K_SPACE)
+    capture_button = Button('capture', capture_image, 0.95 * width - size[0], 0.5 * height, size, key = K_TAB)
+    pause_play_button = Button('pause-play', pause_play_image, 0.5*width - 60, 0.90 * height - 40, (120,80), key=K_p)
+    replay_button = Button('replay', replay_image, 0.35*width - 30, 0.90 * height - 30, (60,60))
+    skip_button = Button('skip', skip_image, 0.65*width - 30, 0.90 * height - 30, (60,60))
 
     renderer.add_button(scramble_button)
     renderer.add_button(reset_button)
     renderer.add_button(solve_button)
     renderer.add_button(capture_button)
+    renderer.add_button(pause_play_button)
+    renderer.add_button(replay_button)
+    renderer.add_button(skip_button)
 
 def main(cube_string='WWWWWWWWWGGGGGGGGGOOOOOOOOORRRRRRRRRBBBBBBBBBYYYYYYYYY'):
        
@@ -94,8 +102,6 @@ def main(cube_string='WWWWWWWWWGGGGGGGGGOOOOOOOOORRRRRRRRRBBBBBBBBBYYYYYYYYY'):
     cube_manager = CubeManager(cube_string, renderer)
     is_demonstrating_solve = False
     is_paused = False
-    pause_debounce_ms = 500
-    last_pause_time = 0
 
      # Display program info at the start
     display_program_info(cube_manager.renderer, main_instructions)
@@ -118,7 +124,7 @@ def main(cube_string='WWWWWWWWWGGGGGGGGGOOOOOOOOORRRRRRRRRBBBBBBBBBYYYYYYYYY'):
                 if event.key == K_ESCAPE:
                     running = False
 
-        current_time = pygame.time.get_ticks()
+        
 
         cube_manager.main()
 
@@ -127,13 +133,18 @@ def main(cube_string='WWWWWWWWWGGGGGGGGGOOOOOOOOORRRRRRRRRBBBBBBBBBYYYYYYYYY'):
 
         rotation_speed = 0.025
         keys = pygame.key.get_pressed()
+        mouse_pressed = pygame.mouse.get_pressed()
+        mouse_pos = pygame.mouse.get_pos()
+
+        cube_manager.renderer.update_mouse(mouse_pressed, mouse_pos, keys)
+
         angle = [0, 0, 0]
 
         # Handle key presses for cube rotation
         if keys[K_UP]:
             angle[0] = -rotation_speed
         if keys[K_DOWN]:
-            angle[0] = rotation_speed
+            angle[0] = +rotation_speed
         if keys[K_LEFT]:
             angle[1] = rotation_speed
         if keys[K_RIGHT]:
@@ -145,12 +156,11 @@ def main(cube_string='WWWWWWWWWGGGGGGGGGOOOOOOOOORRRRRRRRRBBBBBBBBBYYYYYYYYY'):
 
         clicked_button = cube_manager.renderer.get_clicked_button()
         if clicked_button:
-            name = clicked_button.name
-            
+            clicked_button_name  = clicked_button.name
         else:
-            name = None
+            clicked_button_name  = None
 
-        if keys[K_SPACE] or name == 'solve':
+        if clicked_button_name  == 'solve':
             if not is_demonstrating_solve and not cube_manager.face_turning:
                 cube_solver = solver.Solver()
                 cube_to_solve = cube.CubieCube(cube_manager.cube)
@@ -171,7 +181,7 @@ def main(cube_string='WWWWWWWWWGGGGGGGGGOOOOOOOOORRRRRRRRRBBBBBBBBBYYYYYYYYY'):
                     solve_move = None
                     cube_manager.set_cube_view(Edge.UF)
                     
-        if keys[K_TAB] or name == 'capture':
+        if clicked_button_name  == 'capture':
             display_program_info(renderer, capture_instructions)
             captured_cube =  cube_capturer.capture_cube()
             is_demonstrating_solve = False 
@@ -180,7 +190,7 @@ def main(cube_string='WWWWWWWWWGGGGGGGGGOOOOOOOOORRRRRRRRRBBBBBBBBBYYYYYYYYY'):
                 cube_manager.update_cube(captured_cube)
                
 
-        if keys[K_s] or name == 'scramble':
+        if keys[K_s] or clicked_button_name  == 'scramble':
             
             new_cube = cube.CubieCube()
             new_cube.scramble()
@@ -188,7 +198,7 @@ def main(cube_string='WWWWWWWWWGGGGGGGGGOOOOOOOOORRRRRRRRRBBBBBBBBBYYYYYYYYY'):
             cube_manager.update_cube(new_cube)
             is_demonstrating_solve = False
             
-        if keys[K_RETURN] or name == 'reset':
+        if clicked_button_name  == 'reset':
             cube_manager.update_cube(cube.CubieCube())
             
             is_demonstrating_solve = False
@@ -196,32 +206,45 @@ def main(cube_string='WWWWWWWWWGGGGGGGGGOOOOOOOOORRRRRRRRRBBBBBBBBBYYYYYYYYY'):
         if keys[K_i]:
             display_program_info(renderer, main_instructions)
             wait()
-
-        if is_demonstrating_solve and (current_time - last_pause_time) > pause_debounce_ms and (keys[K_p] or keys[K_BACKSPACE]):
-            if keys[K_p]:  # Corrected condition
-                last_pause_time = pygame.time.get_ticks()
-                is_paused = not is_paused  # Toggle the pause state
+        if is_demonstrating_solve:
+            if clicked_button_name == 'pause-play':
+                is_paused = not is_paused
                 if not is_paused:
                     solve_stage = 0
-            elif keys[K_BACKSPACE] and solution_index != 0:  # Corrected condition
-                last_pause_time = pygame.time.get_ticks()
-                solution_index -= 1
-                move_to_invert = solution[solution_index]
-                solve_stage = 0
-          
+
+            elif clicked_button_name == 'replay' and solution_index != 0 :  # Corrected condition
+                move_to_invert = solution[solution_index-1]
+                
+
                 if move_to_invert < 6:
                     inverse_move = move_to_invert + 12
                 elif move_to_invert < 12:
                     inverse_move = move_to_invert
                 else:
                     inverse_move = move_to_invert - 12
-
-                cube_manager.set_face_turn(inverse_move)
-                last_move_time = pygame.time.get_ticks()
                 
-                if not is_paused:
-                    renderer.display_move_text(solution_length-solution_index, solution[solution_index])
+                if cube_manager.set_face_turn(inverse_move):
+                    solution_index -= 1 
+                    solve_stage = 0
+                    last_move_time = pygame.time.get_ticks()
 
+            elif clicked_button_name == 'skip' and solution_index < solution_length:
+                solve_move = solution[solution_index]
+                
+                if cube_manager.set_face_turn(solve_move):
+                    solution_index += 1
+                    solve_stage = 0
+                    last_move_time = pygame.time.get_ticks()
+
+                if solution_index == solution_length:
+                    is_demonstrating_solve = False
+                    print("Solve demonstration complete.")
+                    cube_manager.set_cube_view(Corner.UFR)
+                    continue
+                
+
+            
+            
         if is_paused:
             cube_manager.renderer.display_text('paused...')
 
@@ -265,7 +288,8 @@ def main(cube_string='WWWWWWWWWGGGGGGGGGOOOOOOOOORRRRRRRRRBBBBBBBBBYYYYYYYYY'):
                 if solve_stage % 3 == 2:
                     # Perform face turn
                     solution_index += 1
-                    cube_manager.set_face_turn(solve_move)
+                    if not cube_manager.set_face_turn(solve_move):
+                        solve_stage -= 1
                     
 
                 solve_stage += 1
@@ -300,14 +324,14 @@ def main(cube_string='WWWWWWWWWGGGGGGGGGOOOOOOOOORRRRRRRRRBBBBBBBBBYYYYYYYYY'):
                     if keys[K_LCTRL]:
                         move += 6  # Double move
                     
-            
                     cube_manager.set_face_turn(move)
 
         fps = clock.get_fps()
         cube_manager.renderer.display_fps(fps)
         pygame.display.flip()
         clock.tick(120)
-        cube_manager.renderer.update_mouse()
+
+    
 
     pygame.event.clear()
     pygame.quit()

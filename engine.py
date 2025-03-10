@@ -35,26 +35,23 @@ class Cube:
                                              rectangle.piece_colour))
        
 class Projector:
-    def __init__(self, width, height):
+    def __init__(self, width, height, fov=90):
         self.width, self.height = width, height
-        self.fov = 90
-        self.znear, self.zfar = 0.1, 10000
-        aspect = width / height
+        self.fov = fov
+        a = height / width
         f = 1.0 / np.tan(np.radians(self.fov) / 2.0)
-        nf = 1.0 / (self.znear - self.zfar)
         self.projection_matrix = np.array([
-            [f / aspect, 0, 0, 0],
-            [0, f, 0, 0],
-            [0, 0, (self.zfar + self.znear) * nf, 2 * self.zfar * self.znear * nf],
-            [0, 0, -1, 0]
+            [f, 0, 0],
+            [0, f * a, 0],
+            [0, 0, 1],
+            
         ])
 
     def project_vector(self, vector):
-        vector_homogeneous = np.append(vector, 1)
-        projected_vector = self.projection_matrix @ vector_homogeneous
-        if projected_vector[3] != 0:
-            projected_vector /= projected_vector[3]
-        projected_vector += np.array([1, 1, 0, 0])
+        projected_vector = self.projection_matrix @ vector
+        if projected_vector[2] != 0:
+            projected_vector /= -projected_vector[2]
+        projected_vector += np.array([1, 1, 0])
         return (
             projected_vector[0] * 0.5 * self.width,
             projected_vector[1] * 0.5 * self.height
@@ -62,10 +59,7 @@ class Projector:
 
 
 class Transformer:
-    def __init__(self, projector):
-        self.projector = projector
-        self.rotation_matrix = np.zeros((3,3))
-    
+
     @staticmethod
     def create_rotation_matrix(angle):
         angle_x, angle_y, angle_z = angle
@@ -98,10 +92,10 @@ class Transformer:
 
     
     @staticmethod
-    def transform_vector(rotation_matrix, vertex):
-        rotated_vertex = rotation_matrix @ vertex 
-        translated_vertex = rotated_vertex + np.array([0, 0, 8]) 
-        return translated_vertex
+    def transform_vector(rotation_matrix, vector):
+        rotated_vector = rotation_matrix @ vector 
+        translated_vector = rotated_vector + np.array([0, 0, 8]) 
+        return translated_vector
 
 class CubeManager:
     def __init__(self, cube_string, renderer):
@@ -120,7 +114,7 @@ class CubeManager:
         self.renderer.clear_display_data()
 
         self.projector = Projector(self.renderer.width, self.renderer.height)
-        self.transformer = Transformer(self.projector)
+        self.transformer = Transformer()
         
         self.cubes = [Cube([i/2, j/2, k/2]) for i in range(-3, 3, 2) for j in range(-3, 3, 2) for k in range(-3, 3, 2)]
         self.process_cube_faces()
@@ -243,6 +237,7 @@ class CubeManager:
         hlf_pi = np.pi/2
         eleven_sixteenths_pi = 11/16 * np.pi
         seven_sixteenths_pi = 7/32 * np.pi
+        three_sixteenths_pi = 3/16 * np.pi
         pi = np.pi
 
         corner_view_angles = [
@@ -286,7 +281,7 @@ class CubeManager:
             [-qtr_pi,seven_sixteenths_pi,0],
             [-qtr_pi,-seven_sixteenths_pi, 0],
             [-eleven_sixteenths_pi,0,0],
-            [3/16 * pi,0,0]
+            [three_sixteenths_pi,0,0]
         ]
 
         if isinstance(viewpoint, Face):

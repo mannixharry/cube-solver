@@ -25,6 +25,7 @@ class Renderer:
         
     def detect_facelet_click(self, mouse_pos):
 
+        # !!!
         def is_point_inside_triangle(A, B, C, P):
             v0, v1, v2 = C - A, B - A, P - A
             dot00, dot01, dot02, dot11, dot12 = np.dot(v0, v0), np.dot(v0, v1), np.dot(v0, v2), np.dot(v1, v1), np.dot(v1, v2)
@@ -60,7 +61,7 @@ class Renderer:
         move_text = font.render(f"{Data.move_notation_for_display[move]}", True, (0, 0, 51))
         move_count_text = font.render(f"{move_count}", True, (0, 0, 51))
 
-        move_text_rect = move_text.get_rect(center=(0.5 * self.width, 0.8 * self.height))
+        move_text_rect = move_text.get_rect(center=(0.5 * self.width, 0.75 * self.height))
         move_count_text_rect = move_count_text.get_rect(center=(0.85 * self.width, 0.15 * self.height))
 
         # Blit the text at the calculated positions
@@ -95,14 +96,16 @@ class Renderer:
             self.screen.blit(text_surface, text_rect)
             y_offset += 30  # Space between lines
 
-    def update_mouse(self):
-        if any(pygame.mouse.get_pressed()): 
+    def update_mouse(self, mouse_pressed, mouse_pos, keys):
+        mouse_pos = pygame.mouse.get_pos()
+        mouse_pressed = pygame.mouse.get_pressed()
+        if any(mouse_pressed): 
             self.mouse_pressed = True
         elif self.mouse_pressed == True:
             self.mouse_pressed = False # mouse released (falling edge)
-            mouse_pos = pygame.mouse.get_pos()
             self.detect_facelet_click(mouse_pos)
-            self.detect_button_click(mouse_pos)
+
+        self.detect_button_click(mouse_pressed, mouse_pos, keys)
     def clear_screen(self):
         self.screen.fill((255, 255, 255))
         self.displayed_quadrilaterals, self.displayed_quadrilaterals_indices = [], []
@@ -131,10 +134,10 @@ class Renderer:
         fps_text = self.font.render(f'FPS: {int(fps)}', True, self.colour)
         self.screen.blit(fps_text, (10, 10))
 
-    def detect_button_click(self, mouse_pos):
-        
+    def detect_button_click(self, mouse_pressed, mouse_pos, keys_pressed):
+   
         for button in self.buttons:
-            if button.detect_click(mouse_pos):
+            if button.detect_click(mouse_pressed, mouse_pos, keys_pressed):
                 self.clicked_button = button
                 
     def get_clicked_button(self):
@@ -146,23 +149,38 @@ class Renderer:
         self.buttons.append(button)
     
 class Button:
-    def __init__(self, name, image, x, y, size):
+    def __init__(self, name, image, x, y, size, key=None):
+        self.key = key 
         
+
         self.image = pygame.transform.scale(image, size)  # Resize the image to 100x100
         self.rect = self.image.get_rect()
         self.rect.topleft = (x,y)
         self.name = name 
         self.last_click_time = pygame.time.get_ticks()
-        
+
         self.debounce = 100 # 100 ms button debounce 
+
+        self.latch = False 
         
     def display(self, screen):
         screen.blit(self.image, (self.rect.x, self.rect.y))
         
-    def detect_click(self, mouse_pos):
-        if self.rect.collidepoint(mouse_pos):
-            current_time = pygame.time.get_ticks()
-            if current_time - self.last_click_time > self.debounce:
-                self.last_click_time = current_time
-                return True 
+    def detect_click(self, mouse_pressed, mouse_pos, keys_pressed):
+         
+        mouse_clicked = self.rect.collidepoint(mouse_pos)
+        key_pressed = self.key is not None and keys_pressed[self.key]
+
+        if any(mouse_pressed) and mouse_clicked or key_pressed:
+            if not self.latch: 
+                current_time = pygame.time.get_ticks()
+                self.latch = True 
+                if current_time - self.last_click_time > self.debounce:
+                    self.last_click_time = current_time
+                    return True 
+        else: 
+            self.latch = False # force a period of no input before the next click. 
+
+        return False 
+
             
