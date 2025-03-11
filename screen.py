@@ -40,8 +40,8 @@ class Renderer:
 
         for i, quad in enumerate(self.displayed_quadrilaterals):
             if is_point_inside_quadrilateral(quad, mouse_pos):
-                faces_array = list(np.array([Data.faces_dict[face] for face in 'UFLRBD']).flatten())
-                self.clicked_facelet = faces_array.index(self.displayed_quadrilaterals_indices[i]+1)
+                
+                self.clicked_facelet = self.displayed_quadrilaterals_indices[i]
 
     def get_clicked_facelet(self):
         return_facelet = self.clicked_facelet

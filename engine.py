@@ -18,41 +18,43 @@ class Rectangle:
         normal = np.cross(vector_x, vector_y)
         normal /= np.linalg.norm(normal)
         return normal
+
     
-class Cube:
-    def __init__(self, position_vector, scale=1):
-
-        face_rectangles = [
-            Rectangle([[0, 0, 0], [0, 1, 0], [1, 1, 0], [1, 0, 0]]),  # Bottom face
-            Rectangle([[0, 0, 1], [1, 0, 1], [1, 1, 1], [0, 1, 1]]),  # Top face
-            Rectangle([[0, 0, 0], [1, 0, 0], [1, 0, 1], [0, 0, 1]]),  # Front face
-            Rectangle([[0, 1, 0], [0, 1, 1], [1, 1, 1], [1, 1, 0]]),  # Back face
-            Rectangle([[0, 0, 0], [0, 0, 1], [0, 1, 1], [0, 1, 0]]),  # Left face
-            Rectangle([[1, 0, 0], [1, 1, 0], [1, 1, 1], [1, 0, 1]])   # Right face
-        ]
-
-        self.rectangles = []
-        for rectangle in face_rectangles:
-            self.rectangles.append(Rectangle([(corner + position_vector) * scale for corner in rectangle.corners],
-                                             rectangle.piece_colour))
+class Cube():
     
-class testCube():
-     
-    def __init__(self):
+    colour_map = Data.colour_map
+    
+    def __init__(self, cube_string=None):
         
-        face = [Rectangle([[i-1.5, j-1.5, 0], [i-1.5, j-0.5, 0], [i-0.5, j-0.5, 0], [i-0.5, j-1.5, 0]]) for i in range(3) for j in range(3)]  # Bottom face
-
-        rotation_matrix = Transformer.create_rotation_matrix((0,0,0))
-
-        face = [Rectangle([Transformer.transform_vector(rotation_matrix, i) for i in rect.corners], True) for rect in face]
+        if cube_string is None:
+            cube_string = str(cube.FaceletCube())
+        elif isinstance(cube_string, cube.FaceletCube):
+            cube_string = str(cube_string)
         
-        self.cube = face
-       
-        # try getting a cube mesh on screen first. 
-        # then adding colors. 
+        f_face = [Rectangle([[0.5-i, 1.5-j, -1.5], [0.5-i, 0.5-j, -1.5],  
+                      [1.5-i, 0.5-j, -1.5], [1.5-i, 1.5-j, -1.5]])  
+          for j in range(3) for i in range(3)]
 
-        # i can represent a cube as faces rotated about the central axis. d
-
+        pi = np.pi
+        # UFLRBD
+        face_rotation_angles = [(pi/2, 0, 0), (0,0,0), (0, -pi/2, 0), (0, pi/2, 0), (0,pi,0), (-pi/2, 0, 0)]
+        
+        self.facelets = []
+        self.faces = []
+        for i, angle in enumerate(face_rotation_angles):
+            rotation_matrix = Transformer.create_rotation_matrix(angle)
+            
+            colour = self.colour_map['WGORBY'[i]]
+            # test_colours = [(50 + i * 200//9, 0, 0) for i in range(9)]
+            face = []
+            for j, rect in enumerate(f_face):
+                colour = self.colour_map[cube_string[i*9 + j]]
+                face.append(Rectangle([(rotation_matrix @ i) for i in rect.corners], colour))
+   
+            self.facelets += face
+            self.faces.append(face)
+            
+        
 class Projector:
     def __init__(self, width, height, fov=90):
         self.width, self.height = width, height
@@ -122,8 +124,7 @@ class CubeManager:
 
         self.cube = cube.CubieCube(cube_string)
 
-        self.highlighted_facelets = []
-        self.outer_rectangles = []
+   
         self.faces = []
 
         self.frames_per_face_turn = 30
@@ -134,79 +135,24 @@ class CubeManager:
         self.renderer.clear_display_data()
 
         self.projector = Projector(self.renderer.width, self.renderer.height)
-        self.transformer = Transformer()
-        
-        self.cubes = [Cube([i/2, j/2, k/2]) for i in range(-3, 3, 2) for j in range(-3, 3, 2) for k in range(-3, 3, 2)]
-        self.process_cube_faces()
 
+        self.facelets = Cube().facelets
+      
         self.angle_x = self.angle_y = self.angle_z = 0
         self.current_cube_rotation_angle = np.array([0,0,0])
 
     def update_cube(self, cube_string):
-        #self.renderer.clear_display_data()
-
-        self.highlighted_facelets = []
-        self.outer_rectangles = []
-        self.faces = []
+      
         self.face_turning = self.face_turn_to_execute = False
         self.cube_rotating = self.cube_rotation_to_execute = False
 
         self.cube = cube.CubieCube(cube_string)
-        self.cubes = [Cube([i/2, j/2, k/2]) for i in range(-3, 3, 2) for j in range(-3, 3, 2) for k in range(-3, 3, 2)]
-        self.process_cube_faces()
+        self.facelets =  Cube(str(cube.FaceletCube(cube_string))).facelets
 
-    def process_cube_faces(self):
-        rectangles_to_sort = []
-
-        for cube_index, cube in enumerate(self.cubes):
-            for rect_index, rectangle in enumerate(cube.rectangles):
-                centre = self.find_centre_rectangle(rectangle)
-                dist = max(map(abs, centre))
-                rectangles_to_sort.append([rectangle, dist, cube_index * 6 + rect_index, centre])
-
-        # Sort rectangles by distance in descending order and select the top 54
-        rectangles_to_sort.sort(key=lambda x: x[1], reverse=True)
-        self.outer_rectangles = rectangles_to_sort[:54]
-        self.set_colours()
-        
     @staticmethod
     def find_centre_rectangle(rectangle):
         a, b, c, d = rectangle.corners
         return (a + b + c + d) / 4.0
-    
-    def set_colours(self):
-    
-        cube_string = str(cube.FaceletCube(self.cube))
-        colour_map = {
-            'R': (255, 0, 0),       # Red
-            'O': (255, 100, 0),     # Orange
-            'Y': (255, 255, 0),     # Yellow
-            'W': (255, 255, 255),   # White
-            'G': (0, 187, 0),       # Green
-            'B': (0, 0, 187),       # Blue
-        }
-        
-
-        faces_array = [52, 32, 19, 49, 30, 16, 47, 29, 14,
-                       46, 28, 13, 41, 26, 8, 33, 21, 0,
-                       53, 50, 48, 45, 43, 42, 40, 37, 35,
-                       15, 17, 20, 9, 10, 12, 2, 4, 7,
-                       18, 31, 51, 11, 27, 44, 5, 24, 38,
-                       34, 22, 1, 36, 23, 3, 39, 25, 6]
-
-        for face in range(6):
-            face_cubes = []
-            for face_facelet in range(9):
-                index = face * 9 + face_facelet
-                facelet_index_in_rectangles = faces_array[index]
-                facelet_colour = cube_string[index]
-
-                idx = self.outer_rectangles[facelet_index_in_rectangles][2]
-                cube_index = idx // 6 
-                rect_index = idx % 6             
-                self.cubes[cube_index].rectangles[rect_index].piece_colour = colour_map[facelet_colour]
-                face_cubes.append(self.cubes[cube_index])
-            self.faces.append(face_cubes)
 
     def change_cube_rotation(self, angle_delta):
         if self.cube_rotating:
@@ -329,7 +275,6 @@ class CubeManager:
         move_type = move % 6 
         turn_count = 1 + (move // 6)
 
-        face = self.faces[move_type]
         clockwise = [1, 2, -1][turn_count-1]
         if move_type in [Move.R, Move.D, Move.F]:
             clockwise *= -1 
@@ -345,9 +290,19 @@ class CubeManager:
         self.current_face_turn_frame = self.current_face_turn_angle = 0
 
         self.move, self.face_target_angle, self.face_turning = move, angle, True
-        return move, face, np.multiply(angle, np.pi/2)
+        return move, np.multiply(angle, np.pi/2)
 
     def update_face_turns(self):
+        
+        slice_facelets = {
+            'U': list(range(0,9)) + [9,10,11] + [18,19,20] + [27,28,29] + [36,37,38],
+            'F': list(range(9,18)) + [6,7,8] + [20,23,26] + [27,30,33] + [45,46,47],
+            'L': list(range(18,27)) + [0,3,6] + [9,12,15] + [38,41,44] + [45,48,51],
+            'R': list(range(27,36)) + [2,5,8] + [11,14,17] + [36,39,42] + [47,50,53],
+            'B': list(range(36,45)) + [0,1,2] + [18,21,24] + [29,32,35] + [51,52,53],
+            'D': list(range(45,54)) + [15,16,17] + [24,25,26] + [33,34,35] + [42,43,44]
+        }
+                
         # add varying rotation speed according to curve in animation 
         if not self.face_turning:
             return
@@ -362,28 +317,30 @@ class CubeManager:
             angle = (np.sin(np.pi * self.current_face_turn_frame/(2*frames))) * self.face_target_angle 
             rotation_matrix = Transformer.create_rotation_matrix(angle - self.current_face_turn_angle)
             self.current_face_turn_angle = angle
+            
+            face = self.move % 6 
+            for i, facelet in enumerate(slice_facelets['UFLRBD'[face]]):
+                rectangle = self.facelets[facelet]
+                for j, corner in enumerate(rectangle.corners):
+                    rotated_corner = corner @ rotation_matrix
+                    self.facelets[facelet].corners[j] = rotated_corner
+                
         else: 
             #Reset rotation and apply new colours
-            rotation_matrix = Transformer.create_rotation_matrix(-self.face_target_angle)
-
             self.cube.move(self.move)
-            self.set_colours()
-            self.face_turning = False
-
-        face = self.move % 6 
-        for i, cube in enumerate(self.faces[face]):
-            for j, rectangle in enumerate(cube.rectangles):
-
-                for k, corner in enumerate(rectangle.corners):
-                    rotated_corner = corner @ rotation_matrix
-                    self.faces[face][i].rectangles[j].corners[k] = rotated_corner
+            cube_string = str(cube.FaceletCube(self.cube))
+            
+            self.update_cube(cube_string)
+      
+       
+ 
 
     def get_clicked_facelet(self):
         return self.renderer.get_clicked_facelet()
 
     def main(self):
 
-        #ttestCube = testCube()
+
         self.update_face_turns()    
         self.renderer.clear_screen() # Clear the screen
 
@@ -391,8 +348,7 @@ class CubeManager:
 
         rectangles_to_draw = []
         index = 0
-        for cube in self.cubes:
-            for rectangle in cube.rectangles:
+        for rectangle in np.array(self.facelets):
                 rotating = self.face_turning
                 if not rotating and not rectangle.piece_colour:
                     continue
@@ -406,21 +362,24 @@ class CubeManager:
 
                 reference = transformed_vertices[0] / np.linalg.norm(transformed_vertices[0])
 
-                if np.dot(transformed_normal, reference) < 0:
-                    projected_vertices = [self.projector.project_vector(vertex) for vertex in transformed_vertices]
-                    centre = CubeManager.find_centre_rectangle(transformed_rectangle)
-
-                    centroid_depth = np.linalg.norm(centre)
-                    rectangles_to_draw.append((projected_vertices, rectangle.piece_colour, centroid_depth, index))
-
-                if rectangle.piece_colour:
-                    index += 1
+                piece_colour = rectangle.piece_colour if np.dot(transformed_normal, reference) > 0 else (0,0,0)
                 
-        # Sort rectangles by piece_colour and depth
-        rectangles_to_draw.sort(key=lambda x: (isinstance(x[1], tuple), -x[2]))
+                projected_vertices = [self.projector.project_vector(vertex) for vertex in transformed_vertices]
+                centre = CubeManager.find_centre_rectangle(transformed_rectangle)
+                centroid_depth = np.linalg.norm(centre)
+                
+                rectangles_to_draw.append((projected_vertices, piece_colour, centroid_depth, index))
+
+                index += 1
+                
+        # Sort rectangles by depth
+        rectangles_to_draw.sort(key=lambda x: -x[2])
 
         for rectangle, piece_colour, _, index in rectangles_to_draw:
 
             self.renderer.draw_rectangle(rectangle, piece_colour)
             self.renderer.add_displayed_quadrilateral(rectangle, index)
 
+if __name__ == '__main__':
+    import main
+    main.main()
