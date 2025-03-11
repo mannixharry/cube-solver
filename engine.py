@@ -4,6 +4,8 @@ import cube
 from data import * 
 import numpy as np
 
+# can i define a cube as 6 faces, rotated in 3D space. 
+
 class Rectangle:
     def __init__(self, corners, piece_colour=False):
         self.corners = [np.array(corner) for corner in corners]
@@ -33,7 +35,24 @@ class Cube:
         for rectangle in face_rectangles:
             self.rectangles.append(Rectangle([(corner + position_vector) * scale for corner in rectangle.corners],
                                              rectangle.piece_colour))
+    
+class testCube():
+     
+    def __init__(self):
+        
+        face = [Rectangle([[i-1.5, j-1.5, 0], [i-1.5, j-0.5, 0], [i-0.5, j-0.5, 0], [i-0.5, j-1.5, 0]]) for i in range(3) for j in range(3)]  # Bottom face
+
+        rotation_matrix = Transformer.create_rotation_matrix((0,0,0))
+
+        face = [Rectangle([Transformer.transform_vector(rotation_matrix, i) for i in rect.corners], True) for rect in face]
+        
+        self.cube = face
        
+        # try getting a cube mesh on screen first. 
+        # then adding colors. 
+
+        # i can represent a cube as faces rotated about the central axis. d
+
 class Projector:
     def __init__(self, width, height, fov=90):
         self.width, self.height = width, height
@@ -97,6 +116,7 @@ class Transformer:
         translated_vector = rotated_vector + np.array([0, 0, 8]) 
         return translated_vector
 
+ 
 class CubeManager:
     def __init__(self, cube_string, renderer):
 
@@ -363,6 +383,7 @@ class CubeManager:
 
     def main(self):
 
+        #ttestCube = testCube()
         self.update_face_turns()    
         self.renderer.clear_screen() # Clear the screen
 
