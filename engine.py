@@ -3,9 +3,6 @@ from screen import Renderer
 import cube
 from data import * 
 import numpy as np
-
-# can i define a cube as 6 faces, rotated in 3D space. 
-
 class Rectangle:
     def __init__(self, corners, piece_colour=False):
         self.corners = [np.array(corner) for corner in corners]
@@ -18,9 +15,8 @@ class Rectangle:
         normal = np.cross(vector_x, vector_y)
         normal /= np.linalg.norm(normal)
         return normal
-
     
-class Cube():
+class Cube:
     
     colour_map = Data.colour_map
     
@@ -123,23 +119,16 @@ class CubeManager:
     def __init__(self, cube_string, renderer):
 
         self.cube = cube.CubieCube(cube_string)
-
-   
-        self.faces = []
-
         self.frames_per_face_turn = 30
-        self.face_turning = self.face_turn_to_execute = False
-        self.cube_rotating = self.cube_rotation_to_execute = False
 
         self.renderer = renderer
         self.renderer.clear_display_data()
 
         self.projector = Projector(self.renderer.width, self.renderer.height)
-
-        self.facelets = Cube().facelets
-      
         self.angle_x = self.angle_y = self.angle_z = 0
         self.current_cube_rotation_angle = np.array([0,0,0])
+        
+        self.update_cube(cube_string)
 
     def update_cube(self, cube_string):
       
@@ -154,6 +143,7 @@ class CubeManager:
         a, b, c, d = rectangle.corners
         return (a + b + c + d) / 4.0
 
+    #!!!
     def change_cube_rotation(self, angle_delta):
         if self.cube_rotating:
             return False
@@ -166,7 +156,7 @@ class CubeManager:
         if self.cube_rotating:
             return False
         self.cube_target_angle = np.array(target_angle)
-        # Normalize target angle to ensure interpolation uses the shortest path
+        
         self.cube_target_angle = ((self.cube_target_angle + np.pi) % (2 * np.pi)) - np.pi
         self.cube_rotation_to_execute = True
         self.frames_per_cube_rotation = frames_per_cube_rotation
@@ -332,9 +322,6 @@ class CubeManager:
             
             self.update_cube(cube_string)
       
-       
- 
-
     def get_clicked_facelet(self):
         return self.renderer.get_clicked_facelet()
 

@@ -277,16 +277,6 @@ class Data:
             'T': (0,0,0)            # Test
         }
             
-    faces_dict = {
-            'U' : [53, 33, 20, 50, 31, 17, 48, 30, 15],
-            'D' : [35, 23, 2, 37, 24, 4, 40, 26, 7],
-            'F' : [47, 29, 14, 42, 27, 9, 34, 22, 1],
-            'B' : [19, 32, 52, 12, 28, 45, 6, 25, 39],
-            'L' : [54, 51, 49, 46, 44, 43, 41, 38, 36],
-            'R' : [16, 18, 21, 10, 11, 13, 3, 5, 8]
-        } #Gives the index of the faces 
-    
-    
 '''
 Class to manage the loading of move tables. 
 If a move table is not found, it will raise an error. 
