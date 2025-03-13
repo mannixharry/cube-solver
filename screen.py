@@ -25,23 +25,22 @@ class Renderer:
         
     def detect_facelet_click(self, mouse_pos):
 
-        # !!!
-        def is_point_inside_triangle(A, B, C, P):
-            v0, v1, v2 = C - A, B - A, P - A
-            dot00, dot01, dot02, dot11, dot12 = np.dot(v0, v0), np.dot(v0, v1), np.dot(v0, v2), np.dot(v1, v1), np.dot(v1, v2)
-            invDenom = 1 / (dot00 * dot11 - dot01 * dot01)
-            u, v = (dot11 * dot02 - dot01 * dot12) * invDenom, (dot00 * dot12 - dot01 * dot02) * invDenom
-            return u >= 0 and v >= 0 and u + v <= 1
-
-        def is_point_inside_quadrilateral(corners, P):
-            A, B, C, D, = [np.array(i) for i in corners]
+        def is_point_inside_quadrilateral(quad, P):
+            A, B, C, D = np.array(quad[0]), np.array(quad[1]), np.array(quad[2]), np.array(quad[3])
             P = np.array(P)
-            return is_point_inside_triangle(A, B, C, P) or is_point_inside_triangle(A, C, D, P)
+            ab, ac, ad = B-A, C-A, D-A
+            pa, pb, pc, pd = A-P, B-P, C-P, D-P
+            area = lambda x, y : np.linalg.norm(np.cross(x,y)) 
+            quad_area = area(ab, ac) + area(ac,ad) # This is actually 2x but irrelevent
+            total_area = area(pa, pb) + area(pb,pc) + area(pc, pd) + area(pd, pa)
+            relative_error = abs((total_area-quad_area) / quad_area)          
+            return relative_error < 0.001 # an arbitrary (small) value 
 
         for i, quad in enumerate(self.displayed_quadrilaterals):
             if is_point_inside_quadrilateral(quad, mouse_pos):
-                
+
                 self.clicked_facelet = self.displayed_quadrilaterals_indices[i]
+                print(self.clicked_facelet)
 
     def get_clicked_facelet(self):
         return_facelet = self.clicked_facelet
@@ -64,7 +63,6 @@ class Renderer:
         move_text_rect = move_text.get_rect(center=(0.5 * self.width, 0.75 * self.height))
         move_count_text_rect = move_count_text.get_rect(center=(0.85 * self.width, 0.15 * self.height))
 
-        # Blit the text at the calculated positions
         self.screen.blit(move_text, move_text_rect)
         self.screen.blit(move_count_text, move_count_text_rect)
 
@@ -73,7 +71,7 @@ class Renderer:
         font = pygame.font.Font('resources/pixel_font.ttf', size)
         text = font.render(text, True, (0, 0, 51))
         text_rect = text.get_rect(center=(0.5 * self.width, 0.2 * self.height))
-        # Blit the text at the calculated positions
+       
         self.screen.blit(text, text_rect)
 
 
@@ -94,7 +92,7 @@ class Renderer:
             text_surface = font.render(line, True, (0, 0, 0))
             text_rect = text_surface.get_rect(center=(self.width // 2, y_offset))
             self.screen.blit(text_surface, text_rect)
-            y_offset += 30  # Space between lines
+            y_offset += 30
 
     def update_mouse(self, mouse_pressed, mouse_pos, keys):
         mouse_pos = pygame.mouse.get_pos()

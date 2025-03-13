@@ -2,127 +2,118 @@ import cube
 import json
 from data import * 
 from datetime import datetime
+from pruning_table_generator import pruning_tables
 
-#!!!
 class Solver:
     def __init__(self):
-        """
-        Initialize the solver with built-in G1 and G2 solvers.
-        """
-        self.g1_solver = self.StageSolver(
-            pruning_data=[
-                ('pruning_tables/udslice_corner_table.json', ['UD_slice_coordinate', 'corner_orientation_coordinate']),
-                ('pruning_tables/udslice_edge_table.json', ['UD_slice_coordinate', 'edge_orientation_coordinate']),
-            ],
-            goal_state={
-                'corner_orientation_coordinate': 0,
-                'edge_orientation_coordinate': 0,
-                'UD_slice_coordinate': 0,
-            },
-            max_depth=12,
-            allowed_moves=list(range(18))  # All moves allowed for G1
-        )
+        self.g1_solver = self.g1Solver()
+        self.g2_solver = self.g2Solver()
 
-        self.g2_solver = self.StageSolver(
-            pruning_data=[
-                ('pruning_tables/main_edge_udslice_edge_table.json', ['eight_edge_permutation_coordinate', 'four_edge_permutation_coordinate']),
-                ('pruning_tables/corner_udslice_edge_table.json', ['corner_permutation_coordinate', 'four_edge_permutation_coordinate']),
-            ],
-            goal_state={
-                'eight_edge_permutation_coordinate': 0,
-                'four_edge_permutation_coordinate': 0,
-                'corner_permutation_coordinate': 0,
-            },
-            max_depth=18,
-            allowed_moves=Data.g2_allowed_moves  # Restricted moves for G2
-        )
-        
     class StageSolver:
-        def __init__(self, pruning_data, goal_state, max_depth, allowed_moves):
-            """
-            Initialize a stage solver with specific parameters.
-            """
-            self.coord_tuples = [i[1] for i in pruning_data]
-            self.pruning_tables = [self.load_pruning_table(i[0]) for i in pruning_data]
-            self.goal_state = goal_state
+        def __init__(self, max_depth, allowed_moves):
+
             self.max_depth = max_depth
             self.allowed_moves = allowed_moves
+        
+        def heuristic_function(self, state): 
+            pass
+        
+        def is_solved_function(self, state):
+            pass
+        
+        # must be overridden 
 
-        @staticmethod
-        def load_pruning_table(file_path):
-            """Load a pruning table from a JSON file."""
-            with open(file_path, 'r') as file:
-                return json.load(file)
+        def search_for_solution(self, cube_state, threshold=0): # IDA*
+            
+            stack = [(cube_state, [])]
+            min_h = float('inf')
+            while len(stack) > 0: 
 
-        def heuristic(self, state):
-            """Calculate the heuristic estimate for the given state."""
-            depths = [
-                table.get(str(tuple(getattr(state, attr) for attr in coord_tuple)), self.max_depth)
-                for table, coord_tuple in zip(self.pruning_tables, self.coord_tuples)
-            ]
-            return max(map(int, depths))
+                current_state, current_path = stack.pop()
+                coord = cube.CoordCube(current_state)
 
-        def ida_star(self, initial_state):
-            """Perform IDA* search from the initial state."""
-            # Check if the initial state is already in the goal state
+                g_score = len(current_path) 
+                h_score = self.heuristic_function(current_state)
 
-            path = []
-            threshold = self.heuristic(initial_state)
+                f_score = g_score + h_score
 
-            while True:
-                result = self.search(initial_state, 0, threshold, path)
-                if isinstance(result, list):  # Solution found
-                    return result
-                if result == float('inf'):  # No solution exists within the current threshold
-                    return None
-                threshold = result  # Increase threshold for the next iteration
+                if f_score > threshold or g_score > self.max_depth:
+                    if f_score < min_h:
+                        min_h = f_score
+                    continue
 
-        def search(self, state, g, threshold, path):
-            """Recursive search function for IDA*."""
-            if g > self.max_depth:
-                return float('inf')
-
-            f = g + self.heuristic(state)
-            if f > threshold:
-                return f
-
-            if all(getattr(state, attr) == value for attr, value in self.goal_state.items()):
-                return path[:]
-
-            min_cost = float('inf')
-            for move in self.allowed_moves:
-                if path and move == self.inverse_move(path[-1]):
-                    continue  # Skip inverse of previous move
+                if self.is_solved_function(coord):
+                    return current_path
                 
-                next_state = cube.CoordCube(state)
-                next_state.rotate_clockwise(move)
+                for move in self.allowed_moves:
+                    if current_path:
+                        if move == self.inverse_move(current_path[-1]):
+                            continue
+                    next_state = cube.CoordCube(current_state)
+                    next_state.rotate_clockwise(move)
 
-                path.append(move)
-                result = self.search(next_state, g + 1, threshold, path)
-                if isinstance(result, list):
-                    return result
-                if result < min_cost:
-                    min_cost = result
+                    next_path = current_path + [move]
 
-                path.pop()  # Backtrack
+                    stack.append((next_state, next_path))
 
-            return min_cost
+            return self.search_for_solution(cube_state, min_h)
 
         @staticmethod
         def inverse_move(move):
-            """Returns the inverse of a move."""
             if 0 <= move < 6:
                 return move + 12
             elif 6 <= move < 12:
                 return move
             elif 12 <= move < 18:
                 return move - 12
+    
+    class g1Solver(StageSolver):
+        def __init__(self):
 
+            max_depth = 12 
+            allowed_moves = Data.g1_allowed_moves
+            super().__init__(max_depth, allowed_moves)
+
+            self.udslice_corner_pruning_table = pruning_tables.udslice_corner_table
+            self.udslice_edge_pruning_table = pruning_tables.udslice_edge_table
+
+        def heuristic_function(self, state):
+            search_coord1 = str((state.UD_slice_coordinate, state.corner_orientation_coordinate))
+            d1 = self.udslice_corner_pruning_table.get(search_coord1, self.max_depth)
+
+            search_coord2 = str((state.UD_slice_coordinate, state.edge_orientation_coordinate))
+            d2 = self.udslice_edge_pruning_table.get(search_coord2, self.max_depth)
+
+            return max(d1, d2)
+
+        def is_solved_function(self, state):
+            return state.UD_slice_coordinate == state.corner_orientation_coordinate == state.edge_orientation_coordinate == 0 
+
+    class g2Solver(StageSolver):
+        def __init__(self):
+            
+            max_depth = 18
+            allowed_moves = Data.g2_allowed_moves
+            super().__init__(max_depth, allowed_moves)
+
+            self.corner_udslice_edge_table = pruning_tables.corner_udslice_edge_table
+            self.main_edge_udslice_edge_pruning_table = pruning_tables.mainedge_udslice_edge_table
+
+        def heuristic_function(self, state):
+            search_coord1 = str((state.corner_permutation_coordinate, state.four_edge_permutation_coordinate))
+            d1 = self.corner_udslice_edge_table.get(search_coord1, self.max_depth)
+
+            search_coord2 = str((state.eight_edge_permutation_coordinate, state.four_edge_permutation_coordinate))
+            d2 = self.main_edge_udslice_edge_pruning_table.get(search_coord2, self.max_depth)
+
+            return max(d1, d2)
+
+        def is_solved_function(self, state):
+            return state.corner_permutation_coordinate == state.four_edge_permutation_coordinate == state.eight_edge_permutation_coordinate == 0 
+        
     @staticmethod
     def contract_solution(solution):
-        """
-        Simplify a sequence of moves by combining consecutive rotations on the same face.
-        """
+
         contracted_solution = []
         current_face = None
         current_turn_count = 0
@@ -151,9 +142,7 @@ class Solver:
         return contracted_solution
 
     def solve_cube(self, cube_input):
-        """
-        Solve the given cube, starting from the G1 stage and progressing to G2.
-        """
+      
         start_time = datetime.now()
 
         if isinstance(cube_input, cube.CubieCube):
@@ -163,15 +152,12 @@ class Solver:
         elif isinstance(cube_input, cube.FaceletCube):
             cubie_input = cube_input.to_cubie_cube()
         else:
-            raise ("Error: cube_input does not match expected type")
+            raise ("Error: cube_input is not an expected type")
         
         initial_state = cube.CoordCube(cubie_input)
 
         # Solve G1
-        g1_solution = self.g1_solver.ida_star(initial_state)
-        
-        #if not g1_solution:
-        #   raise ValueError("Error: No G1 solution found.")
+        g1_solution = self.g1_solver.search_for_solution(initial_state)
         print("G1 Solution:", [Data.move_notation[i] for i in g1_solution])
 
         for move in g1_solution:
@@ -182,9 +168,8 @@ class Solver:
 
         # Solve G2
         initial_state_g2 = cube.CoordCube(cubie_input)
-        g2_solution = self.g2_solver.ida_star(initial_state_g2)
-        #if not g2_solution:
-        #    raise ValueError("Error: No G2 solution found.")
+        g2_solution = self.g2_solver.search_for_solution(initial_state_g2)
+
         print("G2 Solution:", [Data.move_notation[i] for i in g2_solution])
 
         for move in g2_solution:
@@ -196,14 +181,13 @@ class Solver:
         contracted_solution = self.contract_solution(full_solution)
 
         print(f"\nWhole Solution ({len(contracted_solution)} moves):", [Data.move_notation[i] for i in contracted_solution])
-        #print("\nSolution Move Code:", full_solution)
-
-        return contracted_solution, full_solution
+    
+        return contracted_solution
     
 if __name__ == "__main__":
     solver = Solver()
 
     test_cube = cube.CubieCube('YYYYWWYYYGGGGGGGGGRRRRORROROROORBOOOBBBOBBBWBWWWWYYWBW')
-    contracted_solution, full_solution = solver.solve_cube(test_cube)
+    contracted_solution = solver.solve_cube(test_cube)
 
 

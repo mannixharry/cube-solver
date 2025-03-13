@@ -1,3 +1,5 @@
+from move_table_generator import move_tables
+from pruning_table_generator import pruning_tables
 from data import *
 from engine import *
 import solver
@@ -6,6 +8,7 @@ from pygame.locals import *
 import cube 
 import vision
 from screen import Button
+
 
 def display_program_info(renderer, informatation):
 
@@ -124,8 +127,6 @@ def main(cube_string='WWWWWWWWWGGGGGGGGGOOOOOOOOORRRRRRRRRBBBBBBBBBYYYYYYYYY'):
                 if event.key == K_ESCAPE:
                     running = False
 
-        
-
         cube_manager.main()
 
         for button in cube_manager.renderer.buttons:
@@ -170,7 +171,7 @@ def main(cube_string='WWWWWWWWWGGGGGGGGGOOOOOOOOORRRRRRRRRBBBBBBBBBYYYYYYYYY'):
 
                 cube_manager.renderer.display_text('Generating Solve...', 60)
                 pygame.display.flip()
-                solution, _ = cube_solver.solve_cube(cube_to_solve)
+                solution = cube_solver.solve_cube(cube_to_solve)
                 solution_length = len(solution)
                 
                 if solution:
@@ -330,8 +331,6 @@ def main(cube_string='WWWWWWWWWGGGGGGGGGOOOOOOOOORRRRRRRRRBBBBBBBBBYYYYYYYYY'):
         cube_manager.renderer.display_fps(fps)
         pygame.display.flip()
         clock.tick(120)
-
-    
 
     pygame.event.clear()
     pygame.quit()

@@ -178,12 +178,6 @@ class CubieCube:
         self.edge_permutations = edge_permutations
         self.edge_orientations = edge_orientations
 
-    
-
-
-
-
-            
 class FaceletCube:
     def __init__(self, cube_input=None):
         
@@ -325,18 +319,21 @@ class FaceletCube:
 class CoordCube:
     def __init__(self, cube_input=None):
         # Import move tables for rotations and transitions
+        
         try: 
+            from move_table_generator import move_tables
             self.g1_move_tables = [
-                Move_Tables.corner_orientation_table,
-                Move_Tables.edge_orientation_table,
-                Move_Tables.UD_slice_permutation_table
+                move_tables.corner_orientation_table,
+                move_tables.edge_orientation_table,
+                move_tables.UD_slice_permutation_table
             ]
             self.g2_move_tables = [
-                Move_Tables.eight_edge_permutation_table,
-                Move_Tables.four_edge_permutation_table,
-                Move_Tables.corner_permutation_table
+                move_tables.eight_edge_permutation_table,
+                move_tables.four_edge_permutation_table,
+                move_tables.corner_permutation_table
             ]
-        except ImportError:
+        except:
+
             pass
 
         # Initialize the CoordCube representation of a solved cube. 

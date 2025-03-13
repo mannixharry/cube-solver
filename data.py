@@ -276,6 +276,15 @@ class Data:
             'B': (0, 0, 187),       # Blue
             'T': (0,0,0)            # Test
         }
+    
+    overlay_colour_map = {
+        'W' : (255, 255, 255),  # White
+        'O' : (0, 165, 255),    # Orange
+        'G' : (0, 255, 0),      # Green
+        'R' : (0, 0, 255),      # Red
+        'B' : (255, 0, 0),      # Blue
+        'Y' : (0, 255, 255)     # Yellow
+    }
             
 '''
 Class to manage the loading of move tables. 
@@ -283,21 +292,4 @@ If a move table is not found, it will raise an error.
 
 -- Need to add automatic loading of the tables -- (error correction)
 '''
-class Move_Tables:
-    try: 
-        with open('move_tables/corner_orientation_table.json', 'r') as corner_orientation_file:
-            corner_orientation_table = json.load(corner_orientation_file)
-        with open('move_tables/edge_orientation_table.json', 'r') as edge_orientation_file:
-            edge_orientation_table = json.load(edge_orientation_file)
-        with open('move_tables/UD_slice_permutation_table.json', 'r') as UD_slice_permutation_file:
-            UD_slice_permutation_table = json.load(UD_slice_permutation_file)
-        with open('move_tables/four_edge_permutation_table.json', 'r') as four_edge_permutation_file:
-            four_edge_permutation_table = json.load(four_edge_permutation_file)
-        with open('move_tables/eight_edge_permutation_table.json', 'r') as eight_edge_permutation_file:
-            eight_edge_permutation_table = json.load(eight_edge_permutation_file)
-        with open('move_tables/corner_permutation_table.json', 'r') as corner_permutation_file:
-            corner_permutation_table = json.load(corner_permutation_file)
-    except FileNotFoundError: 
-        corner_orientation_table = edge_orientation_table = UD_slice_permutation_table = None
-        corner_udslice_edge_table = mainedge_udslice_edge_table = None
-        print('One or more move tables not found')
+

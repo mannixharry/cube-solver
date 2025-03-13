@@ -3,13 +3,14 @@ import json
 import itertools
 import cube 
 from data import * 
+from datetime import datetime 
+
 class MoveTableGenerator:
      
     def __init__(self, regenerate_tables=False):
         # Define the directory where the tables will be saved
-        tables_dir = os.path.join(os.path.dirname(__file__), 'move_tables')
-        os.makedirs(tables_dir, exist_ok=True)  # Ensure the directory exists
-
+        tables_directory = os.path.join(os.path.dirname(__file__), 'move_tables')
+        
         # Define all tables with their respective file paths and generation methods
         tables = {
             "corner_orientation_table": ("corner_orientation_table.json", self.generate_corner_orientation_table),
@@ -22,7 +23,7 @@ class MoveTableGenerator:
 
         # Check if regeneration is required or the files already exist
         for table_name, (filename, generation_method) in tables.items():
-            filepath = os.path.join(tables_dir, filename)  # Path within the tables directory
+            filepath = os.path.join(tables_directory, filename)  # Path within the tables directory
             if regenerate_tables or not os.path.isfile(filepath):
                 # Generate and save the table if regeneration is forced or file doesn't exist
                 data = generation_method()
@@ -138,3 +139,33 @@ if __name__ == '__main__':
     print('Generating move tables...')
     move_tables = MoveTableGenerator(regenerate_tables=True)
     print('Move table generation complete')
+
+class Move_Tables:
+
+    def load(self):
+        with open('move_tables/corner_orientation_table.json', 'r') as file:
+            self.corner_orientation_table = json.load(file)
+        with open('move_tables/edge_orientation_table.json', 'r') as file:
+            self.edge_orientation_table = json.load(file)
+        with open('move_tables/UD_slice_permutation_table.json', 'r') as file:
+            self.UD_slice_permutation_table = json.load(file)
+        with open('move_tables/four_edge_permutation_table.json', 'r') as file:
+            self.four_edge_permutation_table = json.load(file)
+        with open('move_tables/eight_edge_permutation_table.json', 'r') as file:
+            self.eight_edge_permutation_table = json.load(file)
+        with open('move_tables/corner_permutation_table.json', 'r') as file:
+            self.corner_permutation_table = json.load(file)
+    def __init__(self):
+        try: 
+            self.load()
+        except: 
+            print('Generating move tables...')
+            start_time = datetime.now()
+            move_tables = MoveTableGenerator(regenerate_tables=True)
+            print('Move table generation complete')
+            print(f"Time to generate: {datetime.now() - start_time}")
+            
+            self.load()
+
+move_tables = Move_Tables()
+    

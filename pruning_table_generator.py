@@ -2,19 +2,17 @@ import json
 import os
 import cube
 from collections import deque
-from data import * 
+from data import Data
+from datetime import datetime
 
 class PruningTableGenerator:
     def __init__(self, regenerate_tables=False):
-        # Define the directory where the tables will be saved
-        pruning_tables_dir = os.path.join(os.path.dirname(__file__), 'pruning_tables')
-        os.makedirs(pruning_tables_dir, exist_ok=True)  # Ensure the directory exists
 
         # File paths for the pruning tables
-        udslice_corner_table_path = os.path.join(pruning_tables_dir, 'udslice_corner_table.json')
-        udslice_edge_table_path = os.path.join(pruning_tables_dir, 'udslice_edge_table.json')
-        corner_udslice_edge_table_path = os.path.join(pruning_tables_dir, 'corner_udslice_edge_table.json')
-        mainedge_udslice_edge_table_path = os.path.join(pruning_tables_dir, 'main_edge_udslice_edge_table.json')
+        udslice_corner_table_path = 'pruning_tables/udslice_corner_table.json'
+        udslice_edge_table_path = 'pruning_tables/udslice_edge_table.json'
+        corner_udslice_edge_table_path = 'pruning_tables/corner_udslice_edge_table.json'
+        mainedge_udslice_edge_table_path = 'pruning_tables/main_edge_udslice_edge_table.json'
 
         # Flags for regenerating tables
         generate_udslice_corner_table = not os.path.isfile(udslice_corner_table_path) or regenerate_tables
@@ -79,8 +77,8 @@ class PruningTableGenerator:
 
         return general_table
     
-    
-    
+
+
     def generate_udslice_corner_table(self):
         return self.generate_general_pruning_table(('UD_slice_coordinate','corner_orientation_coordinate'), Data.g1_allowed_moves, 2048 * 495)
     
@@ -93,9 +91,28 @@ class PruningTableGenerator:
     def generate_mainedge_udslice_edge_table(self):
         return self.generate_general_pruning_table(('eight_edge_permutation_coordinate', 'four_edge_permutation_coordinate'), Data.g2_allowed_moves, 40320 * 24)
    
+class Pruning_Tables:
+    
+    def load(self):
+        try:
+            with open('pruning_tables/udslice_corner_table.json', 'r') as file:
+                self.udslice_corner_table = json.load(file)
+            with open('pruning_tables/udslice_edge_table.json', 'r') as file:
+                self.udslice_edge_table = json.load(file)
+            with open('pruning_tables/corner_udslice_edge_table.json', 'r') as file:
+                self.corner_udslice_edge_table = json.load(file)
+            with open('pruning_tables/main_edge_udslice_edge_table.json', 'r') as file:
+                self.mainedge_udslice_edge_table = json.load(file)
+        except:
+            print('Generating pruning tables...')
+            start_time = datetime.now()
+            pruning_table_generator = PruningTableGenerator(regenerate_tables=True)
+            print('Pruning table generation complete')
+            print(f"Time to generate: {datetime.now() - start_time}")
 
-if __name__ == '__main__':
-    # Create an instance of the pruning table generator with regeneration enabled
-    print('Generating pruning tables...')
-    pruning_table_generator = PruningTableGenerator(regenerate_tables=True)
-    print('Pruning table generation complete')
+            self.load()
+
+    def __init__(self):
+        self.load()
+
+pruning_tables = Pruning_Tables()
