@@ -1,7 +1,6 @@
 from data import * 
 import numpy as np
 import pygame
-from pygame.locals import K_ESCAPE
 
 class Renderer:
 
@@ -40,7 +39,6 @@ class Renderer:
             if is_point_inside_quadrilateral(quad, mouse_pos):
 
                 self.clicked_facelet = self.displayed_quadrilaterals_indices[i]
-                print(self.clicked_facelet)
 
     def get_clicked_facelet(self):
         return_facelet = self.clicked_facelet

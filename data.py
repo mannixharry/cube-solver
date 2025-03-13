@@ -1,5 +1,4 @@
 from enum import IntEnum
-import json
     
 class Corner(IntEnum):
     UFL = 0  # Upper Front Left

@@ -1,5 +1,4 @@
 import cube
-import json
 from data import * 
 from datetime import datetime
 from pruning_table_generator import pruning_tables
@@ -118,8 +117,13 @@ class Solver:
         current_face = None
         current_turn_count = 0
 
-        for move in solution:
-            face = move % 6
+        for solution_index in range(len(solution) + 1):
+
+            if solution_index < len(solution):
+                move = solution[solution_index]
+                face = move % 6
+            else: 
+                face = None
             turn_count = 1 + (move // 6)
 
             if current_face == face:
@@ -132,12 +136,6 @@ class Solver:
                         contracted_solution.append(contracted_move)
                 current_face = face
                 current_turn_count = turn_count
-
-        if current_face is not None:
-            final_turn_count = current_turn_count % 4
-            if final_turn_count != 0:
-                contracted_move = current_face + 6 * (final_turn_count - 1)
-                contracted_solution.append(contracted_move)
 
         return contracted_solution
 

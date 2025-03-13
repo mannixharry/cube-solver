@@ -135,11 +135,6 @@ class MoveTableGenerator:
         itr = iterator()
         return self.generate_general_table(itr, 'four_edge_permutation_coordinate', 'edge_permutations')
             
-if __name__ == '__main__':
-    print('Generating move tables...')
-    move_tables = MoveTableGenerator(regenerate_tables=True)
-    print('Move table generation complete')
-
 class Move_Tables:
 
     def load(self):
@@ -161,11 +156,15 @@ class Move_Tables:
         except: 
             print('Generating move tables...')
             start_time = datetime.now()
-            move_tables = MoveTableGenerator(regenerate_tables=True)
+            MoveTableGenerator(regenerate_tables=True)
             print('Move table generation complete')
             print(f"Time to generate: {datetime.now() - start_time}")
             
             self.load()
 
-move_tables = Move_Tables()
-    
+if __name__ == '__main__':
+    print('Generating move tables...')
+    move_tables = MoveTableGenerator(regenerate_tables=True)
+    print('Move table generation complete')
+else:
+    move_tables = Move_Tables()

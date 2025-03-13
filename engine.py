@@ -1,8 +1,8 @@
 from pygame.locals import *
-from screen import Renderer
 import cube
 from data import * 
 import numpy as np
+
 class Rectangle:
     def __init__(self, corners, piece_colour=False):
         self.corners = [np.array(corner) for corner in corners]
@@ -27,30 +27,23 @@ class Cube:
         elif isinstance(cube_string, cube.FaceletCube):
             cube_string = str(cube_string)
         
-        f_face = [Rectangle([[0.5-i, 1.5-j, -1.5], [0.5-i, 0.5-j, -1.5],  
-                      [1.5-i, 0.5-j, -1.5], [1.5-i, 1.5-j, -1.5]])  
+        f_face = [Rectangle([[0.5 - i, 1.5 - j, -1.5], [0.5 - i, 0.5 - j, -1.5],  
+                      [1.5 - i, 0.5 - j, -1.5], [1.5 - i, 1.5 - j, -1.5]])  
           for j in range(3) for i in range(3)]
 
         pi = np.pi
-        # UFLRBD
         face_rotation_angles = [(pi/2, 0, 0), (0,0,0), (0, -pi/2, 0), (0, pi/2, 0), (0,pi,0), (-pi/2, 0, 0)]
-        
+        # Given in order UFLRBD
+
         self.facelets = []
-        self.faces = []
         for i, angle in enumerate(face_rotation_angles):
             rotation_matrix = Transformer.create_rotation_matrix(angle)
-            
-            colour = self.colour_map['WGORBY'[i]]
-            # test_colours = [(50 + i * 200//9, 0, 0) for i in range(9)]
             face = []
             for j, rect in enumerate(f_face):
                 colour = self.colour_map[cube_string[i*9 + j]]
                 face.append(Rectangle([(rotation_matrix @ i) for i in rect.corners], colour))
-   
             self.facelets += face
-            self.faces.append(face)
-            
-        
+             
 class Projector:
     def __init__(self, width, height, fov=90):
         self.width, self.height = width, height
@@ -73,7 +66,6 @@ class Projector:
             projected_vector[0] * 0.5 * self.width,
             projected_vector[1] * 0.5 * self.height
         )
-
 
 class Transformer:
 
@@ -107,14 +99,12 @@ class Transformer:
     
         return create_rotation_matrix_x(angle_x) @ create_rotation_matrix_y(angle_y) @ create_rotation_matrix_z(angle_z)
 
-    
     @staticmethod
     def transform_vector(rotation_matrix, vector):
         rotated_vector = rotation_matrix @ vector 
         translated_vector = rotated_vector + np.array([0, 0, 8]) 
         return translated_vector
 
- 
 class CubeManager:
     def __init__(self, cube_string, renderer):
 
@@ -141,14 +131,14 @@ class CubeManager:
     @staticmethod
     def find_centre_rectangle(rectangle):
         a, b, c, d = rectangle.corners
-        return (a + b + c + d) / 4.0
-
-    #!!!
+        return (a + b + c + d) / 4.0    
+    
+    # !!!
     def change_cube_rotation(self, angle_delta):
         if self.cube_rotating:
             return False
         self.current_cube_rotation_angle = [
-            ((self.current_cube_rotation_angle[i] + angle_delta[i] + np.pi) % (2 * np.pi)) - np.pi
+            ((self.current_cube_rotation_angle[i] + angle_delta[i]) % (2 * np.pi))
             for i in range(3)
         ]
         
@@ -165,8 +155,7 @@ class CubeManager:
         self.cube_rotating = True
 
     def interpolate_angles(self,start_angle, end_angle, factor):
-        """Interpolate angles ensuring shortest rotation path."""
-        delta = ((end_angle - start_angle + np.pi) % (2 * np.pi)) - np.pi
+        delta = ((end_angle - start_angle + np.pi)  % (2 * np.pi)) - np.pi # shift to inverval (0, 2pi), apply mod, then shift back to (-pi, pi)
         return start_angle + factor * delta
 
     def get_cube_rotation_matrix(self):
@@ -176,10 +165,7 @@ class CubeManager:
         if self.current_cube_rotation_frame < self.frames_per_cube_rotation:
             self.current_cube_rotation_frame += 1
             interpolation_factor = np.sin(np.pi * self.current_cube_rotation_frame / (2 * self.frames_per_cube_rotation))
-            current_angle = [
-                self.interpolate_angles(self.cube_initial_angle[i], self.cube_target_angle[i], interpolation_factor)
-                for i in range(3)
-            ]
+            current_angle = [self.interpolate_angles(self.cube_initial_angle[i], self.cube_target_angle[i], interpolation_factor) for i in range(3)]
             rotation_matrix = Transformer.create_rotation_matrix(current_angle)
         else:
             self.cube_rotating = False
@@ -366,7 +352,3 @@ class CubeManager:
 
             self.renderer.draw_rectangle(rectangle, piece_colour)
             self.renderer.add_displayed_quadrilateral(rectangle, index)
-
-if __name__ == '__main__':
-    import main
-    main.main()

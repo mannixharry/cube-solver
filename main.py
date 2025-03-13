@@ -8,7 +8,7 @@ from pygame.locals import *
 import cube 
 import vision
 from screen import Button
-
+from screen import Renderer
 
 def display_program_info(renderer, informatation):
 
@@ -244,9 +244,6 @@ def main(cube_string='WWWWWWWWWGGGGGGGGGOOOOOOOOORRRRRRRRRBBBBBBBBBYYYYYYYYY'):
                     cube_manager.set_cube_view(Corner.UFR)
                     continue
                 
-
-            
-            
         if is_paused:
             cube_manager.renderer.display_text('paused...')
 

@@ -77,8 +77,6 @@ class PruningTableGenerator:
 
         return general_table
     
-
-
     def generate_udslice_corner_table(self):
         return self.generate_general_pruning_table(('UD_slice_coordinate','corner_orientation_coordinate'), Data.g1_allowed_moves, 2048 * 495)
     
@@ -106,7 +104,7 @@ class Pruning_Tables:
         except:
             print('Generating pruning tables...')
             start_time = datetime.now()
-            pruning_table_generator = PruningTableGenerator(regenerate_tables=True)
+            PruningTableGenerator(regenerate_tables=True)
             print('Pruning table generation complete')
             print(f"Time to generate: {datetime.now() - start_time}")
 
@@ -115,4 +113,10 @@ class Pruning_Tables:
     def __init__(self):
         self.load()
 
-pruning_tables = Pruning_Tables()
+
+if __name__ == '__main__':
+    print('Generating pruning tables...')
+    pruning_tables = PruningTableGenerator(regenerate_tables=True)
+    print('Pruning table generation complete')
+else:
+    pruning_tables = Pruning_Tables()
