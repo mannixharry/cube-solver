@@ -46,7 +46,7 @@ class Solver:
                 
                 for move in self.allowed_moves:
                     if current_path:
-                        if move == self.inverse_move(current_path[-1]):
+                        if move == Move.inverse_move(current_path[-1]):
                             continue
                     next_state = cube.CoordCube(current_state)
                     next_state.rotate_clockwise(move)
@@ -56,16 +56,7 @@ class Solver:
                     stack.append((next_state, next_path))
 
             return self.search_for_solution(cube_state, min_h)
-
-        @staticmethod
-        def inverse_move(move):
-            if 0 <= move < 6:
-                return move + 12
-            elif 6 <= move < 12:
-                return move
-            elif 12 <= move < 18:
-                return move - 12
-    
+   
     class g1Solver(StageSolver):
         def __init__(self):
 

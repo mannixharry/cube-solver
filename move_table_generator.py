@@ -40,7 +40,6 @@ class MoveTableGenerator:
             n //= 3
         return [0] * (bits - len(ternary)) + ternary  # Pad with 0's to the required bit length
 
-    
     def decimal_to_binary(self, n, bits=12):
         if n == 0:
             return [0] * bits
@@ -50,7 +49,6 @@ class MoveTableGenerator:
             n //= 2
         return [0] * (bits - len(binary)) + binary  # Pad with 0's to the required bit length
 
-    
     def generate_general_table(self, iterator, coordinate_type, configuration_type):
         general_table = {}
 

@@ -52,6 +52,16 @@ class Move(IntEnum):
     B3 = 16 # B'
     D3 = 17 # D'
 
+    @staticmethod
+    def inverse_move(move):
+        if move < 6:
+            inverse_move = move + 12
+        elif move < 12:
+            inverse_move = move
+        else:
+            inverse_move = move - 12
+        return inverse_move
+
 '''
 Facelets are numbered going across, starting in the top left of the face.
 '''

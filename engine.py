@@ -290,12 +290,12 @@ class CubeManager:
 
         if self.current_face_turn_frame < frames:
             self.current_face_turn_frame += 1 
-            angle = (np.sin(np.pi * self.current_face_turn_frame/(2*frames))) * self.face_target_angle 
+            angle = (np.sin(np.pi * self.current_face_turn_frame / (2 * frames))) * self.face_target_angle 
             rotation_matrix = Transformer.create_rotation_matrix(angle - self.current_face_turn_angle)
             self.current_face_turn_angle = angle
             
             face = self.move % 6 
-            for i, facelet in enumerate(slice_facelets['UFLRBD'[face]]):
+            for facelet in slice_facelets['UFLRBD'[face]]:
                 rectangle = self.facelets[facelet]
                 for j, corner in enumerate(rectangle.corners):
                     rotated_corner = corner @ rotation_matrix

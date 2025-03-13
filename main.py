@@ -40,23 +40,18 @@ def initialize_buttons(renderer):
     replay_image = pygame.image.load('resources/replay.png')
     skip_image = pygame.image.load('resources/skip.png')
     
-    size = (175, 70)
+    large_size, medium_size, small_size  = (175, 70), (120, 80), (60, 60)
+    
+    scramble_button = Button('scramble', scramble_image, 0.05 * width, 0.4 * height, large_size, key = K_m)
+    reset_button = Button('reset', reset_image, 0.05 * width, 0.5 * height, large_size, key = K_n)
+    solve_button = Button('solve', solve_image, 0.95 * width - large_size[0], 0.4 * height, large_size, key = K_SPACE)
+    capture_button = Button('capture', capture_image, 0.95 * width - large_size[0], 0.5 * height, large_size, key = K_TAB)
+    pause_play_button = Button('pause-play', pause_play_image, 0.5 * width - 60, 0.90 * height - 40, medium_size, key=K_p)
+    replay_button = Button('replay', replay_image, 0.35*width - 30, 0.90 * height - 30, small_size)
+    skip_button = Button('skip', skip_image, 0.65*width - 30, 0.90 * height - 30, small_size)
 
-    scramble_button = Button('scramble', scramble_image, 0.05 * width, 0.4 * height, size, key = K_m)
-    reset_button = Button('reset', reset_image, 0.05 * width, 0.5 * height, size, key = K_n)
-    solve_button = Button('solve', solve_image, 0.95 * width - size[0], 0.4 * height, size, key = K_SPACE)
-    capture_button = Button('capture', capture_image, 0.95 * width - size[0], 0.5 * height, size, key = K_TAB)
-    pause_play_button = Button('pause-play', pause_play_image, 0.5*width - 60, 0.90 * height - 40, (120,80), key=K_p)
-    replay_button = Button('replay', replay_image, 0.35*width - 30, 0.90 * height - 30, (60,60))
-    skip_button = Button('skip', skip_image, 0.65*width - 30, 0.90 * height - 30, (60,60))
-
-    renderer.add_button(scramble_button)
-    renderer.add_button(reset_button)
-    renderer.add_button(solve_button)
-    renderer.add_button(capture_button)
-    renderer.add_button(pause_play_button)
-    renderer.add_button(replay_button)
-    renderer.add_button(skip_button)
+    buttons = [scramble_button, reset_button, solve_button, capture_button, pause_play_button, replay_button, skip_button]
+    [renderer.add_button(b) for b in buttons]
 
 def main(cube_string='WWWWWWWWWGGGGGGGGGOOOOOOOOORRRRRRRRRBBBBBBBBBYYYYYYYYY'):
        
@@ -158,11 +153,11 @@ def main(cube_string='WWWWWWWWWGGGGGGGGGOOOOOOOOORRRRRRRRRBBBBBBBBBYYYYYYYYY'):
 
         clicked_button = cube_manager.renderer.get_clicked_button()
         if clicked_button:
-            clicked_button_name  = clicked_button.name
+            clicked_button_name = clicked_button.name
         else:
-            clicked_button_name  = None
+            clicked_button_name = None
 
-        if clicked_button_name  == 'solve':
+        if clicked_button_name == 'solve':
             if not is_demonstrating_solve and not cube_manager.face_turning:
                 cube_solver = solver.Solver()
                 cube_to_solve = cube.CubieCube(cube_manager.cube)
@@ -175,24 +170,23 @@ def main(cube_string='WWWWWWWWWGGGGGGGGGOOOOOOOOORRRRRRRRRBBBBBBBBBYYYYYYYYY'):
                 solution = cube_solver.solve_cube(cube_to_solve)
                 solution_length = len(solution)
                 
-                if solution:
-                    last_move_time = pygame.time.get_ticks()
-                    solve_stage = 0
-                    solution_index = 0
-                    is_demonstrating_solve = True
-                    solve_move = None
-                    cube_manager.set_cube_view(Edge.UF)
+                last_move_time = pygame.time.get_ticks()
+                solve_stage = solution_index = 0
+                
+                is_demonstrating_solve = True
+                solve_move = None
+
+                cube_manager.set_cube_view(Edge.UF)
                     
-        if clicked_button_name  == 'capture':
+        if clicked_button_name == 'capture':
             display_program_info(renderer, capture_instructions)
-            captured_cube =  cube_capturer.capture_cube()
+            captured_cube = cube_capturer.capture_cube()
             is_demonstrating_solve = False 
 
             if captured_cube: 
                 cube_manager.update_cube(captured_cube)
                
-
-        if keys[K_s] or clicked_button_name  == 'scramble':
+        if keys[K_s] or clicked_button_name == 'scramble':
             
             new_cube = cube.CubieCube()
             new_cube.scramble()
@@ -200,30 +194,25 @@ def main(cube_string='WWWWWWWWWGGGGGGGGGOOOOOOOOORRRRRRRRRBBBBBBBBBYYYYYYYYY'):
             cube_manager.update_cube(new_cube)
             is_demonstrating_solve = False
             
-        if clicked_button_name  == 'reset':
+        if clicked_button_name == 'reset':
             cube_manager.update_cube(cube.CubieCube())
-            
+
             is_demonstrating_solve = False
 
         if keys[K_i]:
             display_program_info(renderer, main_instructions)
             wait()
+
         if is_demonstrating_solve:
             if clicked_button_name == 'pause-play':
-                is_paused = not is_paused
+                is_paused != is_paused
                 if not is_paused:
                     solve_stage = 0
 
             elif clicked_button_name == 'replay' and solution_index != 0 :  # Corrected condition
                 move_to_invert = solution[solution_index-1]
                 
-
-                if move_to_invert < 6:
-                    inverse_move = move_to_invert + 12
-                elif move_to_invert < 12:
-                    inverse_move = move_to_invert
-                else:
-                    inverse_move = move_to_invert - 12
+                inverse_move = Move.inverse_move(move_to_invert)
                 
                 if cube_manager.set_face_turn(inverse_move):
                     solution_index -= 1 
@@ -305,11 +294,11 @@ def main(cube_string='WWWWWWWWWGGGGGGGGGOOOOOOOOORRRRRRRRRBBBBBBBBBYYYYYYYYY'):
             if clicked_facelet != None:
                 move = Move(clicked_facelet // 9)
                 counter_clockwise = (clicked_facelet % 9) in [0,3,6]
-                double = (clicked_facelet%9) in [1,4,7]
+                double = (clicked_facelet % 9) in [1,4,7]
                 if counter_clockwise:
                     move += 12 
                 if double:
-                    move+=6
+                    move += 6
                 
                 cube_manager.set_face_turn(move)
                 

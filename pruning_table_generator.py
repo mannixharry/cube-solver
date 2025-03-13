@@ -113,7 +113,6 @@ class Pruning_Tables:
     def __init__(self):
         self.load()
 
-
 if __name__ == '__main__':
     print('Generating pruning tables...')
     pruning_tables = PruningTableGenerator(regenerate_tables=True)
