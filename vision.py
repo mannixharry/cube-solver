@@ -2,101 +2,78 @@
 import cv2
 import cube
 from data import *
-import numpy as np 
+import numpy as np
 
 class Capturer():
-    def draw_centered_grid(self, image, grid_size=200, offset=100):
-        """Draws a 3x3 grid on the image with an adjustable vertical offset."""
-        h, w, _ = image.shape
-        center_x, center_y = w // 2, h // 2 + offset  # Adjust vertical position with offset
-
-        half_size = grid_size // 2
-        top_left_x, top_left_y = center_x - half_size, center_y - half_size
-        bottom_right_x, bottom_right_y = center_x + half_size, center_y + half_size
+    def draw_centred_grid(self, image, grid_size=200, vertical_offset=100):
+    
+        height, width, _ = image.shape
+        centre_x, centre_y = width//2, height//2
 
         cell_size = grid_size // 3
-        for i in range(4):
-            y = top_left_y + i * cell_size
-            x = top_left_x + i * cell_size
-            cv2.line(image, (top_left_x, y), (bottom_right_x, y), (255, 255, 255), 2)
-            cv2.line(image, (x, top_left_y), (x, bottom_right_y), (255, 255, 255), 2)
+        half_grid_size = grid_size //2
+        top_left_x, top_left_y = centre_x - half_grid_size, centre_y - half_grid_size + vertical_offset
+        unit_lines = [[(0, i/3), (1, i/3)] for i in range(4)] + [[(j/3, 0), (j/3, 1)] for j in range(4)]
+        transformed_lines = [[(int(top_left_x + grid_size*x0),int(top_left_y + grid_size*y0)),
+                 (int(top_left_x + grid_size*x1), int(top_left_y + grid_size*y1))] for (x0,y0), (x1,y1) in unit_lines]
+        
+        for line in transformed_lines:
+            p1, p2 = line
+            cv2.line(image, p1, p2, (255,255,255), 3)
 
-        return image, (top_left_x, top_left_y, cell_size)
-    
+        grid_centres = [((i-1)*cell_size+centre_x, centre_y+vertical_offset+ cell_size*(j-1)) for j in range(3) for i in range(3)]
+        #for i, centre in enumerate(grid_centres):
+            
+            #cv2.circle(image, centre, 5, (0,255-(i*30),0), 5)
 
-    def detect_dominant_colour(self, square, neighborhood_fraction=0.5, blur_ksize=5):
-        """Detects the dominant color in a square region."""
-        h, w, _ = square.shape
-        center_x, center_y = w // 2, h // 2
+        return image, (top_left_x, top_left_y, cell_size), grid_centres
 
-        offset_x = int(w * neighborhood_fraction // 2)
-        offset_y = int(h * neighborhood_fraction // 2)
-        neighborhood = square[center_y - offset_x:center_y + offset_x, center_x - offset_y:center_y + offset_y]
-        blurred = cv2.GaussianBlur(neighborhood, (blur_ksize, blur_ksize), 0)
-        avg_colour = blurred.mean(axis=0).mean(axis=0)
+    def get_average_colour(self, image, centre, detection_width):
+       
+        x0, x1 = centre[0] - detection_width, centre[0] + detection_width
+        y0, y1 = centre[1] - detection_width, centre[1] + detection_width
+
+        region = image[y0:y1, x0:x1]
+
+        avg_colour = region.mean(axis=(0,1)) # region is a numpy array 
         return tuple(map(int, avg_colour))
+    
+    def apply_centre_overlay(self, image, centre, overlay_colour, cell_size, transparency=0.5):
+        
+        half_cell_size = cell_size // 2
+        x0, x1 = centre[0] - half_cell_size, centre[0] + half_cell_size
+        y0, y1 = centre[1] - half_cell_size, centre[1] + half_cell_size
 
-    def apply_overlay(self, grid_frame, grid_info, overlay_colour, alpha=0.5):
-        """Applies a transparent overlay to the middle grid square."""
-        top_left_x, top_left_y, cell_size = grid_info
-        mid_x1 = top_left_x + cell_size
-        mid_y1 = top_left_y + cell_size
-        mid_x2 = mid_x1 + cell_size
-        mid_y2 = mid_y1 + cell_size
-
-        overlay_image = np.full((mid_y2 - mid_y1, mid_x2 - mid_x1, 3), overlay_colour, dtype=np.uint8)
-        roi = grid_frame[mid_y1:mid_y2, mid_x1:mid_x2]
-        blended = cv2.addWeighted(roi, 1 - alpha, overlay_image, alpha, 0)
-        grid_frame[mid_y1:mid_y2, mid_x1:mid_x2] = blended
-
-    def apply_top_overlay(self, grid_frame, grid_info, overlay_colour, alpha=0.5):
-        """Draws a circular overlay disjoint from the grid by one cell size."""
-        top_left_x, top_left_y, cell_size = grid_info
-
-        # Center position of the circle
-        circle_center_x = top_left_x + cell_size * 1.5
-        circle_center_y = top_left_y - cell_size * 1.5
-
-        # Radius of the circle
+        image[y0:y1, x0:x1] = (1 - transparency) * image[y0:y1, x0:x1] + transparency * np.array(overlay_colour)
+        
+    def apply_top_overlay(self, image, centre, overlay_colour, cell_size, transparency=0.5):
+        
+        half_cell_size = cell_size // 2
+        cx, cy = centre[0], centre[1] - 2 * cell_size - half_cell_size
         radius = cell_size // 2
 
+        x0, x1 = cx - half_cell_size, cx + half_cell_size
+        y0, y1 = cy - half_cell_size, cy + half_cell_size
+
         # Draw the circle
-        overlay = grid_frame.copy()
-        cv2.circle(overlay, (int(circle_center_x), int(circle_center_y)), radius, overlay_colour, -1)
+        overlay = image.copy()
+        cv2.circle(overlay, (cx, cy), radius, overlay_colour, -1) # filled circle 
 
-        # Blend the overlay with the grid frame
-        cv2.addWeighted(overlay, alpha, grid_frame, 1 - alpha, 0, grid_frame)
+        image[y0:y1, x0:x1] = (1 - transparency) * image[y0:y1, x0:x1] + transparency * np.array(overlay)[y0:y1, x0:x1]
 
+        
     def capture_colour_data(self):
-        """Captures color data for a Rubik's cube."""
         cap = cv2.VideoCapture(0)
         if not cap.isOpened():
             print("Error: Could not open webcam.")
             exit()
 
-        captured_faces = []
+        overlay_colours = [Data.overlay_colour_map[i] for i in 'WOGRBY']
+        top_overlay_colours = [Data.overlay_colour_map[i] for i in 'OYYYYYG']
+
+        captured_faces = 0
         colour_data = []
         capture_limit = 6
-
-        overlay_colours = [
-            (255, 255, 255),  # White
-            (0, 165, 255),    # Orange
-            (0, 255, 0),      # Green
-            (0, 0, 255),      # Red
-            (255, 0, 0),      # Blue
-            (0, 255, 255)     # Yellow
-        ]
-
-        top_overlay_colours = [
-            (0, 165, 255),  # Orange
-            (0, 255, 255),  # Yellow
-            (0, 255, 255),  # Yellow
-            (0, 255, 255),  # Yellow
-            (0, 255, 255),  # Yellow
-            (0, 255, 0)     # Green
-        ]
-
-        overlay_index = 0
 
         while True:
             ret, frame = cap.read()
@@ -104,11 +81,15 @@ class Capturer():
                 print("Failed to grab frame.")
                 break
 
-            grid_frame, grid_info = self.draw_centered_grid(frame.copy(), 200, offset=50)
-            
+
+            grid_size = 200
+            cell_size = grid_size // 3
+
+            grid_frame, top_left, grid_centres = self.draw_centred_grid(frame.copy(), grid_size, vertical_offset=50)
+            centre = grid_centres[4]
             # Apply overlays
-            self.apply_overlay(grid_frame, grid_info, overlay_colours[overlay_index])
-            self.apply_top_overlay(grid_frame, grid_info, top_overlay_colours[overlay_index])
+            self.apply_centre_overlay(grid_frame, centre, overlay_colours[captured_faces], cell_size)
+            self.apply_top_overlay(grid_frame, centre, top_overlay_colours[captured_faces], cell_size)
 
             cv2.imshow('Align Your Cube and Press Space', grid_frame)
             key = cv2.waitKey(1)
@@ -116,27 +97,22 @@ class Capturer():
             if key == ord('q') or key == 27:  # Quit on 'q' or 'Esc'
                 break
             elif key == ord(' '):  # Capture on spacebar
-                if len(captured_faces) < capture_limit:
-                    overlay_index += 1
-                    captured_faces.append(frame.copy())
-                    print(f"Captured face {len(captured_faces)}")
+                if captured_faces < capture_limit:
+                    captured_faces += 1
+                    
+                    print(f"Captured face {captured_faces}")
 
-                    top_left_x, top_left_y, cell_size = grid_info
                     colours = []
-                    for i in range(3):
-                        for j in range(3):
-                            x1 = top_left_x + j * cell_size
-                            y1 = top_left_y + i * cell_size
-                            x2 = x1 + cell_size
-                            y2 = y1 + cell_size
-                            square = frame[y1:y2, x1:x2]
-                            dominant_colour = self.detect_dominant_colour(square)
-                            colours.append(dominant_colour)
+                    for centre in grid_centres:
+                        average_colour = self.get_average_colour(frame.copy(),centre,10)
+                        colours.append(average_colour)
+                        
+                    print(colours)
                     colour_data.append(colours)
                 else:
                     print("All 6 faces have already been captured!")
 
-            if len(captured_faces) == capture_limit:
+            if captured_faces == capture_limit:
                 break
 
         cap.release()
@@ -196,7 +172,7 @@ class Capturer():
         return clusters
 
     def convert_clusters_to_cube(self, clusters):
-
+        print(clusters)
         # Define cluster-to-colour mapping
         centre_indices = [4, 22, 13, 31, 40, 49]
         picture_order = [0, 1, 2, 3, 4, 5]
@@ -244,6 +220,3 @@ class Capturer():
             return False
         return cube # Either returns the cube or False. 
     
-if __name__ == '__main__':
-    import main
-    main.main()
