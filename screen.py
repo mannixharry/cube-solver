@@ -158,7 +158,6 @@ class Button:
         self.last_click_time = pygame.time.get_ticks()
 
         self.debounce = 100 # 100 ms button debounce 
-
         self.latch = False 
         
     def display(self, screen):

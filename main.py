@@ -60,6 +60,7 @@ def initialize_buttons(renderer):
 
 def main(cube_string='WWWWWWWWWGGGGGGGGGOOOOOOOOORRRRRRRRRBBBBBBBBBYYYYYYYYY'):
        
+    #!!!
     main_instructions = [
         "Welcome to the Rubik's Cube Solver",
         "Instructions:",

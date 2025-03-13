@@ -22,11 +22,8 @@ class Capturer():
             cv2.line(image, p1, p2, (255,255,255), 3)
 
         grid_centres = [((i-1)*cell_size+centre_x, centre_y+vertical_offset+ cell_size*(j-1)) for j in range(3) for i in range(3)]
-        #for i, centre in enumerate(grid_centres):
-            
-            #cv2.circle(image, centre, 5, (0,255-(i*30),0), 5)
-
-        return image, (top_left_x, top_left_y, cell_size), grid_centres
+        
+        return image, cell_size, grid_centres
 
     def get_average_colour(self, image, centre, detection_width):
        
@@ -83,9 +80,8 @@ class Capturer():
 
 
             grid_size = 200
-            cell_size = grid_size // 3
 
-            grid_frame, top_left, grid_centres = self.draw_centred_grid(frame.copy(), grid_size, vertical_offset=50)
+            grid_frame, cell_size, grid_centres = self.draw_centred_grid(frame.copy(), grid_size, vertical_offset=50)
             centre = grid_centres[4]
             # Apply overlays
             self.apply_centre_overlay(grid_frame, centre, overlay_colours[captured_faces], cell_size)
