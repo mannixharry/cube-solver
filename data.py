@@ -1,6 +1,10 @@
 from enum import IntEnum
-    
+
+'''This file stores data frequently accessed by several CubeSolver files. 
+'''
 class Corner(IntEnum):
+    '''Enum representing the eight corner positions on a cube.
+    '''
     UFL = 0  # Upper Front Left
     UFR = 1  # Upper Front Right
     UBL = 2  # Upper Back Left
@@ -11,6 +15,8 @@ class Corner(IntEnum):
     DBR = 7  # Down Back Right
 
 class Edge(IntEnum):
+    '''Enum representing the twelve edge positions on a cube.
+    '''
     UF = 0  # Upper Front
     UL = 1  # Upper Left
     UB = 2  # Upper Back
@@ -25,6 +31,8 @@ class Edge(IntEnum):
     BR = 11 # Back Right
 
 class Face(IntEnum):
+    '''Enum representing the six cube faces.
+    '''
     U = 0
     F = 1 
     L = 2
@@ -33,6 +41,8 @@ class Face(IntEnum):
     D = 5
 
 class Move(IntEnum):
+    '''Enum representing the 18 possible cube moves.
+    '''
     U = 0 # U
     F = 1 # F
     L = 2 # L
@@ -54,18 +64,25 @@ class Move(IntEnum):
 
     @staticmethod
     def inverse_move(move):
+        '''Static method to compute the inverse of move. ie the move that reverses the effect of move. 
+        Args: 
+            move (Move): Move to invert. 
+        Returns: 
+            Move : Inverted move. 
+        '''
         if move < 6:
             inverse_move = move + 12
         elif move < 12:
             inverse_move = move
         else:
             inverse_move = move - 12
-        return inverse_move
+        return Move(inverse_move)
 
-'''
-Facelets are numbered going across, starting in the top left of the face.
-'''
 class Facelet(IntEnum):
+    '''Enum representing the 54 facelets on a cube. 
+    Facelets are numbered accross the face, and then down, starting in the top left of the face.
+    Faces are given in standard order: UFLRBD
+    '''
     U0 = 0 
     U1 = 1
     U2 = 2
@@ -122,12 +139,15 @@ class Facelet(IntEnum):
     D8 = 53
 
 class Data:
+    ''' 'Static' class to store data frequently accessed by several programmes.
+    Data typically adheres to a strict convention. 
+    '''
 
     '''
     The following dictionaries define rotations for the CubieCube representation. 
     Corner permutation and edge permutation, and their respective orientations are all treated independently.
-    The dictionaries are in an is-replaced-by format. The index of each item in an array represents a piece code, whilst the data value
-    represents the code of the piece replacing it. 
+    The dictionaries are in an is-replaced-by format. The index of each item in an array represents a position; whilst the data value
+    represents the 'home' index of the piece moving to that position.
     For example, in corner_permutation_map the first data item, at index 0, in Move.U = [1,3,0,2,4,5,6,7] means that the piece with code
     1 moves into the position 0 following a U move. 
     ie: UFR replaced UFL
@@ -135,7 +155,6 @@ class Data:
     Position / Piece codes : [UFL, UFR, UBL, UBR, DFL, DFR, DBL, DBR]
                              [  0,   1,   2,   3,   4,   5,   6,   7]
     '''
-
     __corner_permutation_dict = {
             Move.U : [Corner.UFR, Corner.UBR, Corner.UFL, Corner.UBL, Corner.DFL, Corner.DFR, Corner.DBL, Corner.DBR], 
             Move.F : [Corner.DFL, Corner.UFL, Corner.UBL, Corner.UBR, Corner.DFR, Corner.UFR, Corner.DBL, Corner.DBR],
@@ -147,8 +166,8 @@ class Data:
     
     '''
     0 -> No twist
-    1 -> Clockwise twist with respect to reference
-    2 -> Anti-clockwise twist with respect to reference
+    1 -> Clockwise twist with respect to reference.
+    2 -> Anti-clockwise twist with respect to reference.
     '''
     __corner_orientation_dict = {
                 Move.U : [0, 0, 0, 0, 0, 0, 0, 0],  
@@ -275,7 +294,6 @@ class Data:
     Define RGB colours for the the cube. 
     And the displayed facelet indices. 
     '''
-
     colour_map = {
             'R': (255, 0, 0),       # Red
             'O': (255, 100, 0),     # Orange

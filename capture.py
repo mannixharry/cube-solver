@@ -5,8 +5,22 @@ from data import *
 import numpy as np
 
 class Capturer():
+    '''Manages the web-cam application to capture a cube.
+    '''
     def __draw_centred_grid(self, image, grid_size=200, vertical_offset=100):
-    
+        '''Overlays a grid onto the input image; so that the user can align their cube with the grid squares.
+
+        Args:
+            image (np.ndarray): Image to draw grid on.
+            grid_size (int, optional): Side length of the whole grid. Defaults to 200.
+            vertical_offset (int, optional): Height, below the centre of the screen, at which the cube is drawn. Defaults to 100.
+
+        Returns:
+            Tuple[np.ndarray, int, List[Tuple[int, int]]]: 
+                - np.ndarray: Image with the grid overlay.
+                - int: Cell size (length of an individual grid square).
+                - List[Tuple[int, int]]: Coordinates of the 9 grid centers.
+        '''
         height, width, _ = image.shape
         centre_x, centre_y = width // 2, height // 2
 
@@ -26,7 +40,16 @@ class Capturer():
         return image, cell_size, grid_centres
 
     def __get_average_colour(self, image, centre, detection_width):
-       
+        '''Computes the average colour of the image in the viscinity of given point.
+
+        Args:
+            image (np.ndarray): Image to compute average colour of.
+            centre (Tuple[int, int]): Coordinate of point to calculate average at. 
+            detection_width (int): Side length of the window (a square) that the average is calculated for.
+
+        Returns:
+            Tuple[int, int, int]: average colour around point.
+        '''
         x0, x1 = centre[0] - detection_width, centre[0] + detection_width
         y0, y1 = centre[1] - detection_width, centre[1] + detection_width
 
@@ -36,7 +59,16 @@ class Capturer():
         return tuple(map(int, avg_colour))
     
     def __apply_centre_overlay(self, image, centre, overlay_colour, cell_size, transparency=0.5):
-        
+        '''Overlays a colour on the central square of the input image. 
+        The colour is used to align the central square of the camera-facing side of the cube. 
+
+        Args:
+            image (np.ndarray): Image to draw overlay on.
+            centre (Tuple[int, int]): Coordinate of centre of the central square.
+            overlay_colour (Tuple[int, int, int]): Colour of the overlay.
+            cell_size (int): Side length of the central cell. 
+            transparency (float, optional): Blending ratio between input image and overlay. Defaults to 0.5.
+        '''
         half_cell_size = cell_size // 2
         x0, x1 = centre[0] - half_cell_size, centre[0] + half_cell_size
         y0, y1 = centre[1] - half_cell_size, centre[1] + half_cell_size
@@ -44,7 +76,15 @@ class Capturer():
         image[y0:y1, x0:x1] = (1 - transparency) * image[y0:y1, x0:x1] + transparency * np.array(overlay_colour)
         
     def __apply_top_overlay(self, image, centre, overlay_colour, cell_size, transparency=0.5):
-        
+        '''Overlays a circular region of colour above the grid on the input image. 
+        The overlay is used to align the central square of the upwards pointing face.
+        Args:
+            image (np.ndarray): Image to draw overlay on.
+            centre (Tuple[int, int]): Coordinate of centre of the central square.
+            overlay_colour (Tuple[int, int, int]): Colour of the overlay.
+            cell_size (int): Side length of the central cell. 
+            transparency (float, optional): Blending ratio between input image and overlay. Defaults to 0.5.
+        '''
         half_cell_size = cell_size // 2
         cx, cy = centre[0], centre[1] - 2 * cell_size - half_cell_size
         radius = cell_size // 2
@@ -59,46 +99,53 @@ class Capturer():
         image[y0:y1, x0:x1] = (1 - transparency) * image[y0:y1, x0:x1] + transparency * np.array(overlay)[y0:y1, x0:x1]
 
     def __capture_colour_data(self):
+        '''Opens the web-cam application, captures an image of each face, and computes average colours.
+
+        Returns:
+            List[List[Tuple[int, int, int]]]: Colour data (6 x 9). 
+            Stores average colour of each facelet on each face. (54 'colour' tuples)
+        '''
+
         cap = cv2.VideoCapture(0)
         if not cap.isOpened():
             print("Error: Could not open webcam.")
             exit()
+
+        ESCAPE_KEY = 27
+        CAPTURE_LIMIT = 6
+        GRID_SIZE = 200
 
         overlay_colours = [Data.overlay_colour_map[i] for i in 'WOGRBY']
         top_overlay_colours = [Data.overlay_colour_map[i] for i in 'OYYYYG']
 
         captured_faces = 0
         colour_data = []
-        capture_limit = 6
-
         while True:
-            ret, frame = cap.read()
-            if not ret:
-                print("Failed to grab frame.")
+            image_captured, image = cap.read()
+            if not image_captured:
+                print("Failed to capture image.")
                 break
             
-            grid_size = 200
-
-            grid_frame, cell_size, grid_centres = self.__draw_centred_grid(frame.copy(), grid_size, vertical_offset=50)
+            grid_image, cell_size, grid_centres = self.__draw_centred_grid(image.copy(), GRID_SIZE, vertical_offset=50)
             centre = grid_centres[4]
             # Apply overlays
-            self.__apply_centre_overlay(grid_frame, centre, overlay_colours[captured_faces], cell_size)
-            self.__apply_top_overlay(grid_frame, centre, top_overlay_colours[captured_faces], cell_size)
+            self.__apply_centre_overlay(grid_image, centre, overlay_colours[captured_faces], cell_size)
+            self.__apply_top_overlay(grid_image, centre, top_overlay_colours[captured_faces], cell_size)
 
-            cv2.imshow('Align Your Cube and Press Space', grid_frame)
+            cv2.imshow('Align Your Cube and Press Space', grid_image)
             key = cv2.waitKey(1)
-
-            if key == ord('q') or key == 27:  # Quit on 'q' or 'Esc'
+            
+            if key == ESCAPE_KEY:  # Quit on 'Escape'
                 break
             elif key == ord(' '):  # Capture on spacebar
-                if captured_faces < capture_limit:
+                if captured_faces < CAPTURE_LIMIT:
                     captured_faces += 1
                     
                     print(f"Captured face {captured_faces}")
 
                     colours = []
                     for centre in grid_centres:
-                        average_colour = self.__get_average_colour(frame.copy(),centre,10)
+                        average_colour = self.__get_average_colour(image.copy(), centre, 10)
                         colours.append(average_colour)
                         
                     print(colours)
@@ -106,17 +153,27 @@ class Capturer():
                 else:
                     print("All 6 faces have already been captured!")
 
-            if captured_faces == capture_limit:
+            if captured_faces == CAPTURE_LIMIT:
                 break
 
         cap.release()
         cv2.destroyAllWindows()
-
+        
         return colour_data
     
     def __cluster_colour_data(self, colour_data):
-        # Assuming lab_data_flat is defined elsewhere in your code
-        data = np.array(colour_data, dtype=np.uint8).reshape(-1, 3)
+        '''Groups colours by similarity into 6 groups of 9 colours.
+
+        Args:
+            colour_data (List[List[Tuple[int, int, int]]]): captured average colours.
+
+        Returns:
+            List[[List[int]]]: Clusters. List of lists of indices of data values in colour_data that are most similar. (6*9)
+            ie: first list contains indices of WHITE facelets on the captured cube. 
+        '''
+
+        data = np.array(colour_data, dtype=np.uint8).reshape(-1, 3) # flattens colour_data into an array of tuples.
+
         # Initialize adjacency matrix
         adjacency_matrix = np.zeros((54, 54), dtype=float)
 
@@ -166,6 +223,21 @@ class Capturer():
         return clusters
 
     def __convert_clusters_to_cube(self, clusters):
+        '''Converts cluster data to a CubieCube object.
+        Ensures processed data give rise to a valid, solvable cube. 
+
+        Args:
+            clusters (List[[List[int]]]): Cluster data to convert to a CubieCube.
+
+        Returns:
+            CubieCube, False: A CubieCube representation of the captured cube.
+            Otherwise, if it is not valid or solvable, False.
+
+        Raises: 
+            ValueError: 
+                - if cube is not valid (ie not equal numbers of each colour).
+                - if cube is not solvable. 
+        '''
         print(clusters)
         # Define cluster-to-colour mapping
         centre_indices = [4, 22, 13, 31, 40, 49]
@@ -200,18 +272,25 @@ class Capturer():
                     return captured_cubie_cube
                 else:
                     print('Captured cube is not solvable. Please retry')
-                    return False 
+                    raise ValueError('Captured cube is not solvable')
+                    
         if not valid:
             print('Cube capture failed. Please retry.')
-            return False
+            raise ValueError('Cube capture failed. Please retry.')
+            
 
     def capture_cube(self):
-        
+        '''Runs the cube capture software. 
+
+        Returns:
+            CubieCube, False: The captured CubieCube. False if there is an error.
+        '''
         colour_data = self.__capture_colour_data()
         if len(colour_data) == 6:
             clusters = self.__cluster_colour_data(colour_data)
-            cube = self.__convert_clusters_to_cube(clusters)
-        else:
-            return False
-        return cube # Either returns the cube or False. 
+            try:
+                cube = self.__convert_clusters_to_cube(clusters)
+            except ValueError:
+                return False 
+        return cube
     

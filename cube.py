@@ -54,14 +54,14 @@ class CubieCube:
         - Display the cube representation. 
 
     Attributes: 
-        corner_permuations (array) : stores the code of each the corners (Corner in data.py) in the index representing its position.
+        corner_permuations (List[]) : stores the code of each the corners (Corner in data.py) in the index representing its position.
 
-        corner_orientations (array) : stores the orientation of each Corner. 
+        corner_orientations (List[]) : stores the orientation of each Corner. 
         (0 --> oriented correctly, 1 --> clockwise relative to correct orientation, 2 --> anticlockwise relative to correct orientation)
 
-        edge_permutations (array) : stores the code of each each (Edge in data.py) in the index representing its position
+        edge_permutations (List[]) : stores the code of each each (Edge in data.py) in the index representing its position
 
-        edge_orientations (array) : stores the orientation of each Edge.
+        edge_orientations (List[]) : stores the orientation of each Edge.
         (0 --> oriented correctly, 1 --> flipped)
 
         All orientations are taken relative to a 'reference' orientation --> see Analysis. 
@@ -340,7 +340,7 @@ class FaceletCube:
     '''Stores a represention of a cube that uses a single array.
     
     Attributes: 
-        - facelets (array) : 54 characters representing the colours of individual facelets on the cube. 
+        - facelets (List[]) : 54 characters representing the colours of individual facelets on the cube. 
     '''    
     def __init__(self, cube_input=None):
         '''Loads values into representation array from cube_input using private methods.
