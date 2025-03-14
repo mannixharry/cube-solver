@@ -3,7 +3,7 @@ from engine import *
 import pygame
 from pygame.locals import * 
 import cube 
-import vision
+import capture
 from screen import Button
 from screen import Renderer
 
@@ -88,7 +88,7 @@ def main(cube_string='WWWWWWWWWGGGGGGGGGOOOOOOOOORRRRRRRRRBBBBBBBBBYYYYYYYYY'):
 
     renderer = Renderer()
 
-    cube_capturer = vision.Capturer()
+    cube_capturer = capture.Capturer()
     cube_manager = CubeManager(cube_string, renderer)
     is_demonstrating_solve = False
     is_paused = False

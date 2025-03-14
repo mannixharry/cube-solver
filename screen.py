@@ -11,7 +11,7 @@ class Renderer:
         
         self.screen = self.__create_window()
         
-        self.__buttons = []
+        self.buttons = []
 
         self.__clicked_facelet = None
         self.__clicked_button = None
@@ -126,7 +126,7 @@ class Renderer:
 
     def detect_button_click(self, mouse_pressed, mouse_pos, keys_pressed):
    
-        for button in self.__buttons:
+        for button in self.buttons:
             if button.detect_click(mouse_pressed, mouse_pos, keys_pressed):
                 self.__clicked_button = button
                 
@@ -136,10 +136,10 @@ class Renderer:
         return return_button
     
     def add_button(self, button):
-        self.__buttons.append(button)
+        self.buttons.append(button)
         
     def display_buttons(self):
-        for button in self.__buttons:
+        for button in self.buttons:
             button.display(self.screen)
     
 class Button:

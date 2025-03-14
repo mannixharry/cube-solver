@@ -54,25 +54,24 @@ class CubieCube:
         - Display the cube representation. 
 
     Attributes: 
-        corner_permuations (array) : stores the code of each the corners (Corner in Data.py) in the index representing its position.
+        corner_permuations (array) : stores the code of each the corners (Corner in data.py) in the index representing its position.
 
         corner_orientations (array) : stores the orientation of each Corner. 
         (0 --> oriented correctly, 1 --> clockwise relative to correct orientation, 2 --> anticlockwise relative to correct orientation)
 
-        edge_permutations (array) : stores the code of each each (Edge in Data.py) in the index representing its position
+        edge_permutations (array) : stores the code of each each (Edge in data.py) in the index representing its position
 
         edge_orientations (array) : stores the orientation of each Edge.
         (0 --> oriented correctly, 1 --> flipped)
 
         All orientations are taken relative to a 'reference' orientation --> see Analysis. 
-
     '''  
 
     def __init__(self, cube_input=None):
-        '''Loads values into representation array from cube_input using private methods. 
+        '''Loads values into representation arrays from cube_input using private methods. 
 
         Args:
-            cube_input (CubieCube or FaceletCube or str, optional): Input cube to load arrays from. Defaults to None.
+            cube_input (CubieCube, FaceletCube, str, optional): Input cube to load arrays from. Defaults to None.
 
         Raises:
             TypeError: cube_input does not match an expected type.
@@ -91,6 +90,11 @@ class CubieCube:
         self.__corner_facelet_indices, self.__edge_facelet_indices = Data.corner_facelet_indices, Data.edge_facelet_indices # These map pieces to their facelets. ie: UFL to U6, L2, F0.
  
         def __load_configuration_from(cube_input): # Helper procedure to copy configuration from an input cubie_cube. (avoids repetition)
+            '''Copies representation data from a CubieCube input.
+
+            Args:
+                cube_input (CubieCube): CubieCube object to copy arrays from.
+            '''            
             self.corner_permutations = cube_input.corner_permutations
             self.corner_orientations = cube_input.corner_orientations
             self.edge_permutations = cube_input.edge_permutations 
@@ -116,7 +120,6 @@ class CubieCube:
 
         Returns:
             CubieCube: Converted CubieCube. 
-
         '''
         
         # Initialize a new cubie_cube and temporary variables. 
@@ -168,10 +171,10 @@ class CubieCube:
     
     # This procedure manages cubie-cube rotations.                
     def move(self, move):
-        '''Performs a 'logical' cube turn on the CubieCube. 
+        '''Performs a cube turn on the CubieCube. 
 
         Args:
-            move (Data.Move): Integer in range (0-17). See Data.py.
+            move (Move): Integer in range (0-17). See data.py.
 
         Move is given as an integer between 0-17. Move modulo 6 gives the face being turned. Whilst (Move div 6) + 1 gives the number of times
         the face is turned.
@@ -187,7 +190,6 @@ class CubieCube:
         The same principle applies for clockwise twists, only modulo 2 is used intead to represent the flip of a piece. 
 
         (We define by convention the orientation of a corner as its twist and the orientation as an edge as its flip)
-
         '''
         
         turn_count = 1 + (move // 6) # The procedure rotates a face clockwise only. Double and anti-clockwise rotation are achieved through repetition.
@@ -341,7 +343,14 @@ class FaceletCube:
         - facelets (array) : 54 characters representing the colours of individual facelets on the cube. 
     '''    
     def __init__(self, cube_input=None):
-        
+        '''Loads values into representation array from cube_input using private methods.
+
+        Args:
+            cube_input (FaceletCube, str, CubieCube, optional): Input cube to load array from. Defaults to None.
+
+        Raises:
+            TypeError: 'cube_input does not match an expected type'
+        '''        
         self.__corner_colour_table, self.__edge_colour_table = Data.corner_colour_table, Data.edge_colour_table # These map colours to cubie pieces. 
         self.__corner_facelet_indices, self.__edge_facelet_indices = Data.corner_facelet_indices, Data.edge_facelet_indices # These map pieces to their facelets. ie: UFL to U6, L2, F0.
 
@@ -363,7 +372,14 @@ class FaceletCube:
     
     # Converts a cubie representation to a facelet representation. 
     def __from_cubie_cube(self, cubie_cube):
-        
+        '''Converts a CubieCube object to a FaceletCube object. 
+
+        Args:
+            cubie_cube (CubieCube): CubieCube object to convert.
+
+        Returns:
+            FaceletCube: Converted FaceletCube.
+        '''        
         facelets = [''] * 54
        
         # Iteratively load the colour data for each corner into the facelet array.  
@@ -395,6 +411,14 @@ class FaceletCube:
     
     # This cycles the colours on a single face (applies a move but only the colours on a face).
     def rotate_colours_on_face(self, move):
+        '''Rotates the colours on a single face.
+        ie: turning a face, but not the facelets bordering the face. 
+        Used in capture.py to ensure captured faces are oriented correctly relative to each other. 
+        - Updates facelets. 
+        Args:
+            move (Move): Identifies face and direction of turn. 
+        '''      
+
         face = move % 6
         move_count = 1 + (move // 6)
 
@@ -412,12 +436,29 @@ class FaceletCube:
             self.facelets[i+start_pointer] = face_indices[i]
 
     def __repr__(self):
-        return ''.join(self.facelets)
+        '''Converts FaceletCube state to a printable string. Overrides python magic method __repr__. 
+
+        Returns:
+            str: string to print.
+        '''    
+
+        return ''.join(self.facelets) 
     
     def verify_string_validity(self):
+        '''Checks if facelets array has 9 data for each of the 6 colours.
+        Returns:
+            boolean: True if condition met; False otherwise.
+        '''        
         return all(self.facelets.count(colour) == 9 for colour in 'WGORBY')
     
     def verify_validity(self):
+        '''Checks if facelets can be converted to a CubieCube.
+        This is only possible if all connected facelets in facelets match a piece's colours, 
+        and all of the matched pieces are unique.
+
+        Returns:
+            boolean: True if valid_string and possible to convert to CubieCube. 
+        '''        
         is_valid = self.verify_string_validity()
         try:
             CubieCube(self)
@@ -426,10 +467,30 @@ class FaceletCube:
         return is_valid
         
 class CoordCube:
+    '''Stores a representation of a cube that uses six coordinates.
+
+    Attributes:
+        g1_coordinates (tuple) : corner orientation, edge orientation and UD slice permutation coordinates.
+        g2_coordinates (tuple) :  UD slice edge permutation, other edges permutation and corner permutation coordinates.
+
+    Properties:
+        corner_orientation_coordinate (int) : g1_coordinates[0]
+        edge_orientation_coordinate (int) : g1_coordinates[1]
+        UD_slice_coordinate (int) : g1_coordinates[2]
+        eight_edge_permutation_coordinate (int) : g2_coordinates[0]
+        four_edge_permutation_coordinate (int) : g2_coordinates[1]
+        corner_permutation_coordinate (int) : g2_coordinates[2]
+    '''
     def __init__(self, cube_input=None):
+        '''Computes coordinates from cube_input and loads into arrays. 
+
+        Args:
+            cube_input (CoordCube, CubieCube, optional): Input cube to load coordinates from. Defaults to None.
+        '''
+
         # Initialize the CoordCube representation of a solved cube. 
-        self.g1_coordinates = [0,0,0]
-        self.g2_coordinates = [0,0,0]
+        self.g1_coordinates = (0,0,0)
+        self.g2_coordinates = (0,0,0)
         
         self.__cubie_cube = CubieCube()
         try:
@@ -447,7 +508,11 @@ class CoordCube:
             pass
         
         def __load_configuration_from(cube_input):  # Helper procedure to copy configuration from an input CoordCube
-            
+            '''Copies representation data from an input CoordCube object.
+
+            Args:
+                cube_input (CoordCube): CoordCube object to load coordinates from. 
+            '''            
             self.g1_coordinates = cube_input.g1_coordinates 
             self.g2_coordinates = cube_input.g2_coordinates 
    
@@ -461,6 +526,14 @@ class CoordCube:
                 __load_configuration_from(coord_cube)
 
     def __from_cubie_cube(self, cubie_cube):
+        '''Converts a CubieCube object to a FaceletCube.
+
+        Args:
+            cubie_cube (CubieCube): CubieCube object to convert.
+
+        Returns:
+            CoordCube: Converted CoordCube.
+        '''        
         # Creates a new CoordCube from a CubieCube.
         coord_cube = CoordCube()
         coord_cube.__cubie_cube = cubie_cube
@@ -474,11 +547,12 @@ class CoordCube:
         four_edge_permutation_coordinate = coord_cube.__calculate_four_edge_permutation_coordinate()
         corner_permutation_coordinate = coord_cube.__calculate_corner_permutation_coordinate()
 
-        coord_cube.g1_coordinates = [corner_orientation_coordinate, edge_orientation_coordinate, UD_slice_coordinate]
-        coord_cube.g2_coordinates = [eight_edge_permutation_coordinate, four_edge_permutation_coordinate, corner_permutation_coordinate]
+        coord_cube.g1_coordinates = (corner_orientation_coordinate, edge_orientation_coordinate, UD_slice_coordinate)
+        coord_cube.g2_coordinates = (eight_edge_permutation_coordinate, four_edge_permutation_coordinate, corner_permutation_coordinate)
     
         return coord_cube
 
+    #Property definitions 
     @property
     def corner_orientation_coordinate(self):
         return self.g1_coordinates[0]
@@ -499,31 +573,61 @@ class CoordCube:
         return self.g2_coordinates[2]
     
     def rotate_clockwise(self, move):
+        '''Performs a cube turn on a CoordCube.
+
+        Args:
+            move (Move): Move to perform on CoordCube.
+        '''
         # Update coordinates based on move
         self.g1_coordinates = [(self.__g1_move_tables[i])[str(self.g1_coordinates[i])][move] for i in range(3)]
         self.g2_coordinates = [(self.__g2_move_tables[i])[str(self.g2_coordinates[i])][move] for i in range(3)]
       
     def __repr__(self):
+        '''Converts CoordCube state to a printable string. Overrides python magic method __repr__. 
+
+        Returns:
+            str: string to print.
+        '''        
         return str((
             self.g1_coordinates,
             self.g2_coordinates
         ))
     
+    # Coordinate computation definitions. 
     '''
-    Calculation methods for each coordinate.
-
     corner_orientation_coordinate : the orientation array is treated as a ternary number. This is converted to decimal to find the coordinate. 
     edge_orientation_coordinate : this is the same as for the corner orientation, only binary is used. 
     etc... 
     '''
 
     def __calculate_corner_orientation_coordinate(self):
+        '''Calculates the CoordCube's corner orientation coordinate, by
+        treating the corner orientations array as a ternary number and converting it to decimal.
+
+        Returns:
+            int: corner orientation coordinate. Range: [0 - 2186]
+        '''
         return sum(self.__cubie_cube.corner_orientations[i] * (3 ** i) for i in range(7))
 
     def __calculate_edge_orientation_coordinate(self):
+        '''Calculates the CoordCube's edge orientation coordinate, by
+        treating the edge orientations array as a binary number and converting it to decimal.
+
+        Returns:
+            int: edge orientation coordinate. Range: [0 - 2047]
+        '''
         return sum(self.__cubie_cube.edge_orientations[i] * (2 ** i) for i in range(11))
 
     def __calculate_UD_slice_coordinate(self):
+        '''Calculates the CoordCube's UD slice coordinate, by
+        summing the binomial coefficients (n,r),
+        where n is the index (0-11),
+        and r is the number of UD slice coordinates with index less than n, minus 1,
+        for all n not occupied by a UD slice edge.  --> see analysis. 
+        
+        Returns:
+            int: UD slice coordinate. Range: [0 - 494]
+        '''
         slice_indices = [1 if i in [8, 9, 10, 11] else 0 for i in self.__cubie_cube.edge_permutations]
         UD_slice_coordinate = 0
         occupied_count = 0
@@ -541,6 +645,13 @@ class CoordCube:
         return UD_slice_coordinate
 
     def __calculate_corner_permutation_coordinate(self):
+        '''Calculates the CoordCube's corner permutation coordinate, by
+        summing the product n! and the number of corners, at an index less than n, with 'home' index higher than the 'home' index of the corner at index n,
+        over all n in the range [0-7].
+
+        Returns:
+            int: corner permutation coordinate. Range : [0 - 40319]
+        '''
         corner_permutation_coordinate = 0
         for i in range(8):
             smaller_count = sum(1 for j in range(i) if self.__cubie_cube.corner_permutations[j] > self.__cubie_cube.corner_permutations[i])
@@ -548,6 +659,13 @@ class CoordCube:
         return corner_permutation_coordinate
 
     def __calculate_eight_edge_permutation_coordinate(self):
+        '''Calculates the CoordCube's eight edge permutation coordinate, by
+        summing the product n! and the number of edges, at an index less than n, with 'home' index higher than the 'home' index of the corner at index n,
+        over all n in the range [0-7].
+
+        Returns:
+            int: eight edge permutation coordinate. Range : [0 - 40319]
+        '''
         eight_edge_permutation_coordinate = 0
         for i in range(8):
             smaller_count = sum(1 for j in range(i) if self.__cubie_cube.edge_permutations[j] > self.__cubie_cube.edge_permutations[i])
@@ -555,6 +673,13 @@ class CoordCube:
         return eight_edge_permutation_coordinate
 
     def __calculate_four_edge_permutation_coordinate(self):
+        '''Calculates the CoordCube's four edge coordinate, by
+        summing the product n! and the number of UD edges, at an index less than n, with 'home' index higher than the 'home' index of the UD at index n,
+        over all n in the range [8-11].
+
+        Returns:
+            int: four edge permutation coordinate. Range : [0 - 23]
+        '''
         four_edge_permutation_coordinate = 0
         for i in range(4):
             smaller_count = sum(1 for j in range(i) if self.__cubie_cube.edge_permutations[j + 8] > self.__cubie_cube.edge_permutations[i + 8])
