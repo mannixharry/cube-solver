@@ -295,10 +295,4 @@ class Data:
         'Y' : (0, 255, 255)     # Yellow
     }
             
-'''
-Class to manage the loading of move tables. 
-If a move table is not found, it will raise an error. 
-
--- Need to add automatic loading of the tables -- (error correction)
-'''
 

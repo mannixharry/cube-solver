@@ -5,27 +5,27 @@ from data import *
 import numpy as np
 
 class Capturer():
-    def draw_centred_grid(self, image, grid_size=200, vertical_offset=100):
+    def __draw_centred_grid(self, image, grid_size=200, vertical_offset=100):
     
         height, width, _ = image.shape
-        centre_x, centre_y = width//2, height//2
+        centre_x, centre_y = width // 2, height // 2
 
         cell_size = grid_size // 3
-        half_grid_size = grid_size //2
+        half_grid_size = grid_size // 2
         top_left_x, top_left_y = centre_x - half_grid_size, centre_y - half_grid_size + vertical_offset
-        unit_lines = [[(0, i/3), (1, i/3)] for i in range(4)] + [[(j/3, 0), (j/3, 1)] for j in range(4)]
-        transformed_lines = [[(int(top_left_x + grid_size*x0),int(top_left_y + grid_size*y0)),
-                 (int(top_left_x + grid_size*x1), int(top_left_y + grid_size*y1))] for (x0,y0), (x1,y1) in unit_lines]
+        unit_lines = [[(0, i / 3), (1, i / 3)] for i in range(4)] + [[(j / 3, 0), (j / 3, 1)] for j in range(4)]
+        transformed_lines = [[(int(top_left_x + grid_size * x0),int(top_left_y + grid_size * y0)),
+                 (int(top_left_x + grid_size * x1), int(top_left_y + grid_size * y1))] for (x0, y0), (x1, y1) in unit_lines]
         
         for line in transformed_lines:
             p1, p2 = line
-            cv2.line(image, p1, p2, (255,255,255), 3)
+            cv2.line(image, p1, p2, (255, 255, 255), 3)
 
-        grid_centres = [((i-1)*cell_size+centre_x, centre_y+vertical_offset+ cell_size*(j-1)) for j in range(3) for i in range(3)]
+        grid_centres = [((i - 1) * cell_size + centre_x, centre_y + vertical_offset + cell_size * (j - 1)) for j in range(3) for i in range(3)]
         
         return image, cell_size, grid_centres
 
-    def get_average_colour(self, image, centre, detection_width):
+    def __get_average_colour(self, image, centre, detection_width):
        
         x0, x1 = centre[0] - detection_width, centre[0] + detection_width
         y0, y1 = centre[1] - detection_width, centre[1] + detection_width
@@ -35,7 +35,7 @@ class Capturer():
         avg_colour = region.mean(axis=(0,1)) # region is a numpy array 
         return tuple(map(int, avg_colour))
     
-    def apply_centre_overlay(self, image, centre, overlay_colour, cell_size, transparency=0.5):
+    def __apply_centre_overlay(self, image, centre, overlay_colour, cell_size, transparency=0.5):
         
         half_cell_size = cell_size // 2
         x0, x1 = centre[0] - half_cell_size, centre[0] + half_cell_size
@@ -43,7 +43,7 @@ class Capturer():
 
         image[y0:y1, x0:x1] = (1 - transparency) * image[y0:y1, x0:x1] + transparency * np.array(overlay_colour)
         
-    def apply_top_overlay(self, image, centre, overlay_colour, cell_size, transparency=0.5):
+    def __apply_top_overlay(self, image, centre, overlay_colour, cell_size, transparency=0.5):
         
         half_cell_size = cell_size // 2
         cx, cy = centre[0], centre[1] - 2 * cell_size - half_cell_size
@@ -58,15 +58,14 @@ class Capturer():
 
         image[y0:y1, x0:x1] = (1 - transparency) * image[y0:y1, x0:x1] + transparency * np.array(overlay)[y0:y1, x0:x1]
 
-        
-    def capture_colour_data(self):
+    def __capture_colour_data(self):
         cap = cv2.VideoCapture(0)
         if not cap.isOpened():
             print("Error: Could not open webcam.")
             exit()
 
         overlay_colours = [Data.overlay_colour_map[i] for i in 'WOGRBY']
-        top_overlay_colours = [Data.overlay_colour_map[i] for i in 'OYYYYYG']
+        top_overlay_colours = [Data.overlay_colour_map[i] for i in 'OYYYYG']
 
         captured_faces = 0
         colour_data = []
@@ -77,15 +76,14 @@ class Capturer():
             if not ret:
                 print("Failed to grab frame.")
                 break
-
-
+            
             grid_size = 200
 
-            grid_frame, cell_size, grid_centres = self.draw_centred_grid(frame.copy(), grid_size, vertical_offset=50)
+            grid_frame, cell_size, grid_centres = self.__draw_centred_grid(frame.copy(), grid_size, vertical_offset=50)
             centre = grid_centres[4]
             # Apply overlays
-            self.apply_centre_overlay(grid_frame, centre, overlay_colours[captured_faces], cell_size)
-            self.apply_top_overlay(grid_frame, centre, top_overlay_colours[captured_faces], cell_size)
+            self.__apply_centre_overlay(grid_frame, centre, overlay_colours[captured_faces], cell_size)
+            self.__apply_top_overlay(grid_frame, centre, top_overlay_colours[captured_faces], cell_size)
 
             cv2.imshow('Align Your Cube and Press Space', grid_frame)
             key = cv2.waitKey(1)
@@ -100,7 +98,7 @@ class Capturer():
 
                     colours = []
                     for centre in grid_centres:
-                        average_colour = self.get_average_colour(frame.copy(),centre,10)
+                        average_colour = self.__get_average_colour(frame.copy(),centre,10)
                         colours.append(average_colour)
                         
                     print(colours)
@@ -116,7 +114,7 @@ class Capturer():
 
         return colour_data
     
-    def cluster_colour_data(self, colour_data):
+    def __cluster_colour_data(self, colour_data):
         # Assuming lab_data_flat is defined elsewhere in your code
         data = np.array(colour_data, dtype=np.uint8).reshape(-1, 3)
         # Initialize adjacency matrix
@@ -167,7 +165,7 @@ class Capturer():
 
         return clusters
 
-    def convert_clusters_to_cube(self, clusters):
+    def __convert_clusters_to_cube(self, clusters):
         print(clusters)
         # Define cluster-to-colour mapping
         centre_indices = [4, 22, 13, 31, 40, 49]
@@ -194,6 +192,7 @@ class Capturer():
             print(''.join(captured_cube.facelets))
 
             valid = captured_cube.verify_validity()
+            print(valid)
             if valid:
                 captured_cubie_cube = cube.CubieCube(captured_cube)
                 solvable = captured_cubie_cube.verify_solvability()
@@ -208,10 +207,10 @@ class Capturer():
 
     def capture_cube(self):
         
-        colour_data = self.capture_colour_data()
+        colour_data = self.__capture_colour_data()
         if len(colour_data) == 6:
-            clusters = self.cluster_colour_data(colour_data)
-            cube = self.convert_clusters_to_cube(clusters)
+            clusters = self.__cluster_colour_data(colour_data)
+            cube = self.__convert_clusters_to_cube(clusters)
         else:
             return False
         return cube # Either returns the cube or False. 

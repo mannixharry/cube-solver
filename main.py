@@ -1,8 +1,5 @@
-from move_table_generator import move_tables
-from pruning_table_generator import pruning_tables
 from data import *
 from engine import *
-import solver
 import pygame
 from pygame.locals import * 
 import cube 
@@ -54,19 +51,17 @@ def initialize_buttons(renderer):
     [renderer.add_button(b) for b in buttons]
 
 def main(cube_string='WWWWWWWWWGGGGGGGGGOOOOOOOOORRRRRRRRRBBBBBBBBBYYYYYYYYY'):
-       
-    #!!!
+    
     main_instructions = [
-        "Welcome to the Rubik's Cube Solver",
-        "Instructions:",
+        "Cube Solver Instructions",
         "",
-        "1. Click on a facelet to perform a face turn.",
-        "2. Use arrow keys to rotate the cube view.",
-        "3. Press 'Space' to solve the cube.",
-        "4. Press 'Tab' to import a cube from the webcam.",
-        "5. Press 'Backspace' to reset the cube.",
-        "6. Press 'Escape' to quit the application.",
-        "7. Press 'I' to enter this menu.",
+        "1. Click the cube's faces to perform turns.",
+        "2. Use arrow keys to change cube view.",
+        "3. Press \'Space\' or \'Solve\' to solve the cube.",
+        "4. Press \'Tab\' or \'Capture\' to load a cube from webcam.",
+        "5. Press \'n\' or \'Reset\'  to reset the cube.",
+        "6. Press \'Escape\' to quit the application.",
+        "7. Press \'I\' to enter this menu.",
         "",
         
         "Press Enter to continue..."
@@ -77,22 +72,18 @@ def main(cube_string='WWWWWWWWWGGGGGGGGGOOOOOOOOORRRRRRRRRBBBBBBBBBYYYYYYYYY'):
         "How to Capture the Cube:",
         "",
         "1. Start with the WHITE face in the overlay.",
-        "   ORANGE should face UP.",
-        "   Press SPACE to capture the WHITE face once aligned.",
+        " ORANGE should face upwards.",
+        " Press SPACE to capture the WHITE face once aligned.",
         "",
-        "2. Rotate the cube to capture the ORANGE, GREEN, RED, and BLUE faces.",
-        "   Keep WHITE on TOP during these captures.",
-        "   Press SPACE to capture each of these faces after aligning them.",
+        "2. Repeat to capture the ORANGE, GREEN, RED and BLUE faces.",
+        " WHITE should face upwards.",
         "",
-        "3. For the YELLOW face, rotate the cube so that:",
-        "   - GREEN is on TOP, and",
-        "   - YELLOW is in the overlay.",
-        "   Press SPACE to capture the YELLOW face.",
+        "3. Capture the YELLOW face.",
+        " GREEN should face upwards.",
         "",
-        "Tips:",
-        "- Align the cube with the overlay for accurate detection.",
-        "- Ensure good lighting and avoid sticker reflections.",
-        "",
+        "  For each capture, the centre piece of your cube should match the overlay.",
+        "  The colour on top of the cube should match the top overlay.",
+        " Ensure good lighting for accurate detection."
     ]
 
     renderer = Renderer()
@@ -125,8 +116,7 @@ def main(cube_string='WWWWWWWWWGGGGGGGGGOOOOOOOOORRRRRRRRRBBBBBBBBBYYYYYYYYY'):
 
         cube_manager.main()
 
-        for button in cube_manager.renderer.buttons:
-            button.display(cube_manager.renderer.screen)
+        cube_manager.renderer.display_buttons()
 
         rotation_speed = 0.025
         keys = pygame.key.get_pressed()
@@ -184,18 +174,18 @@ def main(cube_string='WWWWWWWWWGGGGGGGGGOOOOOOOOORRRRRRRRRBBBBBBBBBYYYYYYYYY'):
             is_demonstrating_solve = False 
 
             if captured_cube: 
-                cube_manager.update_cube(captured_cube)
+                cube_manager.set_cube(captured_cube)
                
         if keys[K_s] or clicked_button_name == 'scramble':
             
             new_cube = cube.CubieCube()
             new_cube.scramble()
 
-            cube_manager.update_cube(new_cube)
+            cube_manager.set_cube(new_cube)
             is_demonstrating_solve = False
             
         if clicked_button_name == 'reset':
-            cube_manager.update_cube(cube.CubieCube())
+            cube_manager.set_cube(cube.CubieCube())
 
             is_demonstrating_solve = False
 
@@ -205,7 +195,7 @@ def main(cube_string='WWWWWWWWWGGGGGGGGGOOOOOOOOORRRRRRRRRBBBBBBBBBYYYYYYYYY'):
 
         if is_demonstrating_solve:
             if clicked_button_name == 'pause-play':
-                is_paused != is_paused
+                is_paused = not is_paused
                 if not is_paused:
                     solve_stage = 0
 
@@ -323,5 +313,21 @@ def main(cube_string='WWWWWWWWWGGGGGGGGGOOOOOOOOORRRRRRRRRBBBBBBBBBYYYYYYYYY'):
     pygame.quit()
 
 if __name__ == '__main__':
+    # import order matters 
+    import cube 
+    import move_table_generator
+   
+    move_tables = move_table_generator.MoveTableGenerator()
+    move_tables.move_table_generation()
+    cube.import_tables()
+    
+    import solver
+    import pruning_table_generator  
+    
+    pruning_table = pruning_table_generator.PruningTableGenerator()
+    pruning_table.parallel_table_generation()
+    
+    solver.import_tables()
+    
     main()
     

@@ -8,23 +8,21 @@ class Renderer:
         pygame.init()
         self.width = width
         self.height = height
-        self.thickness = 2
-        self.screen = self.create_window()
-        self.font = pygame.font.SysFont('Arial', 20)
-        self.colour = (0, 0, 0)
+        
+        self.screen = self.__create_window()
+        
+        self.__buttons = []
 
-        self.buttons = []
+        self.__clicked_facelet = None
+        self.__clicked_button = None
+        self.__mouse_pressed = False
 
-        self.clicked_facelet = None
-        self.clicked_button = None
-        self.mouse_pressed = False
-
-        self.displayed_quadrilaterals = []
-        self.displayed_quadrilaterals_indices = []
+        self.__displayed_quadrilaterals = []
+        self.__displayed_quadrilaterals_indices = []
         
     def detect_facelet_click(self, mouse_pos):
 
-        def is_point_inside_quadrilateral(quad, P):
+        def __is_point_inside_quadrilateral(quad, P):
             A, B, C, D = np.array(quad[0]), np.array(quad[1]), np.array(quad[2]), np.array(quad[3])
             P = np.array(P)
             ab, ac, ad = B-A, C-A, D-A
@@ -35,17 +33,17 @@ class Renderer:
             relative_error = abs((total_area-quad_area) / quad_area)          
             return relative_error < 0.001 # an arbitrary (small) value 
 
-        for i, quad in enumerate(self.displayed_quadrilaterals):
-            if is_point_inside_quadrilateral(quad, mouse_pos):
+        for i, quad in enumerate(self.__displayed_quadrilaterals):
+            if __is_point_inside_quadrilateral(quad, mouse_pos):
 
-                self.clicked_facelet = self.displayed_quadrilaterals_indices[i]
+                self.__clicked_facelet = self.__displayed_quadrilaterals_indices[i]
 
     def get_clicked_facelet(self):
-        return_facelet = self.clicked_facelet
-        self.clicked_facelet = None
+        return_facelet = self.__clicked_facelet
+        self.__clicked_facelet = None
         return return_facelet
 
-    def create_window(self):
+    def __create_window(self):
         screen = pygame.display.set_mode((self.width, self.height))
         pygame.display.set_caption('Cube Solver')
         icon = pygame.image.load('resources/rubick.png')
@@ -72,7 +70,6 @@ class Renderer:
        
         self.screen.blit(text, text_rect)
 
-
     def display_info(self,instructions):
 
         # Clear the screen
@@ -96,85 +93,85 @@ class Renderer:
         mouse_pos = pygame.mouse.get_pos()
         mouse_pressed = pygame.mouse.get_pressed()
         if any(mouse_pressed): 
-            self.mouse_pressed = True
-        elif self.mouse_pressed == True:
-            self.mouse_pressed = False # mouse released (falling edge)
+            self.__mouse_pressed = True
+        elif self.__mouse_pressed == True:
+            self.__mouse_pressed = False # mouse released (falling edge)
             self.detect_facelet_click(mouse_pos)
 
         self.detect_button_click(mouse_pressed, mouse_pos, keys)
     def clear_screen(self):
+        
         self.screen.fill((255, 255, 255))
-        self.displayed_quadrilaterals, self.displayed_quadrilaterals_indices = [], []
+        self.__displayed_quadrilaterals, self.__displayed_quadrilaterals_indices = [], []
     
-
-    def clear_display_data(self):
-        self.displayed_quadrilaterals, self.displayed_quadrilaterals_indices = [], []
-
-
     def draw_line(self, a, b, colour):
-        pygame.draw.line(self.screen, colour, a, b, self.thickness*3)
+        pygame.draw.line(self.screen, colour, a, b, 6)
 
     def draw_rectangle(self, corners, colour):
         if colour:
             pygame.draw.polygon(self.screen, colour, corners)
         else:
             pygame.draw.polygon(self.screen, 'black', corners)
-        pygame.draw.polygon(self.screen, 'black', corners, self.thickness*2)
+        pygame.draw.polygon(self.screen, 'black', corners, 4)
 
     def add_displayed_quadrilateral(self, rectangle, index):
 
-        self.displayed_quadrilaterals.append(rectangle)
-        self.displayed_quadrilaterals_indices.append(index)
+        self.__displayed_quadrilaterals.append(rectangle)
+        self.__displayed_quadrilaterals_indices.append(index)
 
     def display_fps(self, fps):
-        fps_text = self.font.render(f'FPS: {int(fps)}', True, self.colour)
+        font = pygame.font.SysFont('Arial', 20)
+        fps_text = font.render(f'FPS: {int(fps)}', True, (0,0,0))
         self.screen.blit(fps_text, (10, 10))
 
     def detect_button_click(self, mouse_pressed, mouse_pos, keys_pressed):
    
-        for button in self.buttons:
+        for button in self.__buttons:
             if button.detect_click(mouse_pressed, mouse_pos, keys_pressed):
-                self.clicked_button = button
+                self.__clicked_button = button
                 
     def get_clicked_button(self):
-        return_button = self.clicked_button
-        self.clicked_button = None 
+        return_button = self.__clicked_button
+        self.__clicked_button = None 
         return return_button
     
     def add_button(self, button):
-        self.buttons.append(button)
+        self.__buttons.append(button)
+        
+    def display_buttons(self):
+        for button in self.__buttons:
+            button.display(self.screen)
     
 class Button:
     def __init__(self, name, image, x, y, size, key=None):
-        self.key = key 
+        self.__key = key 
+        self.__image = pygame.transform.scale(image, size)  # Resize the image to 100x100
+        self.__rect = self.__image.get_rect()
+        self.__rect.topleft = (x,y)
         
-
-        self.image = pygame.transform.scale(image, size)  # Resize the image to 100x100
-        self.rect = self.image.get_rect()
-        self.rect.topleft = (x,y)
         self.name = name 
-        self.last_click_time = pygame.time.get_ticks()
-
-        self.debounce = 100 # 100 ms button debounce 
-        self.latch = False 
+        
+        self.__last_click_time = pygame.time.get_ticks()
+        self.__debounce = 100 # 100 ms button debounce 
+        self.__latch = False 
         
     def display(self, screen):
-        screen.blit(self.image, (self.rect.x, self.rect.y))
+        screen.blit(self.__image, (self.__rect.x, self.__rect.y))
         
     def detect_click(self, mouse_pressed, mouse_pos, keys_pressed):
          
-        mouse_clicked = self.rect.collidepoint(mouse_pos)
-        key_pressed = self.key is not None and keys_pressed[self.key]
+        mouse_clicked = self.__rect.collidepoint(mouse_pos)
+        key_pressed = self.__key is not None and keys_pressed[self.__key]
 
         if any(mouse_pressed) and mouse_clicked or key_pressed:
-            if not self.latch: 
+            if not self.__latch: 
                 current_time = pygame.time.get_ticks()
-                self.latch = True 
-                if current_time - self.last_click_time > self.debounce:
-                    self.last_click_time = current_time
+                self.__latch = True 
+                if current_time - self.__last_click_time > self.__debounce:
+                    self.__last_click_time = current_time
                     return True 
         else: 
-            self.latch = False # force a period of no input before the next click. 
+            self.__latch = False # force a period of no input before the next click. 
 
         return False 
 
