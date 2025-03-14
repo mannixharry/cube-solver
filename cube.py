@@ -4,7 +4,20 @@ import random
 import json 
 
 class MoveTables():
+    '''Loads move tables from local files.
+    '''   
     def __init__(self):
+        '''Nagivates to move table files and loads them.
+        
+        Attributes: 
+            corner_orientation_table (dict) : corner orientation
+            edge_orientation_table (dict) : edge orientation
+            UD_slice_permutation_table (dict) : location of UD slice edges
+            four_edge_permutation_table (dict) : UD slice edges permutation 
+            eight_edge_permutation_table (dict) : other edge permutation
+            corner_permutation_table (dict) : corner permutation
+        '''        
+
         with open('move_tables/corner_orientation_table.json', 'r') as file:
             self.corner_orientation_table = json.load(file)
         with open('move_tables/edge_orientation_table.json', 'r') as file:
@@ -19,17 +32,52 @@ class MoveTables():
             self.corner_permutation_table = json.load(file) 
             
 def import_tables():
+    '''Imports tables to global variable move_tables to avoid a circular import error.
+    
+    The circular import is caused by:
+        - MoveTableGenerator.py importing cube.py to generate move tables.
+        - move method of CoordCube class in cube.py being dependent on move tables to work. 
+    
+    Solution: import move tables into cube.py after they have been generated. 
+    '''    
+
     global move_tables
     move_tables = MoveTables()
     
 class CubieCube:
-    def __init__(self, cube_input=None):
-        
-        '''
-        The cubie-cube representation stores the configuration of a cube using a set of four arrays. 
-        It is this form of the cube, which we apply the rotation logic to.
-        '''
+    '''Stores a representation of a cube that uses four arrays.
 
+    Includes methods to:
+        - Perform moves on the CubieCube. 
+        - Verify if a cube is solvable.
+        - Scramble the cube.
+        - Display the cube representation. 
+
+    Attributes: 
+        corner_permuations (array) : stores the code of each the corners (Corner in Data.py) in the index representing its position.
+
+        corner_orientations (array) : stores the orientation of each Corner. 
+        (0 --> oriented correctly, 1 --> clockwise relative to correct orientation, 2 --> anticlockwise relative to correct orientation)
+
+        edge_permutations (array) : stores the code of each each (Edge in Data.py) in the index representing its position
+
+        edge_orientations (array) : stores the orientation of each Edge.
+        (0 --> oriented correctly, 1 --> flipped)
+
+        All orientations are taken relative to a 'reference' orientation --> see Analysis. 
+
+    '''  
+
+    def __init__(self, cube_input=None):
+        '''Loads values into representation array from cube_input using private methods. 
+
+        Args:
+            cube_input (CubieCube or FaceletCube or str, optional): Input cube to load arrays from. Defaults to None.
+
+        Raises:
+            TypeError: cube_input does not match an expected type.
+        '''
+        
         # Initialize the configuration arrays for a solved cube. 
         self.corner_permutations = list(range(8))
         self.corner_orientations = [0] * 8
@@ -61,7 +109,16 @@ class CubieCube:
 
     # Converts a facelet representation of a cube to a cubie representation. 
     def __from_facelet_cube(self, facelet_cube):
+        '''Converts a FaceletCube object to a CubieCube objects.
 
+        Args:
+            facelet_cube (FaceletCube): FaceletCube object to convert.
+
+        Returns:
+            CubieCube: Converted CubieCube. 
+
+        '''
+        
         # Initialize a new cubie_cube and temporary variables. 
         cubie_cube = CubieCube()
 
@@ -111,10 +168,13 @@ class CubieCube:
     
     # This procedure manages cubie-cube rotations.                
     def move(self, move):
+        '''Performs a 'logical' cube turn on the CubieCube. 
 
-        '''
+        Args:
+            move (Data.Move): Integer in range (0-17). See Data.py.
+
         Move is given as an integer between 0-17. Move modulo 6 gives the face being turned. Whilst (Move div 6) + 1 gives the number of times
-        the face is turned. This is by convention. 
+        the face is turned.
 
         The rotation is executed in four groups of three steps:
         For each aspect of the transformation - ie both permutations and orientations: 
@@ -127,6 +187,7 @@ class CubieCube:
         The same principle applies for clockwise twists, only modulo 2 is used intead to represent the flip of a piece. 
 
         (We define by convention the orientation of a corner as its twist and the orientation as an edge as its flip)
+
         '''
         
         turn_count = 1 + (move // 6) # The procedure rotates a face clockwise only. Double and anti-clockwise rotation are achieved through repetition.
@@ -179,12 +240,30 @@ class CubieCube:
 
     # Procedure to display the configuration of the cube in the console. 
     def __repr__(self):
+        '''Converts CubieCube state to a printable string. Overrides python magic method __repr__. 
+
+        Returns:
+            str: string to print.
+        '''        
         return (f"Corner Permutations: {self.corner_permutations}\n"
                 f"Corner Orientations: {self.corner_orientations}\n"
                 f"Edge Permutations: {self.edge_permutations}\n"
                 f"Edge Orientations: {self.edge_orientations}\n")
     
     def verify_solvability(self):
+        '''Confirms the CubieCube is 'solvable'.
+        This means determining if a sequence of turns that solve the cube exists.
+        
+        The method checks: 
+            - corner orientations
+            - edge orientations 
+            - corner permutation parity and edge permutation parity constistency. 
+
+        A cube might not be solvable, if for example all the corners, except one, are oriented correctly. 
+
+        Returns:
+            boolean: True if solvable; False otherwise. 
+        '''
 
         corner_twist_valid = sum(self.corner_orientations) % 3 == 0 # Check corner orientation validity
 
@@ -205,7 +284,7 @@ class CubieCube:
         if corner_twist_valid and edge_flip_valid and parity_consistent:
             return True
         else:
-            print(f"Error: The input cube is unsolvable."
+            print(f"Error: The input cube is not solvable."
                 f"\nCorner Twisted: {not corner_twist_valid}"
                 f"\nEdge Flipped: {not edge_flip_valid}"
                 f"\nCorner Parity Consistent: {not corner_permutation_parity}"
@@ -214,7 +293,12 @@ class CubieCube:
             return False
         
     def scramble(self):
-         
+        '''Scrambles the CubieCube, by:
+            - generating a random scramble.
+            - ensuring solvability.
+            - updating self.
+        '''         
+
         corner_permutations = list(range(8))
         corner_orientations = [0] * 8
         edge_permutations = list(range(12))
@@ -251,6 +335,11 @@ class CubieCube:
         self.edge_orientations = edge_orientations
 
 class FaceletCube:
+    '''Stores a represention of a cube that uses a single array.
+    
+    Attributes: 
+        - facelets (array) : 54 characters representing the colours of individual facelets on the cube. 
+    '''    
     def __init__(self, cube_input=None):
         
         self.__corner_colour_table, self.__edge_colour_table = Data.corner_colour_table, Data.edge_colour_table # These map colours to cubie pieces. 
@@ -329,12 +418,12 @@ class FaceletCube:
         return all(self.facelets.count(colour) == 9 for colour in 'WGORBY')
     
     def verify_validity(self):
-        self.is_valid = self.verify_string_validity()
+        is_valid = self.verify_string_validity()
         try:
             CubieCube(self)
         except:
-            self.is_valid = False
-        return self.is_valid
+            is_valid = False
+        return is_valid
         
 class CoordCube:
     def __init__(self, cube_input=None):
