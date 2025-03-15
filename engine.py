@@ -4,23 +4,59 @@ from data import *
 import numpy as np
 
 class Rectangle:
+    '''Represents a rectangle in 3D space. 
+    '''
+
     def __init__(self, corners, piece_colour=False):
-        
+        '''Assigns values to main attributes. 
+        Note: Corners are always given in anti-clockwise order so that calculated normals face outwards (towards camera)
+        This is important for backface culling. 
+
+        Args:
+            corners (np.array) : Stores the position vectors of each of the corners.
+            piece_colour (Tuple[int, int, int]) : The colour of the rectangle if/when it is displayed. Defaults to False.
+        '''
+
         self.corners = [np.array(corner) for corner in corners]
         self.piece_colour = piece_colour 
 
     def get_normal(self):
+        '''Calculates the unit normal to the plane containing the rectangle.
+        Returns:
+            np.ndarray: Unit normal vector.
+        '''
         a,  b, c, _ = self.corners
         normal = np.cross(b-a, c-a)
         normal /= np.linalg.norm(normal)
         return normal
     
-class Cube:
+    def find_centre(self):
+        '''Computes the position of the rectangle centre.
+
+        Returns:
+            np.array: Position vector the centre. 
+        '''
+        a, b, c, d = self.corners
+        return (a + b + c + d) / 4.0 
     
+    
+class Cube:
+    '''Generates and stores Rectangles that make up the cube.
+    
+    Attributes:
+        facelets(List[Rectangle]) : List of 54 Rectangles each representing a cube facelet.
+    '''
     __colour_map = Data.colour_map
  
     def __init__(self, cube_string=None):
-        
+        '''Generates 54 coloured facelet rectangles from cube_string, by
+        creating 9 Rectangle objects that represent a single face,
+        and then copying and rotating these 9 Rectangles 6 times to create a whole cube, 
+        and finally assigning the Rectangles colours according to cube_string. 
+
+        Args:
+            cube_string (FaceletCube, str, optional): Input FaceletCube. Defaults to None.
+        '''
         self.facelets = []
         
         if cube_string is None:
@@ -45,11 +81,26 @@ class Cube:
             self.facelets += face
              
 class Projector:
-    def __init__(self, width, height, fov=90):
+    '''Contains mathematics to convert a 3D position vector to a 2D screen coordinate. 
+    
+        Attributes:
+            projection_matrix(np.ndarray) : Used to transform a 3D vector to 2D screen coordinates.
+    '''
+    def __init__(self, width, height, fov=np.pi/2):
+        ''' Creates a projection matrix. 
+
+        Args:
+            width (int): Screen width (pygame window)
+            height (int): Screen height
+
+            fov (int, optional): Field of View. Defaults to 90 degrees.
+
+
+        '''
         self.width, self.height = width, height
         self.fov = fov
         a = height / width
-        f = 1.0 / np.tan(np.radians(self.fov) / 2.0)
+        f = 1.0 / np.tan(self.fov / 2.0)
         self.__projection_matrix = np.array([
             [f, 0, 0],
             [0, f * a, 0],
@@ -58,89 +109,161 @@ class Projector:
         ])
 
     def project_vector(self, vector):
+        '''Applies projection matrix to a vector;
+        scales and translates output to give a screen coordinate. 
+
+        Args:
+            vector (np.array): 3D position vector being projected.
+
+        Returns:
+            Tuple(float, float): 2D screen coordinate
+        '''
         projected_vector = self.__projection_matrix @ vector
         if projected_vector[2] != 0:
             projected_vector /= -projected_vector[2]
         projected_vector += np.array([1, 1, 0])
-        return (
-            projected_vector[0] * 0.5 * self.width,
+
+        screen_coordinate = (
+            projected_vector[0] * 0.5 * self.width, 
             projected_vector[1] * 0.5 * self.height
         )
+        
+        return screen_coordinate
 
 class Transformer:
-
+    '''Contains mathematics to rotate a 3D position vector about the origin by a given angle.
+    '''
     @staticmethod
     def create_rotation_matrix(angle):
+        '''Creates a rotation matrix for an input angle. 
+        Note: all angles are measured in radians. 
+
+        Args:
+            angle (Tuple[float, float, float]): X, Y and Z components of desired angle to rotate through. 
+
+        Returns:
+            np.ndarray: Rotation matrix for angle input. 
+        '''
         angle_x, angle_y, angle_z = angle
 
-        def __create_rotation_matrix_x(angle):
-            cos_theta, sin_theta = np.cos(angle), np.sin(angle)
+        def __create_rotation_matrix_x(angle_x):
+            '''Creates x-axis rotation matrix.
+            '''
+            cos_theta, sin_theta = np.cos(angle_x), np.sin(angle_x)
             return np.array([
                 [1, 0, 0],
                 [0, cos_theta, -sin_theta],
                 [0, sin_theta, cos_theta]
             ])
 
-        def __create_rotation_matrix_y(angle):
-            cos_theta, sin_theta = np.cos(angle), np.sin(angle)
+        def __create_rotation_matrix_y(angle_y):
+            '''Creates y-axis rotation matrix. 
+            '''
+            cos_theta, sin_theta = np.cos(angle_y), np.sin(angle_y)
             return np.array([
                 [cos_theta, 0, sin_theta],
                 [0, 1, 0],
                 [-sin_theta, 0, cos_theta]
             ])
 
-        def __create_rotation_matrix_z(angle):
-            cos_theta, sin_theta = np.cos(angle), np.sin(angle)
+        def __create_rotation_matrix_z(angle_z):
+            '''Creates z-axis rotation matrix.
+            '''
+            cos_theta, sin_theta = np.cos(angle_z), np.sin(angle_z)
             return np.array([
                 [cos_theta, -sin_theta, 0],
                 [sin_theta, cos_theta, 0],
                 [0, 0, 1]
             ])
-    
+
+        # aggregate matrices.
         return __create_rotation_matrix_x(angle_x) @ __create_rotation_matrix_y(angle_y) @ __create_rotation_matrix_z(angle_z)
 
     @staticmethod
     def transform_vector(rotation_matrix, vector):
+        '''Applies an input rotation matrix to an input vector,
+        and translates the result deeper into the screen (8 units)
+
+        Args:
+            rotation_matrix (np.ndarray): Input rotation matrix
+            vector (np.array): Vector being rotated and translated
+
+        Returns:
+            np.array: Rotated and translated vector
+        '''
         rotated_vector = rotation_matrix @ vector 
         translated_vector = rotated_vector + np.array([0, 0, 8]) 
         return translated_vector
 
 class CubeManager:
-    
+    '''Manages creation of Cube objects, rotating the cube (and changing the cube view),
+    executing moves (3D animation of face turns), projection, back-face culling, and depth sorting of rectangles. 
+    Attaches rectangles to display to Renderer object.
+
+    Attributes: 
+        - renderer(Renderer) : Main Renderer object to manage display.
+        - cube(Cube) : Main Cube object being displayed. 
+        - face_turning(boolean) : Flags if a face-turn animation is taking place.
+        - cube_rotating(boolean) : Flags if a cube-rotation animation is taking place.
+    '''
     __frames_per_face_turn = 30
-    
     __current_cube_rotation_angle = np.array([0,0,0])
     
-    def __init__(self, cube_string, renderer):
+    def __init__(self, cube_input, renderer):
+        '''Loads key attributes.
+        Note: Passing the Renderer as an argument avoids reloading the screen upon re-instantiating CubeManager objects.
+
+        Args:
+            cube_input (CubieCube, FaceletCube, str): Input cube to load cube state from. 
+            renderer (Renderer): Renderer object to use. 
+        '''
 
         self.renderer = renderer
         
         width, height = self.renderer.width, self.renderer.height
-        self.projector = Projector(width, height)
 
-        self.set_cube(cube_string)
+        self.__projector = Projector(width, height)
+        self.set_cube(cube_input)
 
-    def set_cube(self, cube_string):
-        
+    def set_cube(self, cube_input):
+        '''Loads a cube from cube_input.
+
+        Args:
+            cube_input (CubieCube, FaceletCube, str): Input cubeto load cube state from.
+        '''
         self.face_turning = False
         self.cube_rotating = False
 
-        self.cube = cube.CubieCube(cube_string)
-        self.facelets = Cube(str(cube.FaceletCube(cube_string))).facelets
-        
-    def __find_centre_rectangle(self, rectangle):
-        a, b, c, d = rectangle.corners
-        return (a + b + c + d) / 4.0    
-
+        self.cube = cube.CubieCube(cube_input)
+        self.__facelets = Cube(str(cube.FaceletCube(cube_input))).facelets
+           
     def change_cube_rotation(self, angle_delta):
+        '''Changes the cube's current rotation angle by angle_delta. 
+
+        Args:
+            angle_delta (Tuple[int, int, int]): Angle to change current cube rotation angle by.
+
+        Returns:
+            boolean: True; False if cube is rotating.
+        '''
         if self.cube_rotating:
             return False
         self.__current_cube_rotation_angle = [
             ((self.__current_cube_rotation_angle[i] + angle_delta[i]) % (2 * np.pi))
             for i in range(3)
         ]
+        return True
         
     def set_cube_rotation(self, target_angle, frames_per_cube_rotation):
+        '''Sets the cube rotating towards a target angle in a specified number of frames. 
+
+        Args:
+            target_angle (Tuple[int, int, int]): The angle which the cube will rotate towards.
+            frames_per_cube_rotation (int): The number of frames over which the rotation will occur. 
+
+        Returns:
+            boolean: True; False if cube is rotating.
+        '''
         if self.cube_rotating:
             return False
         
@@ -150,11 +273,29 @@ class CubeManager:
         self.__current_cube_rotation_frame = 0
         self.cube_rotating = True
 
-    def __interpolate_angles(self,initial_angle, target_angle, factor):
+        return True
+
+    def __interpolate_angles(self, initial_angle, target_angle, factor):
+        '''Computes an angle of rotation, a fraction of the way between an intial angle and a target angle. 
+        Performs linear interpolation of angles. Ensures shortest route between two angles is used.
+
+        Args:
+            initial_angle (Tuple[int, int, int]): The angle at which the cube begins the rotation from.
+            target_angle (Tuple[int, int, int]): The angle that the cube is rotating towards.
+            factor (float): The fraction of the way through the rotation.
+
+        Returns:
+            Tuple[int,int,int]: interpolated angle
+        '''
         delta = ((target_angle - initial_angle + np.pi)  % (2 * np.pi)) - np.pi # shift to inverval (0, 2pi), apply mod, then shift back to (-pi, pi)
         return initial_angle + factor * delta
 
     def __get_cube_rotation_matrix(self):
+        '''Computes the cube rotation matrix for the current frame.  
+
+        Returns:
+            np.ndarray: cube rotation matrix 
+        '''
         if not self.cube_rotating:
             return Transformer.create_rotation_matrix(self.__current_cube_rotation_angle)
         
@@ -171,13 +312,24 @@ class CubeManager:
         return rotation_matrix
     
     def set_cube_view(self, viewpoint, frames_per_cube_rotation = 60):
+        '''Stores default rotation angles for specific 'views' of the cube's pieces. 
+        A majority of these are redundant - but useful for 'future-proofing'. 
 
+        Args:
+            viewpoint (Face, Edge, Corner, Move): indicates which viewpoint to rotate towards. 
+            frames_per_cube_rotation (int, optional): The number of frames over which the view change will occur. Defaults to 60.
+
+        Returns:
+            boolean: True if rotation initiated; False if already at desired view.
+        '''
+
+        pi = np.pi
         qtr_pi = np.pi/4
         hlf_pi = np.pi/2
         eleven_sixteenths_pi = 11/16 * np.pi
         seven_sixteenths_pi = 7/32 * np.pi
         three_sixteenths_pi = 3/16 * np.pi
-        pi = np.pi
+
 
         corner_view_angles = [
             [-qtr_pi,qtr_pi,0],
@@ -241,6 +393,15 @@ class CubeManager:
         return True 
     
     def set_face_turn(self, move, frames_per_face_turn = 30):
+        '''Sets a face to rotate in a specified number of frames. 
+
+        Args:
+            move (Move): Move to begin executing.
+            frames_per_face_turn (int, optional): The number of frames over which the face turn will occur. Defaults to 30.
+
+        Returns:
+            boolean, : True; False if face is already turning.
+        '''
         self.__frames_per_face_turn = frames_per_face_turn
         if self.face_turning:
             return False
@@ -263,9 +424,12 @@ class CubeManager:
         self.__current_face_turn_frame = self.__current_face_turn_angle = 0
 
         self.__move, self.__face_target_angle, self.face_turning = move, angle, True
-        return move, np.multiply(angle, np.pi/2)
+        return True
 
     def __update_face_turns(self):
+        '''Computes and applies face rotation matrices as a face rotates towards a target.
+            Updates Cube once face turn complete.
+        '''
         
         slice_facelets = {
             'U': list(range(0,9)) + [9,10,11] + [18,19,20] + [27,28,29] + [36,37,38],
@@ -277,7 +441,7 @@ class CubeManager:
         }
                  
         if not self.face_turning:
-            return
+            return 
         
         if self.__move // 6 == 1:
             frames = self.__frames_per_face_turn * 2 
@@ -286,36 +450,38 @@ class CubeManager:
 
         if self.__current_face_turn_frame < frames:
             self.__current_face_turn_frame += 1 
-            angle = (np.sin(np.pi * self.__current_face_turn_frame / (2 * frames))) * self.__face_target_angle 
+            factor = (np.sin(np.pi * self.__current_face_turn_frame / (2 * frames)))
+            angle = factor * self.__face_target_angle 
             face_rotation_matrix = Transformer.create_rotation_matrix(angle - self.__current_face_turn_angle)
             self.__current_face_turn_angle = angle
             
             face = self.__move % 6 
             for facelet in slice_facelets['UFLRBD'[face]]:
-                rectangle = self.facelets[facelet]
+                rectangle = self.__facelets[facelet]
                 for j, corner in enumerate(rectangle.corners):
                     rotated_corner = corner @ face_rotation_matrix
-                    self.facelets[facelet].corners[j] = rotated_corner
+                    self.__facelets[facelet].corners[j] = rotated_corner
         else: 
             #Reset rotation and apply new colours
             self.cube.move(self.__move)
             cube_string = str(cube.FaceletCube(self.cube))
             
             self.set_cube(cube_string)
-            
-    def get_clicked_facelet(self):
-        return self.renderer.get_clicked_facelet()
 
     def main(self):
-
+        '''Main engine loop.
+        Executes turns, and rotations by transforming vectors.
+        Culls rectangles facing away from the camera; sorts rectangles by depth.
+        Projects Rectangles. And draws projected rectangles. 
+        '''
         self.__update_face_turns()    
         
         self.renderer.clear_screen() # Clear the screen
         cube_rotation_matrix = self.__get_cube_rotation_matrix()
 
-        rectangles_to_draw = []
+        to_draw = []
         index = 0
-        for rectangle in np.array(self.facelets):
+        for rectangle in np.array(self.__facelets):
                 rotating = self.face_turning
                 if not rotating and not rectangle.piece_colour:
                     continue
@@ -331,18 +497,18 @@ class CubeManager:
 
                 piece_colour = rectangle.piece_colour if np.dot(transformed_normal, reference) > 0 else (0,0,0)
                 
-                projected_vertices = [self.projector.project_vector(vertex) for vertex in transformed_vertices]
-                centre = self.__find_centre_rectangle(transformed_rectangle)
+                projected_vertices = [self.__projector.project_vector(vertex) for vertex in transformed_vertices]
+                centre = transformed_rectangle.find_centre()
                 centroid_depth = centre[2]
                 
-                rectangles_to_draw.append((projected_vertices, piece_colour, centroid_depth, index))
+                to_draw.append((projected_vertices, piece_colour, centroid_depth, index))
 
                 index += 1
                 
         # Sort rectangles by depth
-        rectangles_to_draw.sort(key=lambda x: -x[2])
+        to_draw.sort(key=lambda x: -x[2])
 
-        for rectangle, piece_colour, _, index in rectangles_to_draw:
+        for quadrilateral, piece_colour, _, index in to_draw:
 
-            self.renderer.draw_rectangle(rectangle, piece_colour)
-            self.renderer.add_displayed_quadrilateral(rectangle, index)
+            self.renderer.draw_quadrilateral(quadrilateral, piece_colour)
+            self.renderer.add_displayed_quadrilateral(quadrilateral, index)

@@ -8,12 +8,19 @@ from screen import Button
 from screen import Renderer
 
 def display_program_info(renderer, informatation):
+    '''Displays given information on the screen, using renderer.
 
+    Args:
+        renderer (Renderer): Renderer to display information with.
+        informatation (str): Text to be displayed on screen. 
+
+    '''
     renderer.display_info(informatation)
     pygame.display.flip()
 
 def wait():
-    # Wait for the user to press Enter
+    '''Function to wait until the user presses 'Enter'
+    '''
     waiting = True
     while waiting:
         for event in pygame.event.get():
@@ -26,6 +33,12 @@ def wait():
                     exit()
 
 def initialize_buttons(renderer):
+    '''Loads images and other parameters for buttons and instantiates the Button objects, attaching them to renderer.
+
+    Args:
+        renderer (Renderer): Renderer object to attach the buttons to. 
+    '''
+
     """Initialize and assign buttons to the cube manager's renderer."""
     width, height = renderer.width, renderer.height
 
@@ -50,9 +63,7 @@ def initialize_buttons(renderer):
     buttons = [scramble_button, reset_button, solve_button, capture_button, pause_play_button, replay_button, skip_button]
     [renderer.add_button(b) for b in buttons]
 
-def main(cube_string='WWWWWWWWWGGGGGGGGGOOOOOOOOORRRRRRRRRBBBBBBBBBYYYYYYYYY'):
-    
-    main_instructions = [
+main_instructions = [
         "Cube Solver Instructions",
         "",
         "1. Click the cube's faces to perform turns.",
@@ -68,7 +79,7 @@ def main(cube_string='WWWWWWWWWGGGGGGGGGOOOOOOOOORRRRRRRRRBBBBBBBBBYYYYYYYYY'):
     ]
     
     
-    capture_instructions = [
+capture_instructions = [
         "How to Capture the Cube:",
         "",
         "1. Start with the WHITE face in the overlay.",
@@ -85,6 +96,17 @@ def main(cube_string='WWWWWWWWWGGGGGGGGGOOOOOOOOORRRRRRRRRBBBBBBBBBYYYYYYYYY'):
         "  The colour on top of the cube should match the top overlay.",
         " Ensure good lighting for accurate detection."
     ]
+
+def main(cube_string='WWWWWWWWWGGGGGGGGGOOOOOOOOORRRRRRRRRBBBBBBBBBYYYYYYYYY'):
+    '''Contains main game loop.
+    Manages response to user inputs,
+    and UI (ie the logic for visually demonstrating solves)
+
+    Combines functionality of engine.py, solver.py and capture.py.
+
+    Args:
+        cube_string (str, optional): input cube_string. Defaults to 'WWWWWWWWWGGGGGGGGGOOOOOOOOORRRRRRRRRBBBBBBBBBYYYYYYYYY'.
+    '''
 
     renderer = Renderer()
 
@@ -175,6 +197,7 @@ def main(cube_string='WWWWWWWWWGGGGGGGGGOOOOOOOOORRRRRRRRRBBBBBBBBBYYYYYYYYY'):
 
             if captured_cube: 
                 cube_manager.set_cube(captured_cube)
+                cube_manager.set_cube_view(Edge.UF)
                
         if keys[K_s] or clicked_button_name == 'scramble':
             
@@ -182,10 +205,13 @@ def main(cube_string='WWWWWWWWWGGGGGGGGGOOOOOOOOORRRRRRRRRBBBBBBBBBYYYYYYYYY'):
             new_cube.scramble()
 
             cube_manager.set_cube(new_cube)
+            cube_manager.set_cube_view(Edge.UF)
+
             is_demonstrating_solve = False
             
         if clicked_button_name == 'reset':
             cube_manager.set_cube(cube.CubieCube())
+            cube_manager.set_cube_view(Edge.UF)
 
             is_demonstrating_solve = False
 
@@ -280,7 +306,7 @@ def main(cube_string='WWWWWWWWWGGGGGGGGGOOOOOOOOORRRRRRRRRBBBBBBBBBYYYYYYYYY'):
         
         if not is_demonstrating_solve:
             
-            clicked_facelet = cube_manager.get_clicked_facelet()
+            clicked_facelet = cube_manager.renderer.get_clicked_facelet()
             if clicked_facelet != None:
                 move = Move(clicked_facelet // 9)
                 counter_clockwise = (clicked_facelet % 9) in [0,3,6]
@@ -313,7 +339,10 @@ def main(cube_string='WWWWWWWWWGGGGGGGGGOOOOOOOOORRRRRRRRRBBBBBBBBBYYYYYYYYY'):
     pygame.quit()
 
 if __name__ == '__main__':
-    # import order matters 
+    '''Imports dependencies in a specific order to avoid cylcic import error. 
+    Calls main once imports complete. 
+    '''
+
     import cube 
     import move_table_generator
    
