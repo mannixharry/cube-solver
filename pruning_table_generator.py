@@ -17,10 +17,10 @@ class PruningTableGenerator:
         '''
         # File paths for the pruning tables
         self.__path_function_pairs = [
-            ('pruning_tables/udslice_corner_table.json', self.generate_udslice_corner_table),
-            ('pruning_tables/udslice_edge_table.json', self.generate_udslice_edge_table),
-            ('pruning_tables/corner_udslice_edge_table.json', self.generate_corner_udslice_edge_table),
-            ('pruning_tables/main_edge_udslice_edge_table.json', self.generate_mainedge_udslice_edge_table)
+            ('pruning_tables/UD_slice_corner_table.json', self.generate_UD_slice_corner_table),
+            ('pruning_tables/UD_slice_edge_table.json', self.generate_UD_slice_edge_table),
+            ('pruning_tables/corner_four_edge_table.json', self.generate_corner_four_edge_table),
+            ('pruning_tables/eight_edge_four_edge_table.json', self.generate_eight_edge_four_edge_table)
         ]
         
     def generate_table(self, path, generating_function):
@@ -92,7 +92,7 @@ class PruningTableGenerator:
 
             for move in allowed_moves:  # Moves for G1 or moves for G2
                 next_state = cube.CoordCube(current_state)  # Copy current state
-                next_state.rotate_clockwise(move)  # Apply move
+                next_state.move(move)  # Apply move
 
                 next_coord_tuple = (
                     getattr(next_state, pruning_coordinate_1),
@@ -104,7 +104,7 @@ class PruningTableGenerator:
 
         return general_table
     
-    def generate_udslice_corner_table(self):
+    def generate_UD_slice_corner_table(self):
         '''Generates UD slice coordinate and corner orientation coordinate pruning table for g1 heuristic.
         (2048 * 485 entries)
         Returns:
@@ -112,7 +112,7 @@ class PruningTableGenerator:
         '''
         return self.generate_general_pruning_table(('UD_slice_coordinate','corner_orientation_coordinate'), Data.g1_allowed_moves, 2048 * 495)
     
-    def generate_udslice_edge_table(self):
+    def generate_UD_slice_edge_table(self):
         '''Generates UD slice coordinate and edge orientation coordinate pruning table for g1 heuristic.
         (2187 * 495 entries)
         Returns:
@@ -120,7 +120,7 @@ class PruningTableGenerator:
         '''
         return self.generate_general_pruning_table(('UD_slice_coordinate', 'edge_orientation_coordinate'), Data.g1_allowed_moves, 2187 * 495)
     
-    def generate_corner_udslice_edge_table(self):
+    def generate_corner_four_edge_table(self):
         '''Generates corner permutation coordinate and four edge permutation coordinate pruning table for g2 heuristic.
         (40320 * 24 entries)
         Returns:
@@ -128,7 +128,7 @@ class PruningTableGenerator:
         '''
         return self.generate_general_pruning_table(('corner_permutation_coordinate', 'four_edge_permutation_coordinate'), Data.g2_allowed_moves, 40320 * 24)
     
-    def generate_mainedge_udslice_edge_table(self):
+    def generate_eight_edge_four_edge_table(self):
         '''Generates eight edge permutation coordinate and four edge permutation coordinate pruning table for g2 heuristic.
         (40320 * 24 entries)
         Returns:

@@ -3,6 +3,7 @@ cube.import_tables()
 from data import * 
 from datetime import datetime
 import json 
+from abc import ABC, abstractmethod
 
 class PruningTables:
     '''Loads pruning tables from local files.
@@ -15,14 +16,14 @@ class PruningTables:
     '''   
     def __init__(self):
 
-        with open('pruning_tables/udslice_corner_table.json', 'r') as file:
-            self.udslice_corner_table = json.load(file)
-        with open('pruning_tables/udslice_edge_table.json', 'r') as file:
-            self.udslice_edge_table = json.load(file)
-        with open('pruning_tables/corner_udslice_edge_table.json', 'r') as file:
-            self.corner_udslice_edge_table = json.load(file)
-        with open('pruning_tables/main_edge_udslice_edge_table.json', 'r') as file:
-            self.mainedge_udslice_edge_table = json.load(file)
+        with open('pruning_tables/UD_slice_corner_table.json', 'r') as file:
+            self.UD_slice_corner_table = json.load(file)
+        with open('pruning_tables/UD_slice_edge_table.json', 'r') as file:
+            self.UD_slice_edge_table = json.load(file)
+        with open('pruning_tables/corner_four_edge_table.json', 'r') as file:
+            self.corner_four_edge_table = json.load(file)
+        with open('pruning_tables/eight_edge_four_edge_table.json', 'r') as file:
+            self.eight_edge_four_edge_table = json.load(file)
 
 def import_tables():
     '''Imports tables to global variable pruuning_tables to avoid an import error.
@@ -44,7 +45,7 @@ class Solver:
         self.__g1_solver = self.g1Solver()
         self.__g2_solver = self.g2Solver()
 
-    class StageSolver:
+    class StageSolver(ABC):
         '''An 'abstract' parent class that g1 and g2 inherit from.
         Each child must implement its own _heuristic_function and _is_solved_function,
         but inherits search_for_solution.
@@ -54,6 +55,7 @@ class Solver:
             self.max_depth = max_depth
             self.allowed_moves = allowed_moves
         
+        @abstractmethod
         def _heuristic_function(self, state): 
             '''Searches pruning tables for value of heuristic function, at a given state.
 
@@ -62,6 +64,7 @@ class Solver:
             '''
             pass
         
+        @abstractmethod
         def _is_solved_function(self, state):
             '''Determines if the solver's conditions for a 'solved' cube are met. 
 
@@ -70,21 +73,21 @@ class Solver:
             '''
             pass
         
-        def search_for_solution(self, cube_state, threshold=0): # IDA*
+        def search_for_solution(self, state, threshold=0): # IDA*
             '''IDA* algorithm.
             Stack implementation of DFS to avoid recursion depth limitations. 
             Performs pruning using the heuristic function.
             Recurisve calls increase depth threshold if solved conditions are not met. 
 
             Args:
-                cube_state (CoordCube): CoordCube
+                statet (CoordCube): CoordCube
                 threshold (int, optional): Smallest pruned f-score from previous recursive call. Defaults to 0.
 
             Returns:
                 List[Move]: solution path (this is the base case of recursion)
                 (or result of recursive call).
             '''
-            stack = [(cube_state, [])]
+            stack = [(state, [])]
             min_f = float('inf')
             while len(stack) > 0: 
 
@@ -109,13 +112,13 @@ class Solver:
                         if move == Move.inverse_move(current_path[-1]):
                             continue
                     next_state = cube.CoordCube(current_state)
-                    next_state.rotate_clockwise(move)
+                    next_state.move(move)
 
                     next_path = current_path + [move]
 
                     stack.append((next_state, next_path))
 
-            return self.search_for_solution(cube_state, min_f)
+            return self.search_for_solution(state, min_f)
    
     class g1Solver(StageSolver):
         '''Solves the cube to the g1 subset. 
@@ -128,8 +131,8 @@ class Solver:
             allowed_moves = Data.g1_allowed_moves
             super().__init__(max_depth, allowed_moves)
 
-            self.__udslice_corner_pruning_table = pruning_tables.udslice_corner_table
-            self.__udslice_edge_pruning_table = pruning_tables.udslice_edge_table
+            self.__UD_slice_corner_table = pruning_tables.UD_slice_corner_table
+            self.__UD_slice_edge_table = pruning_tables.UD_slice_edge_table
 
         def _heuristic_function(self, state):
             '''g1 admissible heuristic function.
@@ -143,10 +146,10 @@ class Solver:
             '''
 
             search_coord1 = str((state.UD_slice_coordinate, state.corner_orientation_coordinate))
-            d1 = self.__udslice_corner_pruning_table.get(search_coord1, self.max_depth)
+            d1 = self.__UD_slice_corner_table.get(search_coord1, self.max_depth)
 
             search_coord2 = str((state.UD_slice_coordinate, state.edge_orientation_coordinate))
-            d2 = self.__udslice_edge_pruning_table.get(search_coord2, self.max_depth)
+            d2 = self.__UD_slice_edge_table.get(search_coord2, self.max_depth)
 
             return max(d1, d2)
 
@@ -164,8 +167,8 @@ class Solver:
             allowed_moves = Data.g2_allowed_moves
             super().__init__(max_depth, allowed_moves)
 
-            self.__corner_udslice_edge_table = pruning_tables.corner_udslice_edge_table
-            self.__main_edge_udslice_edge_pruning_table = pruning_tables.mainedge_udslice_edge_table
+            self.__corner_four_edge_table = pruning_tables.corner_four_edge_table
+            self.__eight_edge_four_edge_table = pruning_tables.eight_edge_four_edge_table
 
         def _heuristic_function(self, state):
             '''g2 admissible heuristic function.
@@ -178,18 +181,17 @@ class Solver:
                 int: heuristic
             '''
             search_coord1 = str((state.corner_permutation_coordinate, state.four_edge_permutation_coordinate))
-            d1 = self.__corner_udslice_edge_table.get(search_coord1, self.max_depth)
+            d1 = self.__corner_four_edge_table.get(search_coord1, self.max_depth)
 
             search_coord2 = str((state.eight_edge_permutation_coordinate, state.four_edge_permutation_coordinate))
-            d2 = self.__main_edge_udslice_edge_pruning_table.get(search_coord2, self.max_depth)
+            d2 = self.__eight_edge_four_edge_table.get(search_coord2, self.max_depth)
 
             return max(d1, d2)
 
         def _is_solved_function(self, state):
             return sum(state.g2_coordinates) == 0
         
-    @staticmethod
-    def __contract_solution(solution):
+    def __contract_solution(self, solution):
         '''Combines repeated moves in solution where possible. 
 
         Args:
@@ -241,15 +243,7 @@ class Solver:
       
         start_time = datetime.now()
 
-        if isinstance(cube_input, cube.CubieCube):
-            cubie_input = cube_input
-        elif isinstance(cube_input, str):
-            cubie_input = cube.CubieCube(cube_input)
-        elif isinstance(cube_input, cube.FaceletCube):
-            cubie_input = cube_input.to_cubie_cube()
-        else:
-            raise ("Error: cube_input is not an expected type")
-        
+        cubie_input = cube.CubieCube(cube_input)
         initial_state = cube.CoordCube(cubie_input)
 
         # Solve G1
@@ -258,7 +252,7 @@ class Solver:
 
         for move in g1_solution:
             cubie_input.move(move)
-            initial_state.rotate_clockwise(move)
+            initial_state.move(move)
 
         print(f"Time to G1: {datetime.now() - start_time}")
 

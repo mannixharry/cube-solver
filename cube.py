@@ -12,7 +12,7 @@ class MoveTables():
         Attributes: 
             corner_orientation_table (dict) : corner orientation
             edge_orientation_table (dict) : edge orientation
-            UD_slice_permutation_table (dict) : location of UD slice edges
+             (dict) : location of UD slice edges
             four_edge_permutation_table (dict) : UD slice edges permutation 
             eight_edge_permutation_table (dict) : other edge permutation
             corner_permutation_table (dict) : corner permutation
@@ -369,7 +369,17 @@ class FaceletCube:
                 self.facelets = self.__from_cubie_cube(cube_input).facelets
             else:
                 raise TypeError('cube_input does not match an expected type')
-    
+            
+    def move(self, move):
+        '''Performs a cube turn on the FaceletCube. 
+
+        Args:
+            move (Move): Integer in range (0-17). See data.py.
+        '''
+        cubieCube = CubieCube(self)
+        cubieCube.move(move)
+        self.facelets = self.__from_cubie_cube(cubieCube).facelets
+
     # Converts a cubie representation to a facelet representation. 
     def __from_cubie_cube(self, cubie_cube):
         '''Converts a CubieCube object to a FaceletCube object. 
@@ -470,8 +480,8 @@ class CoordCube:
     '''Stores a representation of a cube that uses six coordinates.
 
     Attributes:
-        g1_coordinates (tuple) : corner orientation, edge orientation and UD slice permutation coordinates.
-        g2_coordinates (tuple) :  UD slice edge permutation, other edges permutation and corner permutation coordinates.
+        g1_coordinates (Tuple[int, int, int]) : corner orientation, edge orientation and UD slice permutation coordinates.
+        g2_coordinates (Tuple[int, int, int]) :  UD slice edge permutation, other edges permutation and corner permutation coordinates.
 
     Properties:
         corner_orientation_coordinate (int) : g1_coordinates[0]
@@ -494,16 +504,16 @@ class CoordCube:
         
         self.__cubie_cube = CubieCube()
         try:
-            self.__g1_move_tables = [
+            self.__g1_move_tables = (
                     move_tables.corner_orientation_table,
                     move_tables.edge_orientation_table,
                     move_tables.UD_slice_permutation_table
-            ]
-            self.__g2_move_tables = [
+            )
+            self.__g2_move_tables = (
                 move_tables.eight_edge_permutation_table,
                 move_tables.four_edge_permutation_table,
                 move_tables.corner_permutation_table
-            ]
+            )
         except:
             pass
         
@@ -572,7 +582,7 @@ class CoordCube:
     def corner_permutation_coordinate(self):
         return self.g2_coordinates[2]
     
-    def rotate_clockwise(self, move):
+    def move(self, move):
         '''Performs a cube turn on a CoordCube.
 
         Args:

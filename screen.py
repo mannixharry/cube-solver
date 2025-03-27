@@ -26,9 +26,7 @@ class Renderer:
         self.__clicked_button = None
         self.__mouse_pressed = False
 
-        self.__displayed_quadrilaterals = []
-        self.__displayed_quadrilaterals_indices = []
-        
+        self.__displayed_quadrilaterals = []        
     def detect_facelet_click(self, mouse_pos):
         '''Updates __clicked_facelet to the index of the clicked facelet if a click is detected.
 
@@ -57,10 +55,10 @@ class Renderer:
             relative_error = abs((total_area-quad_area) / quad_area)          
             return relative_error < 0.001 # an arbitrary (small) value 
 
-        for i, quad in enumerate(self.__displayed_quadrilaterals):
+        for i, (quad, index) in enumerate(self.__displayed_quadrilaterals):
             if __is_point_inside_quadrilateral(quad, mouse_pos):
 
-                self.__clicked_facelet = self.__displayed_quadrilaterals_indices[i]
+                self.__clicked_facelet = index
 
     def get_clicked_facelet(self):
         '''Retrieves most recently clicked facelet.
@@ -141,14 +139,14 @@ class Renderer:
             self.screen.blit(text_surface, text_rect)
             y_offset += 30
 
-    def update_mouse(self, mouse_pressed, mouse_pos, keys):
+    def update_mouse(self, mouse_pressed, mouse_pos, keys_pressed):
         '''Checks if the mouse has been clicked, and by extension, a facelet. 
         Also calls methods to check if a GUI button has been clicked or its keyboard button pressed.
 
         Args:
-            mouse_pressed (Tuple[int]): Pressed mouse buttons. 
+            mouse_pressed (List[int]): Pressed mouse buttons. 
             mouse_pos (Tuple[int, int]): Mouse position on screen.
-            keys (Tuple[int]): Pressed keyboard buttons. 
+            keys_pressed (List[int]): Pressed keyboard buttons. 
         '''
 
         mouse_pos = pygame.mouse.get_pos()
@@ -159,13 +157,13 @@ class Renderer:
             self.__mouse_pressed = False # mouse released (falling edge)
             self.detect_facelet_click(mouse_pos)
 
-        self.detect_button_click(mouse_pressed, mouse_pos, keys)
+        self.detect_button_click(mouse_pressed, mouse_pos, keys_pressed)
 
     def clear_screen(self):
         '''Clears the screen and displayed quadrilateral data. 
         '''
         self.screen.fill((255, 255, 255))
-        self.__displayed_quadrilaterals, self.__displayed_quadrilaterals_indices = [], []
+        self.__displayed_quadrilaterals = []
     
     def draw_line(self, a, b, colour):
         '''Draws a line between two points in a given colour.
@@ -198,8 +196,7 @@ class Renderer:
             index (int): The index of the quadrilateral (ie what Facelet it represents)
         '''
 
-        self.__displayed_quadrilaterals.append(quadrilateral)
-        self.__displayed_quadrilaterals_indices.append(index)
+        self.__displayed_quadrilaterals.append((quadrilateral, index))
 
     def display_fps(self, fps):
         '''Displays an FPS counter
@@ -243,23 +240,24 @@ class Renderer:
     
 class Button:
     '''A button.
-    Includes debounce cooldown logic. 
+    Includes debounce logic. 
+    Attributes: 
+        name(str) : Unique button identifier. 
     '''
-    def __init__(self, name, image, x, y, size, key=None):
+    def __init__(self, name, image, top_left, size, key=None):
         '''Initialize key attributes
 
         Args:
             name (str): The 'name' of the button. Used to uniquely identify it.
             image (pygame.Surface): display image of the button. 
-            x (int): top_left x coordinate.
-            y (int): top_left y coordinate.
+            top_left (Tuple[int, int]) : coordinates of top left of the button.
             size (Tuple[int, int]): Button dimensions.
             key (int, optional): Keyboard key to trigger button. Defaults to None.
         '''
         self.__key = key 
         self.__image = pygame.transform.scale(image, size)  # Resize the image to 100x100
         self.__rect = self.__image.get_rect()
-        self.__rect.topleft = (x,y)
+        self.__rect.topleft = top_left
         
         self.name = name 
         

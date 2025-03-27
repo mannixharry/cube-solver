@@ -16,28 +16,30 @@ class Capturer():
             vertical_offset (int, optional): Height, below the centre of the screen, at which the cube is drawn. Defaults to 100.
 
         Returns:
-            Tuple[np.ndarray, int, List[Tuple[int, int]]]: 
-                - np.ndarray: Image with the grid overlay.
-                - int: Cell size (length of an individual grid square).
                 - List[Tuple[int, int]]: Coordinates of the 9 grid centers.
         '''
+    
         height, width, _ = image.shape
         centre_x, centre_y = width // 2, height // 2
-
         cell_size = grid_size // 3
         half_grid_size = grid_size // 2
         top_left_x, top_left_y = centre_x - half_grid_size, centre_y - half_grid_size + vertical_offset
+
+        #Concatenate two lists of the horizontal and vertical lines.  
         unit_lines = [[(0, i / 3), (1, i / 3)] for i in range(4)] + [[(j / 3, 0), (j / 3, 1)] for j in range(4)]
+        #Englarge grid to specified grid size, and translate to the centre of the screen. 
         transformed_lines = [[(int(top_left_x + grid_size * x0),int(top_left_y + grid_size * y0)),
                  (int(top_left_x + grid_size * x1), int(top_left_y + grid_size * y1))] for (x0, y0), (x1, y1) in unit_lines]
         
+        #Draw the grid lines on image.
         for line in transformed_lines:
             p1, p2 = line
             cv2.line(image, p1, p2, (255, 255, 255), 3)
 
+        #Create a list of the coordinates of the grid centres on the image using list comprehension.
         grid_centres = [((i - 1) * cell_size + centre_x, centre_y + vertical_offset + cell_size * (j - 1)) for j in range(3) for i in range(3)]
         
-        return image, cell_size, grid_centres
+        return grid_centres
 
     def __get_average_colour(self, image, centre, detection_width):
         '''Computes the average colour of the image in the viscinity of given point.
@@ -50,13 +52,17 @@ class Capturer():
         Returns:
             Tuple[int, int, int]: average colour around point.
         '''
+
+        #Get the coordinates of top-left and bottom-right corners of the detection region.
         x0, x1 = centre[0] - detection_width, centre[0] + detection_width
         y0, y1 = centre[1] - detection_width, centre[1] + detection_width
 
-        region = image[y0:y1, x0:x1]
+        #Isolate the detection region. dectection_region is a numpy array. 
+        detection_region = image[y0:y1, x0:x1]
 
-        avg_colour = region.mean(axis=(0,1)) # region is a numpy array 
-        return tuple(map(int, avg_colour))
+        #Compute mean colour in region and convert each data value to an integer. 
+        avg_colour = detection_region.mean(axis=(0,1)).astype(int)
+        return avg_colour
     
     def __apply_centre_overlay(self, image, centre, overlay_colour, cell_size, transparency=0.5):
         '''Overlays a colour on the central square of the input image. 
@@ -69,10 +75,14 @@ class Capturer():
             cell_size (int): Side length of the central cell. 
             transparency (float, optional): Blending ratio between input image and overlay. Defaults to 0.5.
         '''
+
+        #Get the coordinates of top-left and bottom-right corners of central cell. 
         half_cell_size = cell_size // 2
         x0, x1 = centre[0] - half_cell_size, centre[0] + half_cell_size
         y0, y1 = centre[1] - half_cell_size, centre[1] + half_cell_size
 
+        #Set the overlay region of image to a linear combination of itself and the overlay colour.
+        #This gives a 'transparency' effect. 
         image[y0:y1, x0:x1] = (1 - transparency) * image[y0:y1, x0:x1] + transparency * np.array(overlay_colour)
         
     def __apply_top_overlay(self, image, centre, overlay_colour, cell_size, transparency=0.5):
@@ -86,16 +96,19 @@ class Capturer():
             transparency (float, optional): Blending ratio between input image and overlay. Defaults to 0.5.
         '''
         half_cell_size = cell_size // 2
+        #Find the coordinates of the centre of the circle, and its radius.
         cx, cy = centre[0], centre[1] - 2 * cell_size - half_cell_size
         radius = cell_size // 2
 
+        #Compute the coordinates of the square region in which the circle is inscribed.
         x0, x1 = cx - half_cell_size, cx + half_cell_size
         y0, y1 = cy - half_cell_size, cy + half_cell_size
 
-        # Draw the circle
+        #Draw the filled cirlcle on a copy of the image. 
         overlay = image.copy()
-        cv2.circle(overlay, (cx, cy), radius, overlay_colour, -1) # filled circle 
+        cv2.circle(overlay, (cx, cy), radius, overlay_colour, -1)
 
+        #Set the square overlay region to a linear combination of itself and the image with a filled circle drawn on. 
         image[y0:y1, x0:x1] = (1 - transparency) * image[y0:y1, x0:x1] + transparency * np.array(overlay)[y0:y1, x0:x1]
 
     def __capture_colour_data(self):
@@ -105,7 +118,8 @@ class Capturer():
             List[List[Tuple[int, int, int]]]: Colour data (6 x 9). 
             Stores average colour of each facelet on each face. (54 'colour' tuples)
         '''
-
+        
+        #Use cv2 library to access webcam. 
         cap = cv2.VideoCapture(0)
         if not cap.isOpened():
             print("Error: Could not open webcam.")
@@ -114,39 +128,45 @@ class Capturer():
         ESCAPE_KEY = 27
         CAPTURE_LIMIT = 6
         GRID_SIZE = 200
+        CELL_SIZE = GRID_SIZE // 3
 
+        #Load colours used for overlays from Data.
         overlay_colours = [Data.overlay_colour_map[i] for i in 'WOGRBY']
         top_overlay_colours = [Data.overlay_colour_map[i] for i in 'OYYYYG']
 
         captured_faces = 0
         colour_data = []
         while True:
+            #Capture a still image of the webcam feed.
             image_captured, image = cap.read()
             if not image_captured:
                 print("Failed to capture image.")
                 break
             
-            grid_image, cell_size, grid_centres = self.__draw_centred_grid(image.copy(), GRID_SIZE, vertical_offset=50)
-            centre = grid_centres[4]
-            # Apply overlays
-            self.__apply_centre_overlay(grid_image, centre, overlay_colours[captured_faces], cell_size)
-            self.__apply_top_overlay(grid_image, centre, top_overlay_colours[captured_faces], cell_size)
+            # Draw the grid on the captured image.
+            grid_centres = self.__draw_centred_grid(image, GRID_SIZE, vertical_offset=50)
+            centre = grid_centres[4] #Coordinate of the centre of the central cell of the grid. 
 
-            cv2.imshow('Align Your Cube and Press Space', grid_image)
+            # Apply overlays.
+            self.__apply_centre_overlay(image, centre, overlay_colours[captured_faces], CELL_SIZE)
+            self.__apply_top_overlay(image, centre, top_overlay_colours[captured_faces], CELL_SIZE)
+
+            # Display the image using a cv2 window.
+            cv2.imshow('Align Your Cube and Press Space', image)
             key = cv2.waitKey(1)
             
-            if key == ESCAPE_KEY:  # Quit on 'Escape'
+            if key == ESCAPE_KEY:  # Quit on 'Escape'.
                 break
-            elif key == ord(' '):  # Capture on spacebar
+            elif key == ord(' '):  # Capture on spacebar.
                 if captured_faces < CAPTURE_LIMIT:
                     captured_faces += 1
                     
                     print(f"Captured face {captured_faces}")
 
-                    colours = []
+                    colours = [] # 9 colours per face. 
                     for centre in grid_centres:
                         average_colour = self.__get_average_colour(image.copy(), centre, 10)
-                        colours.append(average_colour)
+                        colours.append(average_colour) 
                         
                     print(colours)
                     colour_data.append(colours)
@@ -168,7 +188,7 @@ class Capturer():
             colour_data (List[List[Tuple[int, int, int]]]): captured average colours.
 
         Returns:
-            List[[List[int]]]: Clusters. List of lists of indices of data values in colour_data that are most similar. (6*9)
+            List[List[int]]]: Clusters. List of lists of indices of data values in colour_data that are most similar. (6*9)
             ie: first list contains indices of WHITE facelets on the captured cube. 
         '''
 
@@ -227,7 +247,7 @@ class Capturer():
         Ensures processed data give rise to a valid, solvable cube. 
 
         Args:
-            clusters (List[[List[int]]]): Cluster data to convert to a CubieCube.
+            clusters (List[List[int]]): Cluster data to convert to a CubieCube.
 
         Returns:
             CubieCube, False: A CubieCube representation of the captured cube.

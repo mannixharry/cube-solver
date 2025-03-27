@@ -6,14 +6,14 @@ import numpy as np
 class Rectangle:
     '''Represents a rectangle in 3D space. 
     '''
-
     def __init__(self, corners, piece_colour=False):
         '''Assigns values to main attributes. 
         Note: Corners are always given in anti-clockwise order so that calculated normals face outwards (towards camera)
         This is important for backface culling. 
 
         Args:
-            corners (np.array) : Stores the position vectors of each of the corners.
+            corners (np.array[Tuple[int,int,int
+            ]]) : Stores the position vectors of each of the corners.
             piece_colour (Tuple[int, int, int]) : The colour of the rectangle if/when it is displayed. Defaults to False.
         '''
 
@@ -23,7 +23,7 @@ class Rectangle:
     def get_normal(self):
         '''Calculates the unit normal to the plane containing the rectangle.
         Returns:
-            np.ndarray: Unit normal vector.
+            nparray: Unit normal vector.
         '''
         a,  b, c, _ = self.corners
         normal = np.cross(b-a, c-a)
@@ -40,7 +40,7 @@ class Rectangle:
         return (a + b + c + d) / 4.0 
     
     
-class Cube:
+class Cube3D:
     '''Generates and stores Rectangles that make up the cube.
     
     Attributes:
@@ -56,6 +56,10 @@ class Cube:
 
         Args:
             cube_string (FaceletCube, str, optional): Input FaceletCube. Defaults to None.
+         
+        Raises: 
+            TypeError: 'Input cube_string is not of expected type.
+
         '''
         self.facelets = []
         
@@ -63,7 +67,11 @@ class Cube:
             cube_string = str(cube.FaceletCube())
         elif isinstance(cube_string, cube.FaceletCube):
             cube_string = str(cube_string)
-        
+        elif isinstance(cube_string, str):
+            cube_string = cube_string
+        else: 
+            raise TypeError('Input cube_string is not of expected type')
+
         f_face = [Rectangle([[0.5 - i, 1.5 - j, -1.5], [0.5 - i, 0.5 - j, -1.5],  
                       [1.5 - i, 0.5 - j, -1.5], [1.5 - i, 1.5 - j, -1.5]])  
           for j in range(3) for i in range(3)]
@@ -82,9 +90,6 @@ class Cube:
              
 class Projector:
     '''Contains mathematics to convert a 3D position vector to a 2D screen coordinate. 
-    
-        Attributes:
-            projection_matrix(np.ndarray) : Used to transform a 3D vector to 2D screen coordinates.
     '''
     def __init__(self, width, height, fov=np.pi/2):
         ''' Creates a projection matrix. 
@@ -94,8 +99,6 @@ class Projector:
             height (int): Screen height
 
             fov (int, optional): Field of View. Defaults to 90 degrees.
-
-
         '''
         self.width, self.height = width, height
         self.fov = fov
@@ -155,7 +158,7 @@ class Transformer:
                 [0, cos_theta, -sin_theta],
                 [0, sin_theta, cos_theta]
             ])
-
+        
         def __create_rotation_matrix_y(angle_y):
             '''Creates y-axis rotation matrix. 
             '''
@@ -202,12 +205,18 @@ class CubeManager:
 
     Attributes: 
         - renderer(Renderer) : Main Renderer object to manage display.
-        - cube(Cube) : Main Cube object being displayed. 
+        - cube(Cube3D) : Main Cube object being displayed. 
         - face_turning(boolean) : Flags if a face-turn animation is taking place.
         - cube_rotating(boolean) : Flags if a cube-rotation animation is taking place.
     '''
+
     __frames_per_face_turn = 30
+    __frames_per_cube_rotation = 60
+
     __current_cube_rotation_angle = np.array([0,0,0])
+    __cube_initial_angle = __cube_target_angle = 0
+    __current_cube_rotation_frame = 0
+    
     
     def __init__(self, cube_input, renderer):
         '''Loads key attributes.
@@ -229,19 +238,19 @@ class CubeManager:
         '''Loads a cube from cube_input.
 
         Args:
-            cube_input (CubieCube, FaceletCube, str): Input cubeto load cube state from.
+            cube_input (CubieCube, FaceletCube, str): Input cube Nto load cube state from.
         '''
         self.face_turning = False
         self.cube_rotating = False
 
         self.cube = cube.CubieCube(cube_input)
-        self.__facelets = Cube(str(cube.FaceletCube(cube_input))).facelets
+        self.__facelets = Cube3D(str(cube.FaceletCube(cube_input))).facelets
            
     def change_cube_rotation(self, angle_delta):
         '''Changes the cube's current rotation angle by angle_delta. 
 
         Args:
-            angle_delta (Tuple[int, int, int]): Angle to change current cube rotation angle by.
+            angle_delta (Tuple[float, float, float]): Angle to change current cube rotation angle by.
 
         Returns:
             boolean: True; False if cube is rotating.
@@ -285,7 +294,7 @@ class CubeManager:
             factor (float): The fraction of the way through the rotation.
 
         Returns:
-            Tuple[int,int,int]: interpolated angle
+            Tuple[float, float, float]: interpolated angle
         '''
         delta = ((target_angle - initial_angle + np.pi)  % (2 * np.pi)) - np.pi # shift to inverval (0, 2pi), apply mod, then shift back to (-pi, pi)
         return initial_angle + factor * delta
@@ -313,7 +322,7 @@ class CubeManager:
     
     def set_cube_view(self, viewpoint, frames_per_cube_rotation = 60):
         '''Stores default rotation angles for specific 'views' of the cube's pieces. 
-        A majority of these are redundant - but useful for 'future-proofing'. 
+        A majority of these are redundant - but useful for 'future use'. 
 
         Args:
             viewpoint (Face, Edge, Corner, Move): indicates which viewpoint to rotate towards. 
@@ -332,47 +341,47 @@ class CubeManager:
 
 
         corner_view_angles = [
-            [-qtr_pi,qtr_pi,0],
-            [-qtr_pi, -qtr_pi,0],
-            [-qtr_pi, pi-qtr_pi, 0],
-            [-qtr_pi, qtr_pi-pi,0],
-            [qtr_pi, qtr_pi,0],
-            [qtr_pi, -qtr_pi,0],
-            [qtr_pi, pi-qtr_pi,0],
-            [qtr_pi, qtr_pi-pi,0]
+            (-qtr_pi,qtr_pi,0),
+            (-qtr_pi, -qtr_pi,0),
+            (-qtr_pi, pi-qtr_pi, 0),
+            (-qtr_pi, qtr_pi-pi,0),
+            (qtr_pi, qtr_pi,0),
+            (qtr_pi, -qtr_pi,0),
+            (qtr_pi, pi-qtr_pi,0),
+            (qtr_pi, qtr_pi-pi,0)
         ]
 
         edge_view_angles = [
-            [-qtr_pi,0,0],
-            [-qtr_pi,hlf_pi,0],
-            [-qtr_pi, pi, 0],
-            [-qtr_pi, -hlf_pi, 0],
-            [qtr_pi,0,0],
-            [qtr_pi, hlf_pi,0],
-            [qtr_pi, pi,0],
-            [qtr_pi, -hlf_pi,0], 
-            [0,qtr_pi,0],
-            [0,-qtr_pi,0], 
-            [0,pi-qtr_pi,0], 
-            [0,qtr_pi-pi,0]
+            (-qtr_pi,0,0),
+            (-qtr_pi,hlf_pi,0),
+            (-qtr_pi, pi, 0),
+            (-qtr_pi, -hlf_pi, 0),
+            (qtr_pi,0,0),
+            (qtr_pi, hlf_pi,0),
+            (qtr_pi, pi,0),
+            (qtr_pi, -hlf_pi,0), 
+            (0,qtr_pi,0),
+            (0,-qtr_pi,0), 
+            (0,pi-qtr_pi,0), 
+            (0,qtr_pi-pi,0)
         ]
     
         face_view_angles = [
-            [-hlf_pi,0 ,0],
-            [0,0,0],
-            [0, hlf_pi,0],
-            [0,-hlf_pi,0],
-            [0,pi,0],
-            [hlf_pi,0,0]
+            (-hlf_pi,0 ,0),
+            (0,0,0),
+            (0, hlf_pi,0),
+            (0,-hlf_pi,0),
+            (0,pi,0),
+            (hlf_pi,0,0)
         ]
 
         move_view_angles = [
-            [-qtr_pi,0,0],
-            [-qtr_pi,0,0],
-            [-qtr_pi,seven_sixteenths_pi,0],
-            [-qtr_pi,-seven_sixteenths_pi, 0],
-            [-eleven_sixteenths_pi,0,0],
-            [three_sixteenths_pi,0,0]
+            (-qtr_pi,0,0),
+            (-qtr_pi,0,0),
+            (-qtr_pi,seven_sixteenths_pi,0),
+            (-qtr_pi,-seven_sixteenths_pi, 0),
+            (-eleven_sixteenths_pi,0,0),
+            (three_sixteenths_pi,0,0)
         ]
 
         if isinstance(viewpoint, Face):
@@ -414,11 +423,11 @@ class CubeManager:
             clockwise *= -1 
 
         if move_type in [Move.U, Move.D]:
-            angle = [0,clockwise,0]
+            angle = (0,clockwise,0)
         if move_type in [Move.L, Move.R]:
-            angle = [clockwise,0,0]
+            angle = (clockwise,0,0)
         if move_type in [Move.F, Move.B]:
-            angle = [0,0,clockwise]
+            angle = (0,0,clockwise)
         angle = np.multiply(angle, np.pi/2)
 
         self.__current_face_turn_frame = self.__current_face_turn_angle = 0
@@ -483,8 +492,7 @@ class CubeManager:
         index = 0
         for rectangle in np.array(self.__facelets):
                 rotating = self.face_turning
-                if not rotating and not rectangle.piece_colour:
-                    continue
+        
                     
                 transformed_vertices = []
                 projected_vertices = []
