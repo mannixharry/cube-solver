@@ -108,11 +108,6 @@ class Main:
         Args:
             cube_string (str, optional): input cube_string. Defaults to 'WWWWWWWWWGGGGGGGGGOOOOOOOOORRRRRRRRRBBBBBBBBBYYYYYYYYY'.
         '''
-        imported_cube = cube.CubieCube()
-        imported_cube.corner_permutations = [1, 0, 2, 3, 4, 5, 6, 7]
-        imported_cube.corner_orientations = [1, 2, 0, 0, 0, 0, 0, 0]
-        imported_cube.edge_permutations = [0, 3, 2, 1, 4, 5, 6, 7, 8, 9, 10, 11]
-        cube_string = str(cube.FaceletCube(imported_cube))
         renderer = Renderer()
 
         cube_capturer = capture.Capturer()

@@ -1,0 +1,5 @@
+# Extra tooling needed only to BUILD the distributable app.
+-r requirements.txt
+
+pyinstaller>=6.6
+pillow>=10.0            # lets PyInstaller convert/handle the app icon
