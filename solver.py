@@ -115,8 +115,14 @@ class Solver:
                 
                 for move in self.allowed_moves:
                     if current_path:
-                        if move == Move.inverse_move(current_path[-1]):
+                        last_face = current_path[-1] % 6
+                        face = move % 6
+                        if face == last_face: #Ignore same-face moves. 
                             continue
+                        if face == Data.opposite_face[last_face] and face < last_face:
+                            continue # Canonical ordering for opposite face moves (which commute)
+                        
+                        
                     next_state = cube.CoordCube(current_state)
                     next_state.move(move)
 

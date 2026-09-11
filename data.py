@@ -190,7 +190,6 @@ class Data:
                 Move.R: [Edge.UF, Edge.UL, Edge.UB, Edge.FR, Edge.DF, Edge.DL, Edge.DB,  Edge.BR,  Edge.FL, Edge.DR, Edge.BL, Edge.UR],  
                 Move.B: [Edge.UF, Edge.UL, Edge.BR, Edge.UR, Edge.DF, Edge.DL, Edge.BL,  Edge.DR,  Edge.FL, Edge.FR, Edge.UB, Edge.DB],  
             }
-
     '''
     0 -> No flip with respect to reference
     1 -> Flipped with respect to reference
@@ -289,6 +288,7 @@ class Data:
     '''
     g1_allowed_moves = range(18) 
     g2_allowed_moves = [Move.U, Move.D, Move.U3, Move.D3, Move.F2, Move.B2, Move.L2, Move.R2]
+    opposite_face = [Face.D, Face.B, Face.R, Face.L, Face.F, Face.U]  # opposite_face[face] -> opposite face
 
     '''
     Define RGB colours for the the cube. 
@@ -312,5 +312,4 @@ class Data:
         'B' : (255, 0, 0),      # Blue
         'Y' : (0, 255, 255)     # Yellow
     }
-            
-
+    
