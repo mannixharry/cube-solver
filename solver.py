@@ -98,7 +98,6 @@ class Solver:
             while len(stack) > 0: 
 
                 current_state, current_path = stack.pop()
-                coord = cube.CoordCube(current_state)
 
                 g_score = len(current_path) 
                 h_score = self._heuristic_function(current_state)
@@ -109,7 +108,8 @@ class Solver:
                     if f_score < min_f:
                         min_f = f_score
                     continue
-
+                
+                coord = cube.CoordCube(current_state)
                 if self._is_solved_function(coord):
                     return current_path
                 
