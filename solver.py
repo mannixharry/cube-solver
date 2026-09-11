@@ -1,9 +1,15 @@
 import cube
 cube.import_tables()
-from data import * 
+from data import *
 from datetime import datetime
-import json 
+import json
 from abc import ABC, abstractmethod
+
+# Coordinate-space sizes, used to flatten (coordinate_1, coordinate_2) pairs into a single
+# index into a dense pruning table array: index = coordinate_1 * dim2 + coordinate_2.
+CORNER_ORIENTATION_SIZE = 3 ** 7   # 2187
+EDGE_ORIENTATION_SIZE = 2 ** 11    # 2048
+FOUR_EDGE_PERMUTATION_SIZE = 24
 
 class PruningTables:
     '''Loads pruning tables from local files.
@@ -145,11 +151,8 @@ class Solver:
                 int: heuristic
             '''
 
-            search_coord1 = str((state.UD_slice_coordinate, state.corner_orientation_coordinate))
-            d1 = self.__UD_slice_corner_table.get(search_coord1, self.max_depth)
-
-            search_coord2 = str((state.UD_slice_coordinate, state.edge_orientation_coordinate))
-            d2 = self.__UD_slice_edge_table.get(search_coord2, self.max_depth)
+            d1 = self.__UD_slice_corner_table[state.UD_slice_coordinate * CORNER_ORIENTATION_SIZE + state.corner_orientation_coordinate]
+            d2 = self.__UD_slice_edge_table[state.UD_slice_coordinate * EDGE_ORIENTATION_SIZE + state.edge_orientation_coordinate]
 
             return max(d1, d2)
 
@@ -180,11 +183,8 @@ class Solver:
             Returns:
                 int: heuristic
             '''
-            search_coord1 = str((state.corner_permutation_coordinate, state.four_edge_permutation_coordinate))
-            d1 = self.__corner_four_edge_table.get(search_coord1, self.max_depth)
-
-            search_coord2 = str((state.eight_edge_permutation_coordinate, state.four_edge_permutation_coordinate))
-            d2 = self.__eight_edge_four_edge_table.get(search_coord2, self.max_depth)
+            d1 = self.__corner_four_edge_table[state.corner_permutation_coordinate * FOUR_EDGE_PERMUTATION_SIZE + state.four_edge_permutation_coordinate]
+            d2 = self.__eight_edge_four_edge_table[state.eight_edge_permutation_coordinate * FOUR_EDGE_PERMUTATION_SIZE + state.four_edge_permutation_coordinate]
 
             return max(d1, d2)
 

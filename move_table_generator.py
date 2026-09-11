@@ -71,40 +71,40 @@ class MoveTableGenerator:
             n //= 2
         return [0] * (bits - len(binary)) + binary  # Pad with 0's to the required bit length
 
-    def __generate_general_table(self, iterator, coordinate_type, configuration_type):
+    def __generate_general_table(self, iterator, coordinate_type, configuration_type, table_size):
         '''Generates a move table, taking an iterator function, coordinate_type and configuration_type as input.
         The purpose of the move tables are to act as a look up for applying moves to a CoordCube representation.
         Rather than converting the representation to a CubieCube, peforming a turn, and converting back,
         the result of every possible move on every possible coordinate for every type of coordinate
-        is stored in move tables. As they are stored as dictionaries, access times are extremely low,
-        and therefore, CoordCube moves can be executed extremely quickly, as the solving algorithm requires.
+        is stored in move tables.
 
         Args:
-            iterator (function): Generator function to iterate over all possible coordinates. 
+            iterator (function): Generator function to iterate over all possible coordinates.
             coordinate_type (str): Coordinate attribute of interest.
             configuration_type (str): CubieCube attribute of interest.
+            table_size (int): Number of distinct values the coordinate can take (size of the array).
 
         Returns:
-            dict: Move table.
+            list: Move table. Indexed by coordinate, each entry is a list of 18 child coordinates (one per move).
         '''
-        general_table = {}
+        general_table = [None] * table_size
 
-        for configuration_component in iterator: 
+        for configuration_component in iterator:
 
             parent_cube = cube.CubieCube()
             setattr(parent_cube, configuration_type, configuration_component)
             parent_general_coordinate = getattr(cube.CoordCube(parent_cube), coordinate_type)
 
-            child_general_coordinates = [''] * 18 # Placeholder for 18 moves. 
+            child_general_coordinates = [''] * 18 # Placeholder for 18 moves.
             for move_type in [cube.Move.U, cube.Move.F, cube.Move.L, cube.Move.R, cube.Move.B, cube.Move.D]:
-                
+
                 temp_cube = cube.CubieCube()
                 setattr(temp_cube, configuration_type, configuration_component)
                 for turns in range(3):
                     temp_cube.move(move_type)
                     child_coordinate = getattr(cube.CoordCube(temp_cube), coordinate_type)
                     child_general_coordinates[move_type + 6*turns] = child_coordinate
-                    
+
             general_table[parent_general_coordinate] = child_general_coordinates
         return general_table
     
@@ -119,11 +119,11 @@ class MoveTableGenerator:
                 List[int]: corner_orientations.
             '''
             for generating_orientation_coordinate in range(3**7):  # Iterate over the first 7 corners
-                ternary_form = self.__decimal_to_ternary(generating_orientation_coordinate, bits=7)
+                ternary_form = self.__decimal_to_ternary(generating_orientation_coordinate, digits=7)
                 # Compute the 8th corner orientation to make the total sum divisible by 3
                 yield ternary_form + [(-sum(ternary_form)) % 3]  # Ensure valid corner orientation
         itr = iterator()
-        return self.__generate_general_table(itr, 'corner_orientation_coordinate', 'corner_orientations')
+        return self.__generate_general_table(itr, 'corner_orientation_coordinate', 'corner_orientations', 2187)
 
     def __generate_edge_orientation_table(self):
         '''Generates the edge orientation table.
@@ -140,7 +140,7 @@ class MoveTableGenerator:
                 # Compute the 12th edge flip to make the total sum even
                 yield binary_form + [(sum(binary_form) % 2)]  # Add the parity bit to enforce valid edge orientation
         itr = iterator()
-        return self.__generate_general_table(itr, 'edge_orientation_coordinate', 'edge_orientations')
+        return self.__generate_general_table(itr, 'edge_orientation_coordinate', 'edge_orientations', 2048)
 
     def __generate_UD_slice_permutation_table(self):
         '''Generates the UD slice permutation table. 
@@ -165,7 +165,7 @@ class MoveTableGenerator:
                         counter += 1 
                 yield cubie_UD_permutations
         itr = iterator()
-        return self.__generate_general_table(itr, 'UD_slice_coordinate', 'edge_permutations')
+        return self.__generate_general_table(itr, 'UD_slice_coordinate', 'edge_permutations', 495)
    
     def __generate_corner_permutation_table(self):
         '''Generates the corner permutation table.
@@ -181,7 +181,7 @@ class MoveTableGenerator:
             for index_combination in indices:
                 yield index_combination
         itr = iterator()
-        return self.__generate_general_table(itr, 'corner_permutation_coordinate', 'corner_permutations')
+        return self.__generate_general_table(itr, 'corner_permutation_coordinate', 'corner_permutations', 40320)
     
 
     def __generate_eight_edge_permutation_table(self):
@@ -199,7 +199,7 @@ class MoveTableGenerator:
                 # Set up the cubie cube with the specific main edge permutation
                 yield list(main_edge_combination) + [8, 9, 10, 11]  # Fixed UD edges
         itr = iterator()
-        return self.__generate_general_table(itr, 'eight_edge_permutation_coordinate', 'edge_permutations')
+        return self.__generate_general_table(itr, 'eight_edge_permutation_coordinate', 'edge_permutations', 40320)
 
     def __generate_four_edge_permutation_table(self):
         '''Generates the four edge permutation table.
@@ -216,7 +216,7 @@ class MoveTableGenerator:
                 # Set up the cubie cube with the specific UD slice edge permutation
                 yield list(range(8)) + list(UD_slice_combination)  # Fixed main edges
         itr = iterator()
-        return self.__generate_general_table(itr, 'four_edge_permutation_coordinate', 'edge_permutations')
+        return self.__generate_general_table(itr, 'four_edge_permutation_coordinate', 'edge_permutations', 24)
             
 if __name__ == '__main__':
     move_tables = MoveTableGenerator()

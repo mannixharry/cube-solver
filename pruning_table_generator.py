@@ -55,86 +55,88 @@ class PruningTableGenerator:
             
         print(f"Time to generate: {datetime.now() - start_time}")
                                
-    def generate_general_pruning_table(self, pruning_coordinates, allowed_moves, table_size):
-        '''Generates a pruning table, taking the pruning coordinates, allowed moves and table size as input.
-        Each table stores two coordinates, used as an index, and an integer value.
-        The integer is an underestimate of the minimum number of moves required to solve the cube to either g1 or g2. 
-        This is called an admissible heuristic. 
+    def generate_general_pruning_table(self, pruning_coordinates, allowed_moves, dim2, table_size):
+        '''Generates a pruning table, taking the pruning coordinates, allowed moves, second-coordinate range and
+        table size as input.
+        Each table stores two coordinates, flattened to a single index (coordinate_1 * dim2 + coordinate_2),
+        against an integer value. The integer is an underestimate of the minimum number of moves required to
+        solve the cube to either g1 or g2. This is called an admissible heuristic.
         The purpose of the pruning tables is to precompute the values of an admissible heuristic function,
         in order to allow for efficient pruning of the IDA* search tree through the use of a lookup table. --> see solver.py
         Args:
             pruning_coordinates (Tuple[str, str]): Coordinate pair to index table with.
-            allowed_move (List[Move]): Set of allowed moves for stage. ie: g1 or g2. 
-            table_size (int): Maximum pruning table size. 
+            allowed_move (List[Move]): Set of allowed moves for stage. ie: g1 or g2.
+            dim2 (int): Number of distinct values coordinate_2 can take (used to flatten the coordinate pair).
+            table_size (int): Size of the pruning table array (dim1 * dim2).
 
         Returns:
-            dict: Pruning table.
+            list: Pruning table, indexed by coordinate_1 * dim2 + coordinate_2.
         '''
         pruning_coordinate_1, pruning_coordinate_2 = pruning_coordinates
-        general_table = {}
+        general_table = [None] * table_size
         initial_state = cube.CoordCube()  # Assuming default state [0, 0, 0]
 
         queue = deque([(initial_state, 0)])  # (cube_state, depth)
         visited = set()
 
-        while queue and len(general_table) <= table_size:
+        while queue and len(visited) < table_size:
             current_state, depth = queue.popleft()
-            coord_tuple = (
-                getattr(current_state, pruning_coordinate_1),
-                getattr(current_state, pruning_coordinate_2)
+            index = (
+                getattr(current_state, pruning_coordinate_1) * dim2
+                + getattr(current_state, pruning_coordinate_2)
             )
 
-            if coord_tuple in visited:
+            if index in visited:
                 continue
 
-            visited.add(coord_tuple)
-            general_table[str(coord_tuple)] = depth
+            visited.add(index)
+            general_table[index] = depth
 
             for move in allowed_moves:  # Moves for G1 or moves for G2
                 next_state = cube.CoordCube(current_state)  # Copy current state
                 next_state.move(move)  # Apply move
 
-                next_coord_tuple = (
-                    getattr(next_state, pruning_coordinate_1),
-                    getattr(next_state, pruning_coordinate_2)
+                next_index = (
+                    getattr(next_state, pruning_coordinate_1) * dim2
+                    + getattr(next_state, pruning_coordinate_2)
                 )
 
-                if next_coord_tuple not in visited:
+                if next_index not in visited:
                     queue.append((next_state, depth + 1))
 
         return general_table
-    
+
     def generate_UD_slice_corner_table(self):
         '''Generates UD slice coordinate and corner orientation coordinate pruning table for g1 heuristic.
-        (2048 * 485 entries)
+        (495 * 2187 entries)
         Returns:
-            dict: udslice_corner pruning table
+            list: udslice_corner pruning table
         '''
-        return self.generate_general_pruning_table(('UD_slice_coordinate','corner_orientation_coordinate'), Data.g1_allowed_moves, 2048 * 495)
-    
+        return self.generate_general_pruning_table(('UD_slice_coordinate','corner_orientation_coordinate'), Data.g1_allowed_moves, 2187, 495 * 2187)
+
     def generate_UD_slice_edge_table(self):
         '''Generates UD slice coordinate and edge orientation coordinate pruning table for g1 heuristic.
-        (2187 * 495 entries)
+        (495 * 2048 entries)
         Returns:
-            dict: udslice_edge pruning table
+            list: udslice_edge pruning table
         '''
-        return self.generate_general_pruning_table(('UD_slice_coordinate', 'edge_orientation_coordinate'), Data.g1_allowed_moves, 2187 * 495)
-    
+        return self.generate_general_pruning_table(('UD_slice_coordinate', 'edge_orientation_coordinate'), Data.g1_allowed_moves, 2048, 495 * 2048)
+
     def generate_corner_four_edge_table(self):
         '''Generates corner permutation coordinate and four edge permutation coordinate pruning table for g2 heuristic.
         (40320 * 24 entries)
         Returns:
-            dict: corner_udslice_edge pruning table
+            list: corner_udslice_edge pruning table
         '''
-        return self.generate_general_pruning_table(('corner_permutation_coordinate', 'four_edge_permutation_coordinate'), Data.g2_allowed_moves, 40320 * 24)
-    
+        return self.generate_general_pruning_table(('corner_permutation_coordinate', 'four_edge_permutation_coordinate'), Data.g2_allowed_moves, 24, 40320 * 24)
+
     def generate_eight_edge_four_edge_table(self):
         '''Generates eight edge permutation coordinate and four edge permutation coordinate pruning table for g2 heuristic.
         (40320 * 24 entries)
         Returns:
-            dict: mainedge_udslice_edge pruning table
+            list: mainedge_udslice_edge pruning table
         '''
-        return self.generate_general_pruning_table(('eight_edge_permutation_coordinate', 'four_edge_permutation_coordinate'), Data.g2_allowed_moves, 40320 * 24)
+        return self.generate_general_pruning_table(('eight_edge_permutation_coordinate', 'four_edge_permutation_coordinate'), Data.g2_allowed_moves, 24, 40320 * 24)
 
 if __name__ == '__main__':
     pruning_tables = PruningTableGenerator()

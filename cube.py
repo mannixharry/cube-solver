@@ -5,7 +5,8 @@ import json
 
 class MoveTables():
     '''Loads move tables from local files.
-    '''   
+    '''
+    
     def __init__(self):
         '''Nagivates to move table files and loads them.
         
@@ -502,7 +503,6 @@ class CoordCube:
         self.g1_coordinates = (0,0,0)
         self.g2_coordinates = (0,0,0)
         
-        self.__cubie_cube = CubieCube()
         try:
             self.__g1_move_tables = (
                     move_tables.corner_orientation_table,
@@ -589,8 +589,8 @@ class CoordCube:
             move (Move): Move to perform on CoordCube.
         '''
         # Update coordinates based on move
-        self.g1_coordinates = [(self.__g1_move_tables[i])[str(self.g1_coordinates[i])][move] for i in range(3)]
-        self.g2_coordinates = [(self.__g2_move_tables[i])[str(self.g2_coordinates[i])][move] for i in range(3)]
+        self.g1_coordinates = [self.__g1_move_tables[i][self.g1_coordinates[i]][move] for i in range(3)]
+        self.g2_coordinates = [self.__g2_move_tables[i][self.g2_coordinates[i]][move] for i in range(3)]
       
     def __repr__(self):
         '''Converts CoordCube state to a printable string. Overrides python magic method __repr__. 

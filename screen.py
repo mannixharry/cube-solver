@@ -49,7 +49,7 @@ class Renderer:
             P = np.array(P)
             ab, ac, ad = B-A, C-A, D-A
             pa, pb, pc, pd = A-P, B-P, C-P, D-P
-            area = lambda x, y : np.linalg.norm(np.cross(x,y)) 
+            area = lambda x, y : abs(x[0]*y[1] - x[1]*y[0])
             quad_area = area(ab, ac) + area(ac,ad) # This is actually 2x but irrelevent
             total_area = area(pa, pb) + area(pb,pc) + area(pc, pd) + area(pd, pa)
             relative_error = abs((total_area-quad_area) / quad_area)          
