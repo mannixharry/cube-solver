@@ -3,4 +3,4 @@
 
 numpy>=1.26,<3          # engine.py, screen.py, capture.py
 opencv-python>=4.9      # capture.py  -> provides the "cv2" module
-pygame>=2.6             # main.py, screen.py, engine.py
+pygame>=2.6             # app.py, screen.py, engine.py
