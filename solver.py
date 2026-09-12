@@ -1,7 +1,8 @@
 import cube
 cube.import_tables()
 from data import *
-from datetime import datetime
+from datetime import *
+import time
 import json
 from abc import ABC, abstractmethod
 
@@ -79,39 +80,50 @@ class Solver:
             '''
             pass
         
-        def search_for_solution(self, state, threshold=0): # IDA*
+        def search_for_solutions(self, state, threshold=0, deadline=None, max_depth=None): # IDA*
             '''IDA* algorithm.
-            Stack implementation of DFS to avoid recursion depth limitations. 
+            Stack implementation of DFS to avoid recursion depth limitations.
             Performs pruning using the heuristic function.
-            Recurisve calls increase depth threshold if solved conditions are not met. 
+            Recurisve calls increase depth threshold if solved conditions are not met.
 
             Args:
-                statet (CoordCube): CoordCube
+                state (CoordCube): CoordCube
                 threshold (int, optional): Smallest pruned f-score from previous recursive call. Defaults to 0.
+                max_depth (int, optional): Overrides self.max_depth for this call (and its recursive
+                    deepening steps). Callers pass a tighter cap once they already have a solution to
+                    beat, so the search doesn't waste time exploring depths that can't possibly improve
+                    on it. Defaults to self.max_depth.
 
             Returns:
                 List[Move]: solution path (this is the base case of recursion)
                 (or result of recursive call).
             '''
+            effective_max_depth = self.max_depth if max_depth is None else min(max_depth, self.max_depth)
+            if effective_max_depth < 0:
+                return # No depth can possibly improve on the caller's bound.
+
             stack = [(state, [])]
             min_f = float('inf')
-            while len(stack) > 0: 
+            nodes_checked = 0
+            while stack: # Hot path
+                nodes_checked += 1
+                if deadline is not None and nodes_checked % 1000 == 0 and time.perf_counter() > deadline:
+                    return # Timeout mid-pass
 
                 current_state, current_path = stack.pop()
-
-                g_score = len(current_path) 
+                g_score = len(current_path)
                 h_score = self._heuristic_function(current_state)
-
                 f_score = g_score + h_score
 
-                if f_score > threshold or g_score > self.max_depth:
+                if f_score > threshold or g_score > effective_max_depth:
                     if f_score < min_f:
                         min_f = f_score
                     continue
                 
                 coord = cube.CoordCube(current_state)
                 if self._is_solved_function(coord):
-                    return current_path
+                    yield current_path
+                    continue
                 
                 for move in self.allowed_moves:
                     if current_path:
@@ -122,7 +134,6 @@ class Solver:
                         if face == Data.opposite_face[last_face] and face < last_face:
                             continue # Canonical ordering for opposite face moves (which commute)
                         
-                        
                     next_state = cube.CoordCube(current_state)
                     next_state.move(move)
 
@@ -130,7 +141,12 @@ class Solver:
 
                     stack.append((next_state, next_path))
 
-            return self.search_for_solution(state, min_f)
+            if deadline is not None and time.perf_counter() > deadline:
+                return
+            if min_f == float('inf') or min_f > effective_max_depth:
+                return
+
+            yield from self.search_for_solutions(state, min_f, deadline, max_depth)
    
     class g1Solver(StageSolver):
         '''Solves the cube to the g1 subset. 
@@ -234,7 +250,7 @@ class Solver:
 
         return contracted_solution
 
-    def solve_cube(self, cube_input):
+    def solve_cube(self, cube_input, time_limit=1.0):
         '''Calls methods to solve the cube to g1, update the cube state and solve to g2. 
         Contracts solution (simplifies it).
 
@@ -246,36 +262,67 @@ class Solver:
         Returns:
             List[Move]: contracted solution
         '''
-      
+        
         start_time = datetime.now()
+        deadline = time.perf_counter() + time_limit
 
         cubie_input = cube.CubieCube(cube_input)
         initial_state = cube.CoordCube(cubie_input)
 
-        # Solve G1
-        g1_solution = self.__g1_solver.search_for_solution(initial_state)
-        print("G1 Solution:", [Data.move_notation[i] for i in g1_solution])
+        ATTEMPT_BUDGET = 0.1
+        GRACE_BUDGET = 3.0 # extra time to guarantee a result if nothing was found by the deadline
 
-        for move in g1_solution:
-            cubie_input.move(move)
-            initial_state.move(move)
+        best_solution = None
+        best_length = float('inf')
+        candidates_tried = 0
 
-        print(f"Time to G1: {datetime.now() - start_time}")
+        def try_candidates(search_deadline):
+            nonlocal best_solution, best_length, candidates_tried
 
-        # Solve G2
-        initial_state_g2 = cube.CoordCube(cubie_input)
-        g2_solution = self.__g2_solver.search_for_solution(initial_state_g2)
+            for g1_solution in self.__g1_solver.search_for_solutions(initial_state, deadline=search_deadline):
+                now = time.perf_counter()
+                if now > search_deadline:
+                    break
 
-        print("G2 Solution:", [Data.move_notation[i] for i in g2_solution])
+                if len(g1_solution) >= best_length:
+                    continue
 
-        for move in g2_solution:
-            cubie_input.move(move)
+                g1_cubie = cube.CubieCube(cubie_input)
+                for move in g1_solution:
+                    g1_cubie.move(move)
+                g1_state = cube.CoordCube(g1_cubie)
 
-        print(f"Time to G2: {datetime.now() - start_time}")
+                g2_lower_bound = self.__g2_solver._heuristic_function(g1_state)
+                if len(g1_solution) + g2_lower_bound >= best_length:
+                    continue # cheap admissible bound prunes this
 
-        full_solution = g1_solution + g2_solution
-        contracted_solution = self.__contract_solution(full_solution)
+                depth_cap = None if best_length == float('inf') else best_length - len(g1_solution) - 1
+                attempt_deadline = min(search_deadline, now + ATTEMPT_BUDGET)
 
+                g2_solution = next(
+                    self.__g2_solver.search_for_solutions(g1_state, deadline=attempt_deadline, max_depth=depth_cap),
+                    None
+                )
+                if g2_solution is None:
+                    continue # g2 search didn't find an improving solution within its budget; try the next g1 candidate
+
+                total_length = len(g1_solution) + len(g2_solution)
+                candidates_tried += 1
+
+                if total_length < best_length:
+                    best_length = total_length
+                    best_solution = g1_solution + g2_solution
+
+        try_candidates(deadline)
+
+        if best_solution is None:
+            try_candidates(time.perf_counter() + GRACE_BUDGET)
+
+        if best_solution is None:
+            try_candidates(time.perf_counter() + 60.0)
+
+        contracted_solution = self.__contract_solution(best_solution or [])
+        print(f"Tried {candidates_tried} candidates in {datetime.now() - start_time}")
         print(f"\nWhole Solution ({len(contracted_solution)} moves):", [Data.move_notation[i] for i in contracted_solution])
     
         return contracted_solution

@@ -287,7 +287,7 @@ class Data:
     Define allowed moves in g1 and g2 subsets. 
     '''
     g1_allowed_moves = range(18) 
-    g2_allowed_moves = [Move.U, Move.D, Move.U3, Move.D3, Move.F2, Move.B2, Move.L2, Move.R2]
+    g2_allowed_moves = [Move.U, Move.D, Move.U2, Move.D2, Move.U3, Move.D3, Move.F2, Move.B2, Move.L2, Move.R2]
     opposite_face = [Face.D, Face.B, Face.R, Face.L, Face.F, Face.U]  # opposite_face[face] -> opposite face
 
     '''
